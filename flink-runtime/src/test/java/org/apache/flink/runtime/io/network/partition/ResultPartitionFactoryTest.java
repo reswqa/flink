@@ -135,12 +135,29 @@ public class ResultPartitionFactoryTest extends TestLogger {
         assertFalse(resultPartition.isReleased());
     }
 
+    @Test
+    public void testHybridBroadcastEdgeAlwaysUseFullResultPartition() {
+        ResultPartition resultPartition =
+                createResultPartition(
+                        ResultPartitionType.HYBRID_SELECTIVE, Integer.MAX_VALUE, true);
+        assertThat(resultPartition.partitionType).isEqualTo(ResultPartitionType.HYBRID_FULL);
+
+        resultPartition =
+                createResultPartition(ResultPartitionType.HYBRID_FULL, Integer.MAX_VALUE, true);
+        assertThat(resultPartition.partitionType).isEqualTo(ResultPartitionType.HYBRID_FULL);
+    }
+
     private static ResultPartition createResultPartition(ResultPartitionType partitionType) {
         return createResultPartition(partitionType, Integer.MAX_VALUE);
     }
 
     private static ResultPartition createResultPartition(
             ResultPartitionType partitionType, int sortShuffleMinParallelism) {
+        return createResultPartition(partitionType, sortShuffleMinParallelism, false);
+    }
+
+    private static ResultPartition createResultPartition(
+            ResultPartitionType partitionType, int sortShuffleMinParallelism, boolean isBroadcast) {
         final ResultPartitionManager manager = new ResultPartitionManager();
 
         final ResultPartitionFactory factory =
@@ -166,6 +183,7 @@ public class ResultPartitionFactoryTest extends TestLogger {
                 new ResultPartitionDeploymentDescriptor(
                         PartitionDescriptorBuilder.newBuilder()
                                 .setPartitionType(partitionType)
+                                .setIsBroadcast(isBroadcast)
                                 .build(),
                         NettyShuffleDescriptorBuilder.newBuilder().buildLocal(),
                         1);
