@@ -133,8 +133,6 @@ class HsFullSpillingStrategyTest {
                                 () -> (int) (10 * NUM_BUFFERS_TRIGGER_SPILLING_RATIO))
                         .setGetNumTotalRequestedBuffersSupplier(() -> 10)
                         .setGetPoolSizeSupplier(() -> 10)
-                        .setGetNextBufferIndexToConsumeSupplier(
-                                () -> Arrays.asList(progress1, progress2))
                         .build();
 
         Decision decision = spillStrategy.decideActionWithGlobalInfo(spillInfoProvider);
@@ -149,9 +147,9 @@ class HsFullSpillingStrategyTest {
 
         Map<Integer, List<BufferIndexAndChannel>> expectedReleaseBuffers = new HashMap<>();
         expectedReleaseBuffers.put(
-                subpartition1, new ArrayList<>(subpartitionBuffers1.subList(0, 2)));
+                subpartition1, new ArrayList<>(subpartitionBuffers1.subList(0, 3)));
         expectedReleaseBuffers.put(
-                subpartition2, new ArrayList<>(subpartitionBuffers2.subList(1, 3)));
+                subpartition2, new ArrayList<>(subpartitionBuffers2.subList(1, 4)));
         assertThat(decision.getBufferToRelease()).isEqualTo(expectedReleaseBuffers);
     }
 
