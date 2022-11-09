@@ -271,6 +271,14 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
 
         BufferIndexOrError peek = loadedBuffers.peek();
 
+        while (peek.getIndex() < expectedBufferIndex){
+            loadedBuffers.poll();
+            peek = loadedBuffers.peek();
+            if(peek == null){
+                return Optional.empty();
+            }
+        }
+
         if (peek.getThrowable().isPresent()) {
             throw peek.getThrowable().get();
         } else if (peek.getIndex() != expectedBufferIndex) {
