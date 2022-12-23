@@ -146,7 +146,7 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
             LOG.debug(
                     "%%% find the subpartitionId {}, currentSegmentIndex {}, not finded",
                     subpartitionId, currentSegmentIndex);
-            return new ResultSubpartitionView.AvailabilityWithBacklog(true, 0);
+            return new ResultSubpartitionView.AvailabilityWithBacklog(false, 0);
         }
     }
 
