@@ -84,4 +84,8 @@ public interface NetworkSequenceViewReader {
     InputChannelID getReceiverId();
 
     void notifyNewBufferSize(int newBufferSize);
+
+    default String getTaskName() {
+        return null;
+    }
 }

@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.io.network.partition;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.deployment.ResultPartitionDeploymentDescriptor;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
 import org.apache.flink.runtime.io.disk.FileChannelManager;
@@ -28,10 +29,14 @@ import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.BufferPoolFactory;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsResultPartition;
 import org.apache.flink.runtime.io.network.partition.hybrid.HybridShuffleConfiguration;
+import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
+import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
+import org.apache.flink.runtime.io.network.partition.store.TieredStoreResultPartition;
 import org.apache.flink.runtime.shuffle.NettyShuffleUtils;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.ProcessorArchitecture;
+import org.apache.flink.util.StringUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,6 +45,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 /** Factory for {@link ResultPartition} to use in {@link NettyShuffleEnvironment}. */
@@ -79,6 +86,8 @@ public class ResultPartitionFactory {
 
     private final int maxOverdraftBuffersPerGate;
 
+    private final String baseDfsHomePath;
+
     public ResultPartitionFactory(
             ResultPartitionManager partitionManager,
             FileChannelManager channelManager,
@@ -95,7 +104,8 @@ public class ResultPartitionFactory {
             int sortShuffleMinBuffers,
             int sortShuffleMinParallelism,
             boolean sslEnabled,
-            int maxOverdraftBuffersPerGate) {
+            int maxOverdraftBuffersPerGate,
+            String baseDfsHomePath) {
 
         this.partitionManager = partitionManager;
         this.channelManager = channelManager;
@@ -113,13 +123,16 @@ public class ResultPartitionFactory {
         this.sortShuffleMinParallelism = sortShuffleMinParallelism;
         this.sslEnabled = sslEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
+        this.baseDfsHomePath = baseDfsHomePath;
     }
 
     public ResultPartition create(
+            JobID jobID,
             String taskNameWithSubtaskAndId,
             int partitionIndex,
             ResultPartitionDeploymentDescriptor desc) {
         return create(
+                jobID,
                 taskNameWithSubtaskAndId,
                 partitionIndex,
                 desc.getShuffleDescriptor().getResultPartitionID(),
@@ -132,6 +145,7 @@ public class ResultPartitionFactory {
 
     @VisibleForTesting
     public ResultPartition create(
+            JobID jobID,
             String taskNameWithSubtaskAndId,
             int partitionIndex,
             ResultPartitionID id,
@@ -253,6 +267,36 @@ public class ResultPartitionFactory {
                             bufferCompressor,
                             isBroadcast,
                             bufferPoolFactory);
+        } else if (type == ResultPartitionType.TIERED_STORE
+                || type == ResultPartitionType.TIERED_STORE_SELECTIVE) {
+            if (type == ResultPartitionType.TIERED_STORE_SELECTIVE && isBroadcast) {
+                // for broadcast result partition, it can be optimized to always use full spilling
+                // strategy to significantly reduce shuffle data writing cost.
+                LOG.info(
+                        "{} result partition has been replaced by {} result partition to reduce shuffle data writing cost.",
+                        type,
+                        ResultPartitionType.TIERED_STORE);
+                type = ResultPartitionType.TIERED_STORE;
+            }
+            partition =
+                    new TieredStoreResultPartition(
+                            jobID,
+                            taskNameWithSubtaskAndId,
+                            partitionIndex,
+                            id,
+                            type,
+                            subpartitions.length,
+                            maxParallelism,
+                            batchShuffleReadBufferPool,
+                            batchShuffleReadIOExecutor,
+                            partitionManager,
+                            networkBufferSize,
+                            channelManager.createChannel().getPath(),
+                            isBroadcast,
+                            getStoreConfiguration(type, numberOfSubpartitions),
+                            bufferCompressor,
+                            getTieredStoreStorageModes(type),
+                            bufferPoolFactory);
         } else {
             throw new IllegalArgumentException("Unrecognized ResultPartitionType: " + type);
         }
@@ -260,6 +304,36 @@ public class ResultPartitionFactory {
         LOG.debug("{}: Initialized {}", taskNameWithSubtaskAndId, this);
 
         return partition;
+    }
+
+    private List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>>
+            getTieredStoreStorageModes(ResultPartitionType type) {
+        List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>> storeModes =
+                new ArrayList<>();
+        if (type == ResultPartitionType.TIERED_STORE
+                || type == ResultPartitionType.TIERED_STORE_SELECTIVE) {
+            storeModes.add(
+                    Pair.of(TieredStoreMode.TieredType.LOCAL, TieredStoreMode.StorageType.MEMORY));
+            storeModes.add(
+                    Pair.of(TieredStoreMode.TieredType.LOCAL, TieredStoreMode.StorageType.DISK));
+            if (!StringUtils.isNullOrWhitespaceOnly(baseDfsHomePath)) {
+                storeModes.add(
+                        Pair.of(TieredStoreMode.TieredType.DFS, TieredStoreMode.StorageType.DISK));
+            }
+        }
+        return storeModes;
+    }
+
+    private TieredStoreConfiguration getStoreConfiguration(
+            ResultPartitionType type, int numberOfSubpartitions) {
+        return TieredStoreConfiguration.builder(
+                        numberOfSubpartitions, batchShuffleReadBufferPool.getNumBuffersPerRequest())
+                .setSpillingStrategyType(
+                        type == ResultPartitionType.TIERED_STORE
+                                ? TieredStoreConfiguration.SpillingStrategyType.FULL
+                                : TieredStoreConfiguration.SpillingStrategyType.SELECTIVE)
+                .setBaseDfsHomePath(baseDfsHomePath)
+                .build();
     }
 
     private static void initializeBoundedBlockingPartitions(

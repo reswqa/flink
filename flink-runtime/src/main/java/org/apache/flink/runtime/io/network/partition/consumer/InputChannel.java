@@ -184,7 +184,7 @@ public abstract class InputChannel {
      * Returns the next buffer from the consumed subpartition or {@code Optional.empty()} if there
      * is no data to return.
      */
-    abstract Optional<BufferAndAvailability> getNextBuffer()
+    public abstract Optional<BufferAndAvailability> getNextBuffer()
             throws IOException, InterruptedException;
 
     /**

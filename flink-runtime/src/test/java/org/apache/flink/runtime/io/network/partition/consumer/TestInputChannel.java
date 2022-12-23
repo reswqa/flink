@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static org.apache.flink.runtime.io.network.partition.store.dfs.DfsDataFetcherTest.createTempSegmentInfo;
 import static org.apache.flink.runtime.io.network.util.TestBufferFactory.createBuffer;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -108,6 +109,10 @@ public class TestInputChannel extends InputChannel {
         return read(createBuffer(1), nextType);
     }
 
+    TestInputChannel readSegmentInfo(int segmentId, int curSequenceNumber) throws IOException, InterruptedException {
+        return read(createTempSegmentInfo(segmentId, curSequenceNumber), Buffer.DataType.DATA_BUFFER);
+    }
+
     TestInputChannel readEndOfData() throws IOException {
         return readEndOfData(StopMode.DRAIN);
     }
@@ -170,7 +175,7 @@ public class TestInputChannel extends InputChannel {
     void requestSubpartition() throws IOException, InterruptedException {}
 
     @Override
-    Optional<BufferAndAvailability> getNextBuffer() throws IOException, InterruptedException {
+    public Optional<BufferAndAvailability> getNextBuffer() throws IOException, InterruptedException {
         checkState(!isReleased);
 
         BufferAndAvailabilityProvider provider = buffers.poll();

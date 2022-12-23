@@ -269,6 +269,7 @@ public class StreamNetworkBenchmarkEnvironment<T extends IOReadableWritable> {
         final SingleInputGate singleGate =
                 gateFactory.create(
                         receiverEnv.createShuffleIOOwnerContext(
+                                new JobID(),
                                 "receiving task[" + gateIndex + "]",
                                 taskMetricGroup.executionId(),
                                 taskMetricGroup),

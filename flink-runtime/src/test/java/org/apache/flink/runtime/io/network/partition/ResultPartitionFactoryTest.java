@@ -17,6 +17,7 @@
 
 package org.apache.flink.runtime.io.network.partition;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.deployment.ResultPartitionDeploymentDescriptor;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
 import org.apache.flink.runtime.io.disk.FileChannelManager;
@@ -165,7 +166,8 @@ public class ResultPartitionFactoryTest extends TestLogger {
                         10,
                         sortShuffleMinParallelism,
                         false,
-                        0);
+                        0,
+                        null);
 
         final ResultPartitionDeploymentDescriptor descriptor =
                 new ResultPartitionDeploymentDescriptor(
@@ -179,7 +181,7 @@ public class ResultPartitionFactoryTest extends TestLogger {
         // guard our test assumptions
         assertEquals(1, descriptor.getNumberOfSubpartitions());
 
-        final ResultPartition partition = factory.create("test", 0, descriptor);
+        final ResultPartition partition = factory.create(new JobID(), "test", 0, descriptor);
         manager.registerResultPartition(partition);
 
         return partition;

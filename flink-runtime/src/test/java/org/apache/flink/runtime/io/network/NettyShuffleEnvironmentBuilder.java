@@ -71,6 +71,8 @@ public class NettyShuffleEnvironmentBuilder {
 
     private int maxOverdraftBuffersPerGate = 0;
 
+    private String baseDfsHomePath = null;
+
     private String compressionCodec = "LZ4";
 
     private ResourceID taskManagerLocation = ResourceID.generate();
@@ -87,6 +89,8 @@ public class NettyShuffleEnvironmentBuilder {
             BufferDebloatConfiguration.fromConfiguration(new Configuration());
 
     private int maxNumberOfConnections = 1;
+
+    private boolean isUsingTieredStore = false;
 
     public NettyShuffleEnvironmentBuilder setTaskManagerLocation(ResourceID taskManagerLocation) {
         this.taskManagerLocation = taskManagerLocation;
@@ -167,6 +171,11 @@ public class NettyShuffleEnvironmentBuilder {
         return this;
     }
 
+    public NettyShuffleEnvironmentBuilder setBaseDfsHomePath(String baseDfsHomePath) {
+        this.baseDfsHomePath = baseDfsHomePath;
+        return this;
+    }
+
     public NettyShuffleEnvironmentBuilder setCompressionCodec(String compressionCodec) {
         this.compressionCodec = compressionCodec;
         return this;
@@ -204,6 +213,11 @@ public class NettyShuffleEnvironmentBuilder {
         return this;
     }
 
+    public NettyShuffleEnvironmentBuilder setUsingTieredStore(boolean usingTieredStore) {
+        isUsingTieredStore = usingTieredStore;
+        return this;
+    }
+
     public NettyShuffleEnvironment build() {
         return NettyShuffleServiceFactory.createNettyShuffleEnvironment(
                 new NettyShuffleEnvironmentConfiguration(
@@ -227,7 +241,9 @@ public class NettyShuffleEnvironmentBuilder {
                         debloatConfiguration,
                         maxNumberOfConnections,
                         connectionReuseEnabled,
-                        maxOverdraftBuffersPerGate),
+                        maxOverdraftBuffersPerGate,
+                        baseDfsHomePath,
+                        isUsingTieredStore),
                 taskManagerLocation,
                 new TaskEventDispatcher(),
                 resultPartitionManager,

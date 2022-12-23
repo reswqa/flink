@@ -18,8 +18,10 @@
 
 package org.apache.flink.runtime.taskmanager;
 
+import org.apache.flink.api.common.BatchShuffleMode;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ConfigurationUtils;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
@@ -99,6 +101,10 @@ public class NettyShuffleEnvironmentConfiguration {
 
     private final int maxOverdraftBuffersPerGate;
 
+    @Nullable private final String baseDfsHomePath;
+
+    private final boolean isUsingTieredStore;
+
     public NettyShuffleEnvironmentConfiguration(
             int numNetworkBuffers,
             int networkBufferSize,
@@ -120,7 +126,9 @@ public class NettyShuffleEnvironmentConfiguration {
             BufferDebloatConfiguration debloatConfiguration,
             int maxNumberOfConnections,
             boolean connectionReuseEnabled,
-            int maxOverdraftBuffersPerGate) {
+            int maxOverdraftBuffersPerGate,
+            @Nullable String baseDfsHomePath,
+            boolean isUsingTieredStore) {
 
         this.numNetworkBuffers = numNetworkBuffers;
         this.networkBufferSize = networkBufferSize;
@@ -143,6 +151,8 @@ public class NettyShuffleEnvironmentConfiguration {
         this.maxNumberOfConnections = maxNumberOfConnections;
         this.connectionReuseEnabled = connectionReuseEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
+        this.baseDfsHomePath = baseDfsHomePath;
+        this.isUsingTieredStore = isUsingTieredStore;
     }
 
     // ------------------------------------------------------------------------
@@ -235,6 +245,14 @@ public class NettyShuffleEnvironmentConfiguration {
         return maxOverdraftBuffersPerGate;
     }
 
+    public String getBaseDfsHomePath() {
+        return baseDfsHomePath;
+    }
+
+    public boolean isUsingTieredStore() {
+        return isUsingTieredStore;
+    }
+
     // ------------------------------------------------------------------------
 
     /**
@@ -315,6 +333,9 @@ public class NettyShuffleEnvironmentConfiguration {
                                 NettyShuffleEnvironmentOptions
                                         .NETWORK_EXCLUSIVE_BUFFERS_REQUEST_TIMEOUT_MILLISECONDS));
 
+        String baseDfsHomePath =
+                configuration.getString(NettyShuffleEnvironmentOptions.SHUFFLE_BASE_DFS_HOME_PATH);
+
         BoundedBlockingSubpartitionType blockingSubpartitionType =
                 getBlockingSubpartitionType(configuration);
 
@@ -332,6 +353,13 @@ public class NettyShuffleEnvironmentConfiguration {
         boolean connectionReuseEnabled =
                 configuration.get(
                         NettyShuffleEnvironmentOptions.TCP_CONNECTION_REUSE_ACROSS_JOBS_ENABLED);
+
+        boolean usingTieredStore =
+                configuration
+                        .get(ExecutionOptions.BATCH_SHUFFLE_MODE)
+                        .equals(BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE_FULL) || configuration
+                        .get(ExecutionOptions.BATCH_SHUFFLE_MODE)
+                        .equals(BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE_SELECTIVE) ;
 
         return new NettyShuffleEnvironmentConfiguration(
                 numberOfNetworkBuffers,
@@ -354,7 +382,9 @@ public class NettyShuffleEnvironmentConfiguration {
                 BufferDebloatConfiguration.fromConfiguration(configuration),
                 maxNumConnections,
                 connectionReuseEnabled,
-                maxOverdraftBuffersPerGate);
+                maxOverdraftBuffersPerGate,
+                baseDfsHomePath,
+                usingTieredStore);
     }
 
     /**

@@ -28,12 +28,19 @@ import org.apache.flink.runtime.shuffle.NettyShuffleDescriptor.NetworkPartitionC
 import org.apache.flink.runtime.shuffle.NettyShuffleDescriptor.PartitionConnectionInfo;
 import org.apache.flink.runtime.util.ConfigurationParserUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import static org.apache.flink.runtime.io.network.partition.store.common.StoreReadWriteUtils.deleteJobBasePath;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Default {@link ShuffleMaster} for netty and local file based shuffle implementation. */
 public class NettyShuffleMaster implements ShuffleMaster<NettyShuffleDescriptor> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(NettyShuffleMaster.class);
 
     private final int buffersPerInputChannel;
 
@@ -44,6 +51,8 @@ public class NettyShuffleMaster implements ShuffleMaster<NettyShuffleDescriptor>
     private final int sortShuffleMinBuffers;
 
     private final int networkBufferSize;
+
+    private final String baseDfsPath;
 
     public NettyShuffleMaster(Configuration conf) {
         checkNotNull(conf);
@@ -57,6 +66,7 @@ public class NettyShuffleMaster implements ShuffleMaster<NettyShuffleDescriptor>
         sortShuffleMinBuffers =
                 conf.getInteger(NettyShuffleEnvironmentOptions.NETWORK_SORT_SHUFFLE_MIN_BUFFERS);
         networkBufferSize = ConfigurationParserUtils.getPageSize(conf);
+        baseDfsPath = conf.getString(NettyShuffleEnvironmentOptions.SHUFFLE_BASE_DFS_HOME_PATH);
     }
 
     @Override
@@ -120,5 +130,16 @@ public class NettyShuffleMaster implements ShuffleMaster<NettyShuffleDescriptor>
                         desc.getPartitionTypes());
 
         return new MemorySize((long) networkBufferSize * numRequiredNetworkBuffers);
+    }
+
+    @Override
+    public void unregisterJob(JobID jobID) {
+        if (baseDfsPath != null) {
+            try {
+                deleteJobBasePath(jobID, baseDfsPath);
+            } catch (IOException e) {
+                LOG.error("Failed to delete shuffle files.", e);
+            }
+        }
     }
 }

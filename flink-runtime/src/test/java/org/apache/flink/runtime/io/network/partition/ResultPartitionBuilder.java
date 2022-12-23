@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
 import org.apache.flink.runtime.io.disk.FileChannelManager;
 import org.apache.flink.runtime.io.disk.NoOpFileChannelManager;
@@ -40,6 +41,8 @@ public class ResultPartitionBuilder {
 
     private BoundedBlockingSubpartitionType blockingSubpartitionType =
             BoundedBlockingSubpartitionType.AUTO;
+
+    private JobID jobID = new JobID();
 
     private int partitionIndex = 0;
 
@@ -84,6 +87,12 @@ public class ResultPartitionBuilder {
     private String compressionCodec = "LZ4";
 
     private int maxOverdraftBuffersPerGate = 5;
+
+    private String baseDfsHomePath = null;
+
+    public void setJobID(JobID jobID) {
+        this.jobID = jobID;
+    }
 
     public ResultPartitionBuilder setResultPartitionIndex(int partitionIndex) {
         this.partitionIndex = partitionIndex;
@@ -213,6 +222,11 @@ public class ResultPartitionBuilder {
         return this;
     }
 
+    public ResultPartitionBuilder setBaseDfsHomePath(String baseDfsHomePath) {
+        this.baseDfsHomePath = baseDfsHomePath;
+        return this;
+    }
+
     public ResultPartitionBuilder setBroadcast(boolean broadcast) {
         isBroadcast = broadcast;
         return this;
@@ -236,7 +250,8 @@ public class ResultPartitionBuilder {
                         sortShuffleMinBuffers,
                         sortShuffleMinParallelism,
                         sslEnabled,
-                        maxOverdraftBuffersPerGate);
+                        maxOverdraftBuffersPerGate,
+                        baseDfsHomePath);
 
         SupplierWithException<BufferPool, IOException> factory =
                 bufferPoolFactory.orElseGet(
@@ -245,6 +260,7 @@ public class ResultPartitionBuilder {
                                         numberOfSubpartitions, partitionType));
 
         return resultPartitionFactory.create(
+                jobID,
                 "Result Partition task",
                 partitionIndex,
                 partitionId,

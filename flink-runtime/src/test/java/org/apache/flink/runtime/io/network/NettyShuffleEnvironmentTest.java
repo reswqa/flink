@@ -165,7 +165,7 @@ public class NettyShuffleEnvironmentTest extends TestLogger {
                         .build();
         shuffleEnvironment.createInputGates(
                 shuffleEnvironment.createShuffleIOOwnerContext(
-                        "test", createExecutionAttemptId(), taskMetricGroup),
+                        new JobID(), "test", createExecutionAttemptId(), taskMetricGroup),
                 (dsid, id, consumer) -> {},
                 Arrays.asList(
                         new InputGateDeploymentDescriptor(

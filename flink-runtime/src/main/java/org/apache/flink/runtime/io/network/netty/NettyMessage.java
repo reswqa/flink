@@ -42,6 +42,9 @@ import org.apache.flink.shaded.netty4.io.netty.channel.ChannelOutboundInvoker;
 import org.apache.flink.shaded.netty4.io.netty.channel.ChannelPromise;
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 import java.io.IOException;
@@ -413,7 +416,7 @@ public abstract class NettyMessage {
 
             Buffer dataBuffer;
             if (dataType.isBuffer()) {
-                dataBuffer = bufferAllocator.allocatePooledNetworkBuffer(receiverId);
+                dataBuffer = bufferAllocator.allocatePooledNetworkBuffer(receiverId, dataType);
             } else {
                 dataBuffer = bufferAllocator.allocateUnPooledNetworkBuffer(size, dataType);
             }

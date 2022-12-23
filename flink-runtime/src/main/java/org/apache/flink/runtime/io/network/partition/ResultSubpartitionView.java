@@ -98,4 +98,8 @@ public interface ResultSubpartitionView {
             return backlog;
         }
     }
+
+    default String getTaskName() {
+        return "null";
+    }
 }

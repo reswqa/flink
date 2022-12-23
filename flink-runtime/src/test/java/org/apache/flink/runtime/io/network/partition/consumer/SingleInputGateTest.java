@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition.consumer;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.core.memory.MemorySegmentFactory;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
@@ -1224,7 +1225,10 @@ public class SingleInputGateTest extends InputGateTestBase {
                         netEnv.getNetworkBufferPool())
                 .create(
                         netEnv.createShuffleIOOwnerContext(
-                                "TestTask", taskMetricGroup.executionId(), taskMetricGroup),
+                                new JobID(),
+                                "TestTask",
+                                taskMetricGroup.executionId(),
+                                taskMetricGroup),
                         0,
                         gateDesc,
                         SingleInputGateBuilder.NO_OP_PRODUCER_CHECKER);
@@ -1256,7 +1260,10 @@ public class SingleInputGateTest extends InputGateTestBase {
         SingleInputGate[] gates =
                 network.createInputGates(
                                 network.createShuffleIOOwnerContext(
-                                        "", consumerID, new UnregisteredMetricsGroup()),
+                                        new JobID(),
+                                        "",
+                                        consumerID,
+                                        new UnregisteredMetricsGroup()),
                                 SingleInputGateBuilder.NO_OP_PRODUCER_CHECKER,
                                 asList(gateDescs))
                         .toArray(new SingleInputGate[] {});

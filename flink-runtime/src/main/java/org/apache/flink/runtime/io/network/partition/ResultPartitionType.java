@@ -103,6 +103,11 @@ public enum ResultPartitionType {
      * consumed repeatedly.
      */
     HYBRID_SELECTIVE(
+            false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER),
+
+    TIERED_STORE(false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER),
+
+    TIERED_STORE_SELECTIVE(
             false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER);
 
     /**

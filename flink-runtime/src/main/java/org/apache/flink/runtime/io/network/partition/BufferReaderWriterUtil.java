@@ -279,7 +279,7 @@ public final class BufferReaderWriterUtil {
         }
     }
 
-    static BufferHeader parseBufferHeader(ByteBuffer headerBuffer) {
+    public static BufferHeader parseBufferHeader(ByteBuffer headerBuffer) {
         configureByteBuffer(headerBuffer);
 
         boolean isEvent = headerBuffer.getShort() == HEADER_VALUE_IS_EVENT;
@@ -295,7 +295,7 @@ public final class BufferReaderWriterUtil {
         throw new IOException("The spill file is corrupt: premature end of file");
     }
 
-    private static void throwCorruptDataException() throws IOException {
+    public static void throwCorruptDataException() throws IOException {
         throw new IOException("The spill file is corrupt: buffer size and boundaries invalid");
     }
 

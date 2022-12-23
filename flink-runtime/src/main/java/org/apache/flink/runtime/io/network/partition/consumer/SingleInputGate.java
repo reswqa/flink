@@ -154,7 +154,7 @@ public class SingleInputGate extends IndexedInputGate {
     private final InputChannel[] channels;
 
     /** Channels, which notified this input gate about available data. */
-    private final PrioritizedDeque<InputChannel> inputChannelsWithData = new PrioritizedDeque<>();
+    protected final PrioritizedDeque<InputChannel> inputChannelsWithData = new PrioritizedDeque<>();
 
     /**
      * Field guaranteeing uniqueness for inputChannelsWithData queue. Both of those fields should be
@@ -170,7 +170,7 @@ public class SingleInputGate extends IndexedInputGate {
     private final BitSet channelsWithEndOfUserRecords;
 
     @GuardedBy("inputChannelsWithData")
-    private int[] lastPrioritySequenceNumber;
+    protected int[] lastPrioritySequenceNumber;
 
     /** The partition producer state listener. */
     private final PartitionProducerStateProvider partitionProducerStateProvider;
@@ -387,7 +387,7 @@ public class SingleInputGate extends IndexedInputGate {
     }
 
     @VisibleForTesting
-    int getBuffersInUseCount() {
+    public int getBuffersInUseCount() {
         int total = 0;
         for (InputChannel channel : channels) {
             total += channel.getBuffersInUseCount();
@@ -438,7 +438,7 @@ public class SingleInputGate extends IndexedInputGate {
         return bufferPool;
     }
 
-    MemorySegmentProvider getMemorySegmentProvider() {
+    public MemorySegmentProvider getMemorySegmentProvider() {
         return memorySegmentProvider;
     }
 
@@ -764,7 +764,7 @@ public class SingleInputGate extends IndexedInputGate {
         return Optional.of(bufferOrEvent);
     }
 
-    private Optional<InputWithData<InputChannel, BufferAndAvailability>> waitAndGetNextData(
+    protected Optional<InputWithData<InputChannel, BufferAndAvailability>> waitAndGetNextData(
             boolean blocking) throws IOException, InterruptedException {
         while (true) {
             synchronized (inputChannelsWithData) {
@@ -810,7 +810,7 @@ public class SingleInputGate extends IndexedInputGate {
         }
     }
 
-    private void checkUnavailability() {
+    protected void checkUnavailability() {
         assert Thread.holdsLock(inputChannelsWithData);
 
         if (inputChannelsWithData.isEmpty()) {
@@ -951,7 +951,7 @@ public class SingleInputGate extends IndexedInputGate {
     // Channel notifications
     // ------------------------------------------------------------------------
 
-    void notifyChannelNonEmpty(InputChannel channel) {
+    protected void notifyChannelNonEmpty(InputChannel channel) {
         queueChannel(checkNotNull(channel), null, false);
     }
 
@@ -1040,7 +1040,7 @@ public class SingleInputGate extends IndexedInputGate {
      * @return true iff it has been enqueued/prioritized = some change to {@link
      *     #inputChannelsWithData} happened
      */
-    private boolean queueChannelUnsafe(InputChannel channel, boolean priority) {
+    protected boolean queueChannelUnsafe(InputChannel channel, boolean priority) {
         assert Thread.holdsLock(inputChannelsWithData);
         if (channelsWithEndOfPartitionEvents.get(channel.getChannelIndex())) {
             return false;
@@ -1061,7 +1061,7 @@ public class SingleInputGate extends IndexedInputGate {
         return true;
     }
 
-    private Optional<InputChannel> getChannel(boolean blocking) throws InterruptedException {
+    protected Optional<InputChannel> getChannel(boolean blocking) throws InterruptedException {
         assert Thread.holdsLock(inputChannelsWithData);
 
         while (inputChannelsWithData.isEmpty()) {

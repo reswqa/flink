@@ -432,6 +432,6 @@ class HsSubpartitionViewTest {
             int buffersInBacklog, DataType nextDataType, int sequenceNumber) {
         final int bufferSize = 8;
         Buffer buffer = HybridShuffleTestUtils.createBuffer(bufferSize, true);
-        return new BufferAndBacklog(buffer, buffersInBacklog, nextDataType, sequenceNumber);
+        return new BufferAndBacklog(buffer, buffersInBacklog, nextDataType, sequenceNumber, false);
     }
 }

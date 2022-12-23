@@ -125,18 +125,21 @@ public abstract class ResultSubpartition {
     public static final class BufferAndBacklog {
         private final Buffer buffer;
         private final int buffersInBacklog;
-        private final Buffer.DataType nextDataType;
-        private final int sequenceNumber;
+        private Buffer.DataType nextDataType;
+        private int sequenceNumber;
+        private final boolean isLastBufferInSegment;
 
         public BufferAndBacklog(
                 Buffer buffer,
                 int buffersInBacklog,
                 Buffer.DataType nextDataType,
-                int sequenceNumber) {
+                int sequenceNumber,
+                boolean isLastBufferInSegment) {
             this.buffer = checkNotNull(buffer);
             this.buffersInBacklog = buffersInBacklog;
             this.nextDataType = checkNotNull(nextDataType);
             this.sequenceNumber = sequenceNumber;
+            this.isLastBufferInSegment = isLastBufferInSegment;
         }
 
         public Buffer buffer() {
@@ -163,9 +166,26 @@ public abstract class ResultSubpartition {
             return sequenceNumber;
         }
 
+        public void setSequenceNumber(int sequenceNumber) {
+            this.sequenceNumber = sequenceNumber;
+        }
+
+        public void setNextDataType(Buffer.DataType nextDataType) {
+            this.nextDataType = nextDataType;
+        }
+
+        public boolean isLastBufferInSegment() {
+            return isLastBufferInSegment;
+        }
+
         public static BufferAndBacklog fromBufferAndLookahead(
-                Buffer current, Buffer.DataType nextDataType, int backlog, int sequenceNumber) {
-            return new BufferAndBacklog(current, backlog, nextDataType, sequenceNumber);
+                Buffer current,
+                Buffer.DataType nextDataType,
+                int backlog,
+                int sequenceNumber,
+                boolean isLastBufferInSegment) {
+            return new BufferAndBacklog(
+                    current, backlog, nextDataType, sequenceNumber, isLastBufferInSegment);
         }
     }
 }
