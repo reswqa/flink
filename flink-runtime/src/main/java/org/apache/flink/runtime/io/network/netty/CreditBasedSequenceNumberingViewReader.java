@@ -171,7 +171,6 @@ class CreditBasedSequenceNumberingViewReader
      */
     private Buffer.DataType getNextDataType(BufferAndBacklog bufferAndBacklog) {
         final Buffer.DataType nextDataType = bufferAndBacklog.getNextDataType();
-        LOG.debug("%%% {} it's CreditBasedSequenceNumberingViewReader get the datatype {}, numCreditsAvailable {} ", subpartitionView.getTaskName(), nextDataType, numCreditsAvailable);
         if (numCreditsAvailable > 0 || nextDataType.isEvent()) {
             return nextDataType;
         }

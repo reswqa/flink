@@ -104,43 +104,20 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
                             String.format(
                                     "Can not find a tier contains the next segment %d for subpartition %d.",
                                     currentSegmentIndex, subpartitionId));
-                    LOG.debug(
-                            "%%% {} Can not find a tier contains the next segment {} for subpartition {}.",
-                            taskName, currentSegmentIndex, subpartitionId);
                     return null;
                 }
-
-                LOG.debug(
-                        "%%% {} TieredStoreConsumerImpl is trying to getNextBuffer {}, {}",
-                        taskName, currentSegmentIndex, viewIndexContainsCurrentSegment);
 
                 BufferAndBacklog bufferAndBacklog =
                         singleTierReaders[viewIndexContainsCurrentSegment].getNextBuffer();
 
-                if (bufferAndBacklog == null) {
-                    LOG.debug("%%% {} TieredStoreConsumerImpl get null data.", taskName);
-                }
-
                 if (bufferAndBacklog != null) {
-                    bufferAndBacklog.setNextDataType(Buffer.DataType.DATA_BUFFER);
+                    //bufferAndBacklog.setNextDataType(Buffer.DataType.DATA_BUFFER);
                     hasSegmentFinished = bufferAndBacklog.isLastBufferInSegment();
-                    LOG.debug(
-                            "%%% {} TieredStoreConsumerImpl get bufferandbacklog, is SegmentFinished {}",
-                            taskName, hasSegmentFinished);
                     if (hasSegmentFinished) {
                         currentSegmentIndex++;
                     }
                     bufferAndBacklog.setSequenceNumber(currentSequenceNumber);
                     currentSequenceNumber++;
-                }
-                if (bufferAndBacklog != null) {
-                    if (bufferAndBacklog.buffer().getDataType()
-                            != Buffer.DataType.SEGMENT_INFO_BUFFER) {
-                        LOG.debug(
-                                "### {} Buffer type, {}",
-                                bufferAndBacklog.buffer().getDataType(),
-                                taskName);
-                    }
                 }
                 return bufferAndBacklog;
             }
