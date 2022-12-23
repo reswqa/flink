@@ -101,7 +101,6 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
             boolean isLastRecord = writerAndSegmentIndex.isLastRecordInSegment();
             int subpartitionId = writerAndSegmentIndex.getSubpartitionId();
             int writerIndex = writerAndSegmentIndex.getWriterIndex();
-            LOG.debug(" ### TieredStoreProducerImpl is trying to write subpartition {}, writer index {}, segmentIndex is {}", subpartitionId, singleTierWriters[writerIndex], segmentIndex);
             singleTierWriters[writerIndex].emit(
                     record.duplicate(),
                     subpartitionId,

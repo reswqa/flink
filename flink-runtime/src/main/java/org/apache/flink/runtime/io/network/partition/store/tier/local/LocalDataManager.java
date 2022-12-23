@@ -125,7 +125,7 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
                         SubpartitionFileReaderImpl.Factory.INSTANCE,
                         storeConfiguration,
                         this::isLastRecordInSegment);
-        this.segmentIndexTracker = new SubpartitionSegmentIndexTracker(numSubpartitions);
+        this.segmentIndexTracker = new SubpartitionSegmentIndexTracker(numSubpartitions, isBroadcastOnly);
     }
 
     @Override
@@ -167,7 +167,7 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
             int segmentIndex)
             throws IOException {
         segmentIndexTracker.addSubpartitionSegmentIndex(
-                targetSubpartition, segmentIndex, isBroadcastOnly);
+                targetSubpartition, segmentIndex);
         emit(record, targetSubpartition, dataType, isLastRecordInSegment);
     }
 

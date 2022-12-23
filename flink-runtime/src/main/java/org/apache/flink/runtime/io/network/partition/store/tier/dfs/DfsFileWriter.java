@@ -66,7 +66,7 @@ public class DfsFileWriter implements SingleTierWriter {
             int segmentIndex)
             throws IOException {
         if (segmentIndexTracker.addSubpartitionSegmentIndex(
-                targetSubpartition, segmentIndex, isBroadcastOnly)) {
+                targetSubpartition, segmentIndex)) {
             cacheDataManager.startSegment(targetSubpartition, segmentIndex);
         }
         emit(record, targetSubpartition, dataType, isLastRecordInSegment);

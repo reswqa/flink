@@ -67,7 +67,7 @@ public class DfsDataManager implements SingleTierDataGate, DataManagerOperation 
         this.numSubpartitions = numSubpartitions;
         this.isBroadcastOnly = isBroadcastOnly;
         this.lastConsumerIds = new ConsumerId[numSubpartitions];
-        this.segmentIndexTracker = new SubpartitionSegmentIndexTracker(numSubpartitions);
+        this.segmentIndexTracker = new SubpartitionSegmentIndexTracker(numSubpartitions, isBroadcastOnly);
         this.dfsCacheDataManager =
                 new DfsCacheDataManager(
                         jobID,
