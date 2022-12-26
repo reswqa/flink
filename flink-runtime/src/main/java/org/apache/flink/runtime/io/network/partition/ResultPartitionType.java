@@ -226,7 +226,9 @@ public enum ResultPartitionType {
     public boolean supportCompression() {
         return isBlockingOrBlockingPersistentResultPartition()
                 || this == HYBRID_FULL
-                || this == HYBRID_SELECTIVE;
+                || this == HYBRID_SELECTIVE
+                || this == TIERED_STORE
+                || this == TIERED_STORE_SELECTIVE;
     }
 
     public boolean isReconsumable() {

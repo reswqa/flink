@@ -112,6 +112,7 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
         this.isBroadcastOnly = isBroadcastOnly;
         this.bufferPoolHelper = bufferPoolHelper;
         this.bufferCompressor = bufferCompressor;
+        checkNotNull(bufferCompressor);
         this.storeConfiguration = storeConfiguration;
         this.regionBufferIndexTracker =
                 new RegionBufferIndexTrackerImpl(isBroadcastOnly ? 1 : numSubpartitions);
