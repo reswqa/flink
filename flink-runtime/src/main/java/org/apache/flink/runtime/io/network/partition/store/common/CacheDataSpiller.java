@@ -21,13 +21,14 @@ package org.apache.flink.runtime.io.network.partition.store.common;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.RegionBufferIndexTracker;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** Spilling the caching data in a cached data manager. */
 public interface CacheDataSpiller {
 
-    void startSegment(int segmentIndex);
+    void startSegment(int segmentIndex) throws IOException;
 
     CompletableFuture<List<RegionBufferIndexTracker.SpilledBuffer>> spillAsync(
             List<BufferWithIdentity> bufferToSpill);

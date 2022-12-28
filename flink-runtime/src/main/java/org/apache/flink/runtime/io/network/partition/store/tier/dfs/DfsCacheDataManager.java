@@ -148,7 +148,7 @@ public class DfsCacheDataManager implements DfsCacheDataManagerOperation {
         }
     }
 
-    public void startSegment(int targetSubpartition, int segmentIndex) {
+    public void startSegment(int targetSubpartition, int segmentIndex) throws IOException {
         getSubpartitionCacheDataManager(targetSubpartition).startSegment(segmentIndex);
     }
 

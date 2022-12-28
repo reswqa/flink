@@ -178,7 +178,7 @@ public class SubpartitionDfsCacheDataManager {
         this.outputMetrics = checkNotNull(outputMetrics);
     }
 
-    public void startSegment(int segmentIndex) {
+    public void startSegment(int segmentIndex) throws IOException {
         cacheDataSpiller.startSegment(segmentIndex);
     }
 

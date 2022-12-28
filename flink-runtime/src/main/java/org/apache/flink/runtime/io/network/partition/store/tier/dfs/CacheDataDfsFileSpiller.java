@@ -58,12 +58,20 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
 
     private final ExecutorService ioExecutor;
 
+    private final JobID jobID;
+
+    private final ResultPartitionID resultPartitionID;
+
+    private final int subpartitionId;
+
+    private final String baseDfsPath;
+
     /** Records the current writing location. */
     private long totalBytesWritten;
 
     private WritableByteChannel writingChannel;
 
-    private final String baseSubpartitionPath;
+    private String baseSubpartitionPath;
 
     private Path writingSegmentPath;
 
@@ -76,15 +84,16 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
             ResultPartitionID resultPartitionID,
             int subpartitionId,
             String baseDfsPath,
-            ExecutorService ioExecutor)
-            throws IOException {
-        this.baseSubpartitionPath =
-                createBaseSubpartitionPath(jobID, resultPartitionID, subpartitionId, baseDfsPath, false);
+            ExecutorService ioExecutor) {
         this.ioExecutor = ioExecutor;
+        this.jobID = jobID;
+        this.resultPartitionID = resultPartitionID;
+        this.subpartitionId = subpartitionId;
+        this.baseDfsPath = baseDfsPath;
     }
 
     @Override
-    public void startSegment(int segmentIndex) {
+    public void startSegment(int segmentIndex) throws IOException {
         if (segmentIndex <= currentSegmentIndex) {
             System.out.println();
         }
@@ -115,14 +124,24 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
     }
 
     @Override
-    public void release() {}
+    public void release() {
+    }
 
     @Override
     public void close() {
         closeWritingChannel();
     }
 
-    private void openNewSegmentFile() {
+    private void openNewSegmentFile() throws IOException {
+        if (baseSubpartitionPath == null) {
+            baseSubpartitionPath = createBaseSubpartitionPath(
+                    jobID,
+                    resultPartitionID,
+                    subpartitionId,
+                    baseDfsPath,
+                    false);
+        }
+
         generateNewSegmentPath();
 
         try {
@@ -170,7 +189,8 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
      *
      * @param toWrite for create {@link RegionBufferIndexTracker.SpilledBuffer}.
      * @param spilledBuffers receive the created {@link RegionBufferIndexTracker.SpilledBuffer} by
-     *     this method.
+     *         this method.
+     *
      * @return total bytes(header size + buffer size) of all buffers to write.
      */
     private long createSpilledBuffersAndGetTotalBytes(
