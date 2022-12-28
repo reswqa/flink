@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition.store.reader;
 
+import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
@@ -94,7 +95,7 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
                 singleTierReaders[viewIndexContainsCurrentSegment].getNextBuffer();
 
         if (bufferAndBacklog != null) {
-            //bufferAndBacklog.setNextDataType(Buffer.DataType.DATA_BUFFER);
+            bufferAndBacklog.setNextDataType(Buffer.DataType.DATA_BUFFER);
             hasSegmentFinished = bufferAndBacklog.isLastBufferInSegment();
             if (hasSegmentFinished) {
                 currentSegmentIndex++;
