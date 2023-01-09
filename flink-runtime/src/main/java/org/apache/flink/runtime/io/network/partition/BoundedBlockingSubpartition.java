@@ -288,7 +288,7 @@ final class BoundedBlockingSubpartition extends ResultSubpartition {
     }
 
     @Override
-    protected long getTotalNumberOfBytesUnsafe() {
+    public long getTotalNumberOfBytesUnsafe() {
         return data.getSize();
     }
 

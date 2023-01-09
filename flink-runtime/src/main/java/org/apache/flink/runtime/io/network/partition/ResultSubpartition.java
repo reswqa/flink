@@ -35,7 +35,7 @@ public abstract class ResultSubpartition {
     protected final ResultSubpartitionInfo subpartitionInfo;
 
     /** The parent partition this subpartition belongs to. */
-    protected final ResultPartition parent;
+    public final ResultPartition parent;
 
     // - Statistics ----------------------------------------------------------
 
@@ -51,14 +51,14 @@ public abstract class ResultSubpartition {
     /** Gets the total numbers of buffers (data buffers plus events). */
     protected abstract long getTotalNumberOfBuffersUnsafe();
 
-    protected abstract long getTotalNumberOfBytesUnsafe();
+    public abstract long getTotalNumberOfBytesUnsafe();
 
     public int getSubPartitionIndex() {
         return subpartitionInfo.getSubPartitionIdx();
     }
 
     /** Notifies the parent partition about a consumed {@link ResultSubpartitionView}. */
-    protected void onConsumedSubpartition() {
+    public void onConsumedSubpartition() {
         parent.onConsumedSubpartition(getSubPartitionIndex());
     }
 

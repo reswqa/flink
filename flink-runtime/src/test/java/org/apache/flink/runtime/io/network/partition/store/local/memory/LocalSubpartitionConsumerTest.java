@@ -32,7 +32,7 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreTestUtils;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelperImpl;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.CacheDataManager;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.RegionBufferIndexTrackerImpl;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.SubpartitionConsumer;

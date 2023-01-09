@@ -19,16 +19,21 @@
 package org.apache.flink.runtime.io.network.partition.store.common;
 
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
+import org.apache.flink.runtime.io.network.partition.ChannelStateHolder;
+import org.apache.flink.runtime.io.network.partition.CheckpointedResultPartition;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
+import org.apache.flink.runtime.metrics.TimerGauge;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * The gate for a single tiered data. The gate is used to create {@link SingleTierWriter} and {@link
  * SingleTierReader}. The writing and reading data processes happen in the writer and reader.
  */
-public interface SingleTierDataGate {
+public interface SingleTierDataGate extends ChannelStateHolder, CheckpointedResultPartition {
 
     void setup() throws IOException;
 
@@ -39,13 +44,41 @@ public interface SingleTierDataGate {
 
     boolean canStoreNextSegment();
 
+    int getNewSegmentSize();
+
+    void setNumBytesInASegment(int numBytesInASegment);
+
     boolean hasCurrentSegment(int subpartitionId, int segmentIndex);
 
     void setOutputMetrics(OutputMetrics tieredStoreOutputMetrics);
+
+    void setTimerGauge(TimerGauge timerGauge);
 
     void close();
 
     void release();
 
-    Path getBaseSubpartitionPath(int subpartitionId);
+    default Path getBaseSubpartitionPath(int subpartitionId) {
+        return null;
+    }
+
+    void alignedBarrierTimeout(long checkpointId) throws IOException;
+
+    void abortCheckpoint(long checkpointId, CheckpointException cause);
+
+    void flushAll();
+
+    void flush(int subpartitionIndex);
+
+    int getNumberOfQueuedBuffers();
+
+    long getSizeOfQueuedBuffersUnsafe();
+
+    int getNumberOfQueuedBuffers(int targetSubpartition);
+
+    void onConsumedSubpartition(int subpartitionIndex);
+
+    CompletableFuture<Void> getAllDataProcessedFuture();
+
+    void onSubpartitionAllDataProcessed(int subpartition);
 }

@@ -16,22 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.io.network.partition.store;
+package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
 
-/** The store mode for Tiered Store. */
-public interface TieredStoreMode {
+/**
+ * Operations provided by {@link MemoryReader} that will be used in {@link
+ * org.apache.flink.runtime.io.network.partition.ResultSubpartition}.
+ */
+public interface MemoryReaderInternalOperations {
 
-    /** The type of Tiered Store. */
-    enum TieredType implements TieredStoreMode {
-        IN_MEM,
-        LOCAL,
-        REMOTE,
-        DFS,
-    }
+    /** Callback for new data become available. */
+    void notifyDataAvailable();
 
-    /** Type of storage used by Tiered Store. */
-    enum StorageType implements TieredStoreMode {
-        MEMORY,
-        DISK,
-    }
+    /** Callback for new priority event become available. */
+    void notifyPriorityEvent(int priorityBufferNumber);
+
+    /** Callback to resumeConsumption. */
+    void resumeConsumption();
+
+    /** Callback to acknowledgeAllDataProcessed. */
+    void acknowledgeAllDataProcessed();
+
+    /** Callback to notifyNewBufferSize. */
+    void notifyNewBufferSize(int newBufferSize);
 }

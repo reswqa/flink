@@ -16,32 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.io.network.partition.store.tier.local;
+package org.apache.flink.runtime.io.network.partition.store.tier.local.file;
 
 import org.apache.flink.configuration.IllegalConfigurationException;
+import org.apache.flink.runtime.checkpoint.CheckpointException;
+import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
+import org.apache.flink.runtime.io.network.partition.CheckpointedResultSubpartition;
 import org.apache.flink.runtime.io.network.partition.PartitionNotFoundException;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierDataGate;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierWriter;
 import org.apache.flink.runtime.io.network.partition.store.common.SubpartitionSegmentIndexTracker;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.CacheDataManager;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.FullSpillingStrategy;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.LocalDiskDataManager;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.RegionBufferIndexTracker;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.RegionBufferIndexTrackerImpl;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.SelectiveSpillingStrategy;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.SubpartitionConsumer;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.SubpartitionFileReaderImpl;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.file.TsSpillingStrategy;
+import org.apache.flink.runtime.metrics.TimerGauge;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -51,13 +49,16 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
-/** The DataManager of LOCAL. */
-public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
+/** The DataManager of LOCAL file. */
+public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGate {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LocalFileDataManager.class);
 
     public static final int BROADCAST_CHANNEL = 0;
 
@@ -90,11 +91,14 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
 
     private final SubpartitionSegmentIndexTracker segmentIndexTracker;
 
+    // TODO, Make this configurable.
+    private int numBytesInASegment = 4 * 1024 * 1024; // 4 M
+
     private volatile boolean isReleased;
 
     private volatile boolean isClosed;
 
-    public LocalDataManager(
+    public LocalFileDataManager(
             int numSubpartitions,
             int networkBufferSize,
             ResultPartitionID resultPartitionID,
@@ -126,7 +130,8 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
                         SubpartitionFileReaderImpl.Factory.INSTANCE,
                         storeConfiguration,
                         this::isLastRecordInSegment);
-        this.segmentIndexTracker = new SubpartitionSegmentIndexTracker(numSubpartitions, isBroadcastOnly);
+        this.segmentIndexTracker =
+                new SubpartitionSegmentIndexTracker(numSubpartitions, isBroadcastOnly);
     }
 
     @Override
@@ -167,8 +172,7 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
             boolean isEndOfPartition,
             int segmentIndex)
             throws IOException {
-        segmentIndexTracker.addSubpartitionSegmentIndex(
-                targetSubpartition, segmentIndex);
+        segmentIndexTracker.addSubpartitionSegmentIndex(targetSubpartition, segmentIndex);
         emit(record, targetSubpartition, dataType, isLastRecordInSegment);
     }
 
@@ -227,7 +231,16 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
     @Override
     public boolean canStoreNextSegment() {
         return new Random().nextBoolean();
-        //return true;
+    }
+
+    @Override
+    public int getNewSegmentSize() {
+        return numBytesInASegment;
+    }
+
+    @Override
+    public void setNumBytesInASegment(int numBytesInASegment) {
+        this.numBytesInASegment = numBytesInASegment;
     }
 
     @Override
@@ -260,13 +273,13 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
     }
 
     @Override
-    public org.apache.flink.core.fs.Path getBaseSubpartitionPath(int subpartitionId) {
-        return null;
+    public void setOutputMetrics(OutputMetrics tieredStoreOutputMetrics) {
+        checkNotNull(cacheDataManager).setOutputMetrics(tieredStoreOutputMetrics);
     }
 
     @Override
-    public void setOutputMetrics(OutputMetrics tieredStoreOutputMetrics) {
-        checkNotNull(cacheDataManager).setOutputMetrics(tieredStoreOutputMetrics);
+    public void setTimerGauge(TimerGauge timerGauge) {
+        // nothing to do
     }
 
     private static void checkMultipleConsumerIsAllowed(
@@ -278,5 +291,75 @@ public class LocalDataManager implements SingleTierWriter, SingleTierDataGate {
                     "Multiple consumer is not allowed for %s spilling strategy mode",
                     storeConfiguration.getSpillingStrategyType());
         }
+    }
+
+    @Override
+    public void alignedBarrierTimeout(long checkpointId) throws IOException {
+        // Nothing to do
+    }
+
+    @Override
+    public void abortCheckpoint(long checkpointId, CheckpointException cause) {
+        // Nothing to do
+    }
+
+    @Override
+    public void flushAll() {
+        // Nothing to do
+    }
+
+    @Override
+    public void flush(int subpartitionIndex) {
+        // Nothing to do
+    }
+
+    @Override
+    public int getNumberOfQueuedBuffers() {
+        // Batch shuffle does not need to provide QueuedBuffers information
+        return Integer.MIN_VALUE;
+    }
+
+    @Override
+    public long getSizeOfQueuedBuffersUnsafe() {
+        // Batch shuffle does not need to provide QueuedBuffers information
+        return Integer.MIN_VALUE;
+    }
+
+    @Override
+    public int getNumberOfQueuedBuffers(int targetSubpartition) {
+        // Batch shuffle does not need to provide QueuedBuffers information
+        return Integer.MIN_VALUE;
+    }
+
+    @Override
+    public void setChannelStateWriter(ChannelStateWriter channelStateWriter) {
+        // Batch shuffle doesn't support to set channel state writer
+    }
+
+    @Override
+    public CheckpointedResultSubpartition getCheckpointedSubpartition(int subpartitionIndex) {
+        // Batch shuffle doesn't support checkpoint
+        return null;
+    }
+
+    @Override
+    public void finishReadRecoveredState(boolean notifyAndBlockOnCompletion) throws IOException {
+        // Batch shuffle doesn't support state
+    }
+
+    @Override
+    public void onConsumedSubpartition(int subpartitionIndex) {
+        // Batch shuffle doesn't support onConsumedSubpartition
+    }
+
+    @Override
+    public CompletableFuture<Void> getAllDataProcessedFuture() {
+        // Batch shuffle doesn't support getAllDataProcessedFuture
+        return null;
+    }
+
+    @Override
+    public void onSubpartitionAllDataProcessed(int subpartition) {
+        // Batch shuffle doesn't support onSubpartitionAllDataProcessed
     }
 }

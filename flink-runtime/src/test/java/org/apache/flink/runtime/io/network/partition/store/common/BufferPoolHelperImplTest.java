@@ -41,8 +41,6 @@ class BufferPoolHelperImplTest {
 
     private static final int NUM_SUBPARTITIONS = 3;
 
-    private int poolSize = 10;
-
     private int bufferSize = Integer.BYTES;
 
     private Path dataFilePath;
@@ -74,7 +72,7 @@ class BufferPoolHelperImplTest {
                         .build();
 
         BufferPoolHelper bufferPoolHelper = new BufferPoolHelperImpl(bufferPool, 0.4f, 0.2f, 0.8f);
-        createMemoryDataManager(spillingStrategy, bufferPoolHelper);
+        createCacheDataManagerInLocalDiskTier(spillingStrategy, bufferPoolHelper);
         networkBufferPool.createBufferPool(maxBuffers - requiredBuffers, maxBuffers);
         assertThat(bufferPool.getNumBuffers()).isEqualTo(requiredBuffers);
         for (int i = 0; i < requiredBuffers; i++) {
@@ -83,10 +81,10 @@ class BufferPoolHelperImplTest {
         assertThat(triggerGlobalDecision).succeedsWithin(10, TimeUnit.SECONDS);
     }
 
-    private CacheDataManager createMemoryDataManager(
+    private void createCacheDataManagerInLocalDiskTier(
             TsSpillingStrategy spillingStrategy, BufferPoolHelper bufferPoolHelper)
             throws Exception {
-        return new CacheDataManager(
+        new CacheDataManager(
                 NUM_SUBPARTITIONS,
                 bufferSize,
                 bufferPoolHelper,

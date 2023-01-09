@@ -23,7 +23,7 @@ import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import java.util.Optional;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
-/** The read view of {@link DfsDataManager}, data can be read from memory or disk. */
+/** The read view of {@link DfsDataManager}, data can be read from dfs. */
 public class DfsFileReader implements SingleTierReader, DfsFileReaderInternalOperations {
 
     private static final Logger LOG = LoggerFactory.getLogger(DfsFileReader.class);

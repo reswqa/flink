@@ -24,12 +24,8 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
@@ -53,13 +49,25 @@ import static org.apache.flink.util.Preconditions.checkState;
  */
 public class BufferPoolHelperImpl implements BufferPoolHelper {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BufferPoolHelperImpl.class);
+    // ------------------------------------
+    //          For Local Memory Tier
+    // ------------------------------------
+
+    private final float bufferInMemoryRatio;
+
+    private int numInMemoryMaxBuffers;
+
+    private final int[] memoryTierSubpartitionRequiredBuffers;
+
+    private final AtomicInteger numInMemoryBuffers = new AtomicInteger(0);
+
+    // ------------------------------------
+    //          For Local Disk Tier
+    // ------------------------------------
 
     private static final int ALL_SUBPARTITIONS_INDEX = -1;
 
     private final BufferPool bufferPool;
-
-    private final float bufferInMemoryRatio;
 
     private final float flushBufferRatio;
 
@@ -67,23 +75,20 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     private int numTotalBuffers;
 
-    private int numInMemoryMaxBuffers;
-
     private int numStopNotifyFlushBuffers;
 
     private int numTriggerFlushBuffers;
 
-    private final Queue<CompletableFuture<Void>> requestingBuffersQueue = new LinkedList<>();
-
-    private final Map<SubpartitionTier, SubpartitionCachedBuffersCounter>
-            subpartitionCachedBuffersMap = new HashMap<>();
-
-    private final AtomicInteger numInMemoryBuffers = new AtomicInteger(0);
-
     private final AtomicInteger numTotalCacheBuffers = new AtomicInteger(0);
 
-    private Queue<SubpartitionCachedBuffersCounter> subpartitionCachedBuffersCounters =
-            new PriorityBlockingQueue<>();
+    // ------------------------------------
+    //                Common
+    // ------------------------------------
+
+    private final Map<SubpartitionTier, SubpartitionBuffersCounter> subpartitionCachedBuffersMap =
+            new HashMap<>();
+
+    private Queue<SubpartitionBuffersCounter> subpartitionBuffersCounters = new PriorityBlockingQueue<>();
 
     private CompletableFuture<Void> isTriggeringFlush = FutureUtils.completedVoidFuture();
 
@@ -93,20 +98,19 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
             Executors.newSingleThreadScheduledExecutor(
                     new ExecutorThreadFactory("tiered-store-buffer-pool-checker"));
 
-    private String taskName;
-
     public BufferPoolHelperImpl(
             BufferPool bufferPool,
             float bufferInMemoryRatio,
             float flushBufferRatio,
             float triggerFlushRatio,
-            String taskName) {
+            int numSubpartitions) {
 
         this.bufferPool = bufferPool;
         this.bufferInMemoryRatio = bufferInMemoryRatio;
         this.flushBufferRatio = flushBufferRatio;
         this.triggerFlushRatio = triggerFlushRatio;
         this.numTotalBuffers = this.bufferPool.getNumBuffers();
+        this.memoryTierSubpartitionRequiredBuffers = new int[numSubpartitions];
 
         checkState(flushBufferRatio < triggerFlushRatio);
 
@@ -129,7 +133,6 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
                     poolSizeCheckInterval,
                     TimeUnit.MILLISECONDS);
         }
-        this.taskName = taskName;
     }
 
     public BufferPoolHelperImpl(
@@ -137,24 +140,49 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
             float bufferInMemoryRatio,
             float flushBufferRatio,
             float triggerFlushRatio) {
-        this(bufferPool, bufferInMemoryRatio, flushBufferRatio, triggerFlushRatio, "Null");
+        this(bufferPool, bufferInMemoryRatio, flushBufferRatio, triggerFlushRatio, 0);
     }
+
+    // ------------------------------------
+    //          For Local Memory Tier
+    // ------------------------------------
+
+    @Override
+    public boolean canStoreNextSegmentForMemoryTier(int bufferNumberInSegment) {
+        int currentNumberBuffer = numInMemoryBuffers.get();
+        if ((currentNumberBuffer + bufferNumberInSegment) <= numInMemoryMaxBuffers) {
+            numInMemoryBuffers.addAndGet(bufferNumberInSegment);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public void decreaseRedundantBufferNumberInSegment(
+            int subpartitionId, int bufferNumberInSegment) {
+        int actualRequiredBufferNum = memoryTierSubpartitionRequiredBuffers[subpartitionId];
+        if (actualRequiredBufferNum < bufferNumberInSegment) {
+            checkState(
+                    numInMemoryBuffers.addAndGet(
+                                    -1 * (bufferNumberInSegment - actualRequiredBufferNum))
+                            >= 0,
+                    "Wrong buffer number of a single subpartition is recorded.");
+        }
+        memoryTierSubpartitionRequiredBuffers[subpartitionId] = 0;
+    }
+
+    void decInMemoryBuffer() {
+        numInMemoryBuffers.decrementAndGet();
+    }
+
+    // ------------------------------------
+    //          For Local Disk Tier
+    // ------------------------------------
 
     @Override
     public int numPoolSize() {
         return bufferPool.getNumBuffers();
-    }
-
-    @Override
-    public void registerSubpartitionTieredManager(
-            int subpartitionId,
-            TieredStoreMode.TieredType tieredType,
-            NotifyFlushListener notifyFlushListener) {
-        SubpartitionTier subpartitionTier = new SubpartitionTier(subpartitionId, tieredType);
-        SubpartitionCachedBuffersCounter cachedBuffersCounter =
-                new SubpartitionCachedBuffersCounter(subpartitionTier, notifyFlushListener);
-        subpartitionCachedBuffersMap.put(subpartitionTier, cachedBuffersCounter);
-        subpartitionCachedBuffersCounters.add(cachedBuffersCounter);
     }
 
     @Override
@@ -165,60 +193,8 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     @Override
     public MemorySegment requestMemorySegmentBlocking(
-            int subpartitionId, TieredStoreMode.TieredType tieredType, boolean isInMemory) {
-        try {
-            if (!isInMemory) {
-                return requestMemorySegmentFromPool(subpartitionId, tieredType, isInMemory);
-            }
-
-            checkState(tieredType == TieredStoreMode.TieredType.LOCAL);
-            if (numInMemoryBuffers.get() < numInMemoryMaxBuffers) {
-                return requestMemorySegmentFromPool(subpartitionId, tieredType, isInMemory);
-            } else {
-                CompletableFuture<Void> isInMemBuffersEnough = new CompletableFuture<>();
-                requestingBuffersQueue.add(isInMemBuffersEnough);
-                return isInMemBuffersEnough
-                        .thenApply(
-                                ignore -> {
-                                    try {
-                                        return requestMemorySegmentFromPool(
-                                                subpartitionId, tieredType, isInMemory);
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                        .get();
-            }
-        } catch (Throwable e) {
-            throw new RuntimeException("Failed to request memory segment from buffer pool.", e);
-        }
-    }
-
-    @Override
-    public MemorySegment requestMemorySegmentBlocking(
             TieredStoreMode.TieredType tieredType, boolean isInMemory) {
         return requestMemorySegmentBlocking(ALL_SUBPARTITIONS_INDEX, tieredType, isInMemory);
-    }
-
-    @Override
-    public void recycleBuffer(
-            int subpartitionId,
-            MemorySegment buffer,
-            TieredStoreMode.TieredType tieredType,
-            boolean isInMemory) {
-        bufferPool.recycle(buffer);
-        if (isInMemory) {
-            checkState(tieredType == TieredStoreMode.TieredType.LOCAL);
-            decInMemoryBuffer();
-            if (numInMemoryBuffers.get() < numInMemoryMaxBuffers) {
-                CompletableFuture<Void> requestingBuffer = requestingBuffersQueue.poll();
-                if (requestingBuffer != null) {
-                    requestingBuffer.complete(null);
-                }
-            }
-        } else {
-            decCachedBuffers(subpartitionId, tieredType);
-        }
     }
 
     @Override
@@ -240,7 +216,8 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         checkState(totalBuffers > 0);
         double availableRatio = availableBuffers * 1.0 / totalBuffers;
         if ((numTotalCacheBuffers.get() + numInMemoryBuffers.get() < numTriggerFlushBuffers)
-                        && (numTotalCacheBuffers.get() < 64) && availableRatio < 0.8
+                        && (numTotalCacheBuffers.get() < 64)
+                        && availableRatio < 0.8
                 || !isTriggeringFlush.isDone()) {
             return;
         }
@@ -249,6 +226,95 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         sortToFlushSubpartitions();
         notifySubpartitionFlush();
         isTriggeringFlush.complete(null);
+    }
+
+    void incCachedBuffers(int subpartitionId, TieredStoreMode.TieredType tieredType) {
+        numTotalCacheBuffers.incrementAndGet();
+        checkNotNull(
+                        subpartitionCachedBuffersMap.get(
+                                new SubpartitionTier(subpartitionId, tieredType)))
+                .incNumCachedBuffers();
+    }
+
+    void decCachedBuffers(int subpartitionId, TieredStoreMode.TieredType tieredType) {
+        numTotalCacheBuffers.decrementAndGet();
+        checkNotNull(
+                        subpartitionCachedBuffersMap.get(
+                                new SubpartitionTier(subpartitionId, tieredType)))
+                .decNumCachedBuffers();
+    }
+
+    // ------------------------------------
+    //             For Dfs Tier
+    // ------------------------------------
+
+    @Override
+    public void registerSubpartitionTieredManager(
+            int subpartitionId,
+            TieredStoreMode.TieredType tieredType,
+            NotifyFlushListener notifyFlushListener) {
+        SubpartitionTier subpartitionTier = new SubpartitionTier(subpartitionId, tieredType);
+        SubpartitionBuffersCounter cachedBuffersCounter =
+                new SubpartitionBuffersCounter(subpartitionTier, notifyFlushListener);
+        subpartitionCachedBuffersMap.put(subpartitionTier, cachedBuffersCounter);
+        subpartitionBuffersCounters.add(cachedBuffersCounter);
+    }
+
+    // ------------------------------------
+    //                Common
+    // ------------------------------------
+
+    @Override
+    public MemorySegment requestMemorySegmentBlocking(
+            int subpartitionId, TieredStoreMode.TieredType tieredType, boolean isInMemory) {
+        try {
+            return requestMemorySegmentFromPool(subpartitionId, tieredType, isInMemory);
+            //if (!isInMemory) {
+            //    return requestMemorySegmentFromPool(subpartitionId, tieredType, isInMemory);
+            //}
+            //
+            //checkState(tieredType == TieredStoreMode.TieredType.IN_MEM);
+            //if (numInMemoryBuffers.get() < numInMemoryMaxBuffers) {
+            //    return requestMemorySegmentFromPool(subpartitionId, tieredType, isInMemory);
+            //} else {
+            //    CompletableFuture<Void> isInMemBuffersEnough = new CompletableFuture<>();
+            //    requestingBuffersQueue.add(isInMemBuffersEnough);
+            //    return isInMemBuffersEnough
+            //            .thenApply(
+            //                    ignore -> {
+            //                        try {
+            //                            return requestMemorySegmentFromPool(
+            //                                    subpartitionId, tieredType, isInMemory);
+            //                        } catch (IOException e) {
+            //                            throw new RuntimeException(e);
+            //                        }
+            //                    })
+            //            .get();
+            //}
+        } catch (Throwable e) {
+            throw new RuntimeException("Failed to request memory segment from buffer pool.", e);
+        }
+    }
+
+    @Override
+    public void recycleBuffer(
+            int subpartitionId,
+            MemorySegment buffer,
+            TieredStoreMode.TieredType tieredType,
+            boolean isInMemory) {
+        bufferPool.recycle(buffer);
+        if (isInMemory) {
+            checkState(tieredType == TieredStoreMode.TieredType.IN_MEM);
+            decInMemoryBuffer();
+            //if (numInMemoryBuffers.get() < numInMemoryMaxBuffers) {
+            //    CompletableFuture<Void> requestingBuffer = requestingBuffersQueue.poll();
+            //    if (requestingBuffer != null) {
+            //        requestingBuffer.complete(null);
+            //    }
+            //}
+        } else {
+            decCachedBuffers(subpartitionId, tieredType);
+        }
     }
 
     @Override
@@ -266,8 +332,8 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
             throw new IOException("Failed to request memory segments.", throwable);
         }
         if (isInMemory) {
-            checkState(tieredType == TieredStoreMode.TieredType.LOCAL);
-            incInMemoryBuffer();
+            checkState(tieredType == TieredStoreMode.TieredType.IN_MEM);
+            memoryTierSubpartitionRequiredBuffers[subpartitionId] += 1;
         } else {
             incCachedBuffers(subpartitionId, tieredType);
             checkNeedFlushCachedBuffers();
@@ -287,43 +353,19 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
     }
 
     private void sortToFlushSubpartitions() {
-        subpartitionCachedBuffersCounters = new PriorityQueue<>(subpartitionCachedBuffersCounters);
+        subpartitionBuffersCounters = new PriorityQueue<>(subpartitionBuffersCounters);
     }
 
     private void notifySubpartitionFlush() {
-        int numMaxNotified = subpartitionCachedBuffersCounters.size();
+        int numMaxNotified = subpartitionBuffersCounters.size();
         while ((numTotalCacheBuffers.get() + numInMemoryBuffers.get() >= numStopNotifyFlushBuffers
                 && numMaxNotified > 0)) {
-            SubpartitionCachedBuffersCounter buffersCounter =
-                    checkNotNull(subpartitionCachedBuffersCounters.poll());
+            SubpartitionBuffersCounter buffersCounter =
+                    checkNotNull(subpartitionBuffersCounters.poll());
             buffersCounter.getNotifyFlushListener().notifyFlushCachedBuffers();
-            subpartitionCachedBuffersCounters.add(buffersCounter);
+            subpartitionBuffersCounters.add(buffersCounter);
             numMaxNotified--;
         }
-    }
-
-    void incCachedBuffers(int subpartitionId, TieredStoreMode.TieredType tieredType) {
-        numTotalCacheBuffers.incrementAndGet();
-        checkNotNull(
-                        subpartitionCachedBuffersMap.get(
-                                new SubpartitionTier(subpartitionId, tieredType)))
-                .incNumCachedBuffers();
-    }
-
-    void decCachedBuffers(int subpartitionId, TieredStoreMode.TieredType tieredType) {
-        numTotalCacheBuffers.decrementAndGet();
-        checkNotNull(
-                        subpartitionCachedBuffersMap.get(
-                                new SubpartitionTier(subpartitionId, tieredType)))
-                .decNumCachedBuffers();
-    }
-
-    void incInMemoryBuffer() {
-        numInMemoryBuffers.incrementAndGet();
-    }
-
-    void decInMemoryBuffer() {
-        numInMemoryBuffers.decrementAndGet();
     }
 
     private static class SubpartitionTier {
@@ -363,8 +405,8 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         }
     }
 
-    private static class SubpartitionCachedBuffersCounter
-            implements Comparable<SubpartitionCachedBuffersCounter> {
+    private static class SubpartitionBuffersCounter
+            implements Comparable<SubpartitionBuffersCounter> {
 
         SubpartitionTier subpartitionTier;
 
@@ -372,7 +414,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
         private final AtomicInteger numCachedBuffers = new AtomicInteger(0);
 
-        public SubpartitionCachedBuffersCounter(
+        public SubpartitionBuffersCounter(
                 SubpartitionTier subpartitionTier, NotifyFlushListener notifyFlushListener) {
             this.subpartitionTier = subpartitionTier;
             this.notifyFlushListener = notifyFlushListener;
@@ -403,7 +445,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         }
 
         @Override
-        public int compareTo(BufferPoolHelperImpl.SubpartitionCachedBuffersCounter that) {
+        public int compareTo(SubpartitionBuffersCounter that) {
             return -1 * Integer.compare(numCachedBuffers(), that.numCachedBuffers());
         }
     }

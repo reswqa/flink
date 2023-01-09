@@ -31,7 +31,7 @@ import org.apache.flink.runtime.io.network.partition.store.TestingBufferConsumeV
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
 import org.apache.flink.runtime.io.network.partition.store.local.memory.TestingSubpartitionConsumerInternalOperation;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.LocalDiskDataManager;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.RegionBufferIndexTracker;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.RegionBufferIndexTrackerImpl;

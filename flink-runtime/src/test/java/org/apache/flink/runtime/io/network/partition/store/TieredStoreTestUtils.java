@@ -73,7 +73,7 @@ public class TieredStoreTestUtils {
     }
 
     public static OutputMetrics createTestingOutputMetrics() {
-        return new OutputMetrics(new TestCounter(), new TestCounter());
+        return new OutputMetrics(new TestCounter(), new TestCounter(), new TestCounter());
     }
 
     public static ByteBuffer createRecord(int value) {

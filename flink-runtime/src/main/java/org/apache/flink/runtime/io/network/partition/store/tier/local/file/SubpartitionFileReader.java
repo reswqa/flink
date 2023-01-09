@@ -21,7 +21,7 @@ package org.apache.flink.runtime.io.network.partition.store.tier.local.file;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.io.network.buffer.BufferRecycler;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -23,6 +23,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
+import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.runtime.event.AbstractEvent;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
 import org.apache.flink.runtime.io.network.api.EndOfData;
@@ -33,18 +34,21 @@ import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
+import org.apache.flink.runtime.io.network.partition.ChannelStateHolder;
 import org.apache.flink.runtime.io.network.partition.ResultPartition;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionManager;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
+import org.apache.flink.runtime.io.network.partition.ResultSubpartition;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelperImpl;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierDataGate;
 import org.apache.flink.runtime.io.network.partition.store.common.TieredStoreProducer;
 import org.apache.flink.runtime.io.network.partition.store.tier.dfs.DfsDataManager;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.LocalDataManager;
+import org.apache.flink.runtime.io.network.partition.store.tier.local.file.LocalFileDataManager;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
+import org.apache.flink.runtime.io.network.partition.store.tier.local.memory.LocalMemoryDataManager;
 import org.apache.flink.runtime.io.network.partition.store.writer.TieredStoreProducerImpl;
 import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.util.StringUtils;
@@ -60,6 +64,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -67,7 +72,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /** ResultPartition for TieredStore. */
-public class TieredStoreResultPartition extends ResultPartition {
+public class TieredStoreResultPartition extends ResultPartition implements ChannelStateHolder {
 
     private final JobID jobID;
 
@@ -94,6 +99,8 @@ public class TieredStoreResultPartition extends ResultPartition {
 
     private boolean hasNotifiedEndOfUserRecords;
 
+    private final ResultSubpartition[] subpartitions;
+
     public TieredStoreResultPartition(
             JobID jobID,
             String owningTaskName,
@@ -111,7 +118,8 @@ public class TieredStoreResultPartition extends ResultPartition {
             TieredStoreConfiguration storeConfiguration,
             @Nullable BufferCompressor bufferCompressor,
             List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>> sortedTieredTypes,
-            SupplierWithException<BufferPool, IOException> bufferPoolFactory) {
+            SupplierWithException<BufferPool, IOException> bufferPoolFactory,
+            ResultSubpartition[] subpartitions) {
         super(
                 owningTaskName,
                 partitionIndex,
@@ -134,6 +142,7 @@ public class TieredStoreResultPartition extends ResultPartition {
         this.dataFileBasePath = dataFileBasePath;
         this.isBroadcast = isBroadcast;
         this.storeConfiguration = storeConfiguration;
+        this.subpartitions = subpartitions;
     }
 
     // Called by task thread.
@@ -148,7 +157,7 @@ public class TieredStoreResultPartition extends ResultPartition {
                         storeConfiguration.getTieredStoreBufferInMemoryRatio(),
                         storeConfiguration.getTieredStoreFlushBufferRatio(),
                         storeConfiguration.getTieredStoreTriggerFlushRatio(),
-                        getOwningTaskName());
+                        numSubpartitions);
         setupTierDataGates();
         tieredStoreProducer =
                 new TieredStoreProducerImpl(tierDataGates, numSubpartitions, isBroadcast);
@@ -158,7 +167,8 @@ public class TieredStoreResultPartition extends ResultPartition {
     public void setMetricGroup(TaskIOMetricGroup metrics) {
         super.setMetricGroup(metrics);
         for (SingleTierDataGate singleTierDataGate : this.tierDataGates) {
-            singleTierDataGate.setOutputMetrics(new OutputMetrics(numBytesOut, numBuffersOut));
+            singleTierDataGate.setOutputMetrics(new OutputMetrics(numBytesOut, numBuffersOut, numBytesProduced));
+            singleTierDataGate.setTimerGauge(metrics.getHardBackPressuredTimePerSecond());
         }
     }
 
@@ -182,8 +192,11 @@ public class TieredStoreResultPartition extends ResultPartition {
     private SingleTierDataGate getTieredDataByType(TieredStoreMode.TieredType tieredType)
             throws IOException {
         switch (tieredType) {
+            case IN_MEM:
+                return new LocalMemoryDataManager(
+                        subpartitions, numSubpartitions, this, bufferPoolHelper, isBroadcast, storeConfiguration.getConfiguredNetworkBuffersPerChannel());
             case LOCAL:
-                return new LocalDataManager(
+                return new LocalFileDataManager(
                         numSubpartitions,
                         networkBufferSize,
                         getPartitionId(),
@@ -194,7 +207,6 @@ public class TieredStoreResultPartition extends ResultPartition {
                         readBufferPool,
                         readIOExecutor,
                         storeConfiguration);
-                // TODO, support REMOTE tiered type.
             case DFS:
                 String baseDfsPath = storeConfiguration.getBaseDfsHomePath();
                 if (StringUtils.isNullOrWhitespaceOnly(baseDfsPath)) {
@@ -256,9 +268,11 @@ public class TieredStoreResultPartition extends ResultPartition {
             ByteBuffer record,
             int targetSubpartition,
             Buffer.DataType dataType,
-            boolean isBroadcast, boolean isEndOfPartition)
+            boolean isBroadcast,
+            boolean isEndOfPartition)
             throws IOException {
-        checkNotNull(tieredStoreProducer).emit(record, targetSubpartition, dataType, isBroadcast, isEndOfPartition);
+        checkNotNull(tieredStoreProducer)
+                .emit(record, targetSubpartition, dataType, isBroadcast, isEndOfPartition);
     }
 
     @Override
@@ -272,22 +286,42 @@ public class TieredStoreResultPartition extends ResultPartition {
 
     @Override
     public void alignedBarrierTimeout(long checkpointId) throws IOException {
-        // Nothing to do.
+        tieredStoreProducer.alignedBarrierTimeout(checkpointId);
     }
 
     @Override
     public void abortCheckpoint(long checkpointId, CheckpointException cause) {
-        // Nothing to do.
+        tieredStoreProducer.abortCheckpoint(checkpointId, cause);
     }
 
     @Override
     public void flushAll() {
-        // Nothing to do.
+        tieredStoreProducer.flushAll();
     }
 
     @Override
     public void flush(int subpartitionIndex) {
-        // Nothing to do.
+        tieredStoreProducer.flush(subpartitionIndex);
+    }
+
+    @Override
+    public void setChannelStateWriter(ChannelStateWriter channelStateWriter) {
+        tieredStoreProducer.setChannelStateWriter(channelStateWriter);
+    }
+
+    @Override
+    public void onConsumedSubpartition(int subpartitionIndex) {
+        tieredStoreProducer.onConsumedSubpartition(subpartitionIndex);
+    }
+
+    @Override
+    public CompletableFuture<Void> getAllDataProcessedFuture() {
+        return tieredStoreProducer.getAllDataProcessedFuture();
+    }
+
+    @Override
+    public void onSubpartitionAllDataProcessed(int subpartition) {
+        tieredStoreProducer.onSubpartitionAllDataProcessed(subpartition);
     }
 
     @Override
@@ -320,20 +354,17 @@ public class TieredStoreResultPartition extends ResultPartition {
 
     @Override
     public int getNumberOfQueuedBuffers() {
-        // Batch shuffle does not need to provide QueuedBuffers information
-        return 0;
+        return tieredStoreProducer.getNumberOfQueuedBuffers();
     }
 
     @Override
     public long getSizeOfQueuedBuffersUnsafe() {
-        // Batch shuffle does not need to provide QueuedBuffers information
-        return 0;
+        return tieredStoreProducer.getSizeOfQueuedBuffersUnsafe();
     }
 
     @Override
     public int getNumberOfQueuedBuffers(int targetSubpartition) {
-        // Batch shuffle does not need to provide QueuedBuffers information
-        return 0;
+        return tieredStoreProducer.getNumberOfQueuedBuffers(targetSubpartition);
     }
 
     @Override

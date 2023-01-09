@@ -114,7 +114,7 @@ public class ResultPartitionManager implements ResultPartitionProvider {
     // Notifications
     // ------------------------------------------------------------------------
 
-    void onConsumedPartition(ResultPartition partition) {
+    public void onConsumedPartition(ResultPartition partition) {
         LOG.debug("Received consume notification from {}.", partition);
 
         synchronized (registeredPartitions) {

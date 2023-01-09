@@ -25,7 +25,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferRecycler;
 import org.apache.flink.runtime.io.network.partition.BufferReaderWriterUtil;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.util.FatalExitExceptionHandler;
 import org.apache.flink.util.IOUtils;
 

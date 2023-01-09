@@ -601,7 +601,8 @@ class TieredStoreResultPartitionDfsTest {
                         tieredStoreConfiguration,
                         null,
                         sortedTieredTypes,
-                        () -> bufferPool);
+                        () -> bufferPool,
+                        null);
         taskIOMetricGroup =
                 UnregisteredMetricGroups.createUnregisteredTaskMetricGroup().getIOMetricGroup();
         tieredStoreResultPartition.setup();

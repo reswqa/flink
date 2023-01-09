@@ -23,8 +23,7 @@ import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.LocalDataManager;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +37,7 @@ import java.util.Optional;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
-/** The read view of {@link LocalDataManager}, data can be read from memory or disk. */
+/** The read view of {@link LocalFileDataManager}, data can be read from memory or disk. */
 public class SubpartitionConsumer
         implements SingleTierReader, SubpartitionConsumerInternalOperations {
 

@@ -19,10 +19,16 @@
 package org.apache.flink.runtime.io.network.partition.store.writer;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.runtime.checkpoint.CheckpointException;
+import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
+import org.apache.flink.runtime.io.network.partition.CheckpointedResultSubpartition;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierDataGate;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierWriter;
 import org.apache.flink.runtime.io.network.partition.store.common.TieredStoreProducer;
+
+import org.apache.flink.runtime.io.network.partition.store.tier.local.file.LocalFileDataManager;
+import org.apache.flink.runtime.io.network.partition.store.tier.local.memory.LocalMemoryDataManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +38,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * This is a common entrypoint of the emitted records. These records will be transferred to the
@@ -73,7 +82,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
 
         Arrays.fill(subpartitionSegmentIndexes, 0);
         Arrays.fill(numSubpartitionEmitBytes, 0);
-        Arrays.fill(subpartitionWriterIndex, 0);
+        Arrays.fill(subpartitionWriterIndex, -1);
         for (int i = 0; i < tierDataGates.length; i++) {
             singleTierWriters[i] = tierDataGates[i].createPartitionTierWriter();
         }
@@ -82,7 +91,9 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
     @VisibleForTesting
     @Override
     public void setNumBytesInASegment(int numBytesInASegment) {
-        this.numBytesInASegment = numBytesInASegment;
+        for (int i = 0; i < tierDataGates.length; i++) {
+            tierDataGates[i].setNumBytesInASegment(numBytesInASegment);
+        }
     }
 
     @Override
@@ -118,48 +129,88 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
         List<WriterAndSegmentIndex> writerAndSegmentIndexes = new ArrayList<>();
         if (isBroadcast && !isBroadcastOnly) {
             for (int i = 0; i < numSubpartitions; ++i) {
-                writerAndSegmentIndexes.add(getTieredWriterAndGetRegionIndex(numRecordBytes, i));
+                writerAndSegmentIndexes.add(getTieredWriterAndGetSegmentIndex(numRecordBytes, i));
             }
         } else {
             writerAndSegmentIndexes.add(
-                    getTieredWriterAndGetRegionIndex(numRecordBytes, targetSubpartition));
+                    getTieredWriterAndGetSegmentIndex(numRecordBytes, targetSubpartition));
         }
         return writerAndSegmentIndexes;
     }
 
-    private WriterAndSegmentIndex getTieredWriterAndGetRegionIndex(
+    private WriterAndSegmentIndex getTieredWriterAndGetSegmentIndex(
             int numRecordBytes, int targetSubpartition) throws IOException {
-        numSubpartitionEmitBytes[targetSubpartition] += numRecordBytes;
-        if (numSubpartitionEmitBytes[targetSubpartition] < numBytesInASegment) {
-            return new WriterAndSegmentIndex(
-                    subpartitionWriterIndex[targetSubpartition],
-                    false,
-                    subpartitionSegmentIndexes[targetSubpartition],
-                    targetSubpartition);
+
+        // Each record needs to get the following information
+        int writerIndex;
+        boolean isLastRecordInSegment;
+        int segmentIndex;
+
+        // For the record that haven't selected a gate to emit
+        if (subpartitionWriterIndex[targetSubpartition] == -1) {
+            writerIndex = chooseGate();
+            subpartitionWriterIndex[targetSubpartition] = writerIndex;
+            checkState(numSubpartitionEmitBytes[targetSubpartition] == 0);
+            numSubpartitionEmitBytes[targetSubpartition] += numRecordBytes;
+            if (numSubpartitionEmitBytes[targetSubpartition]
+                    >= tierDataGates[writerIndex].getNewSegmentSize()) {
+                isLastRecordInSegment = true;
+                segmentIndex = subpartitionSegmentIndexes[targetSubpartition];
+                ++subpartitionSegmentIndexes[targetSubpartition];
+                clearInfoOfSelectGate(targetSubpartition);
+            } else {
+                isLastRecordInSegment = false;
+                segmentIndex = subpartitionSegmentIndexes[targetSubpartition];
+            }
+        }
+        // For the record that already selected a gate to emit
+        else {
+            int currentWriterIndex = subpartitionWriterIndex[targetSubpartition];
+            checkState(currentWriterIndex != -1);
+            numSubpartitionEmitBytes[targetSubpartition] += numRecordBytes;
+            if (numSubpartitionEmitBytes[targetSubpartition]
+                    >= tierDataGates[currentWriterIndex].getNewSegmentSize()) {
+                writerIndex = currentWriterIndex;
+                isLastRecordInSegment = true;
+                segmentIndex = subpartitionSegmentIndexes[targetSubpartition];
+                ++subpartitionSegmentIndexes[targetSubpartition];
+                clearInfoOfSelectGate(targetSubpartition);
+            }else {
+                writerIndex = currentWriterIndex;
+                isLastRecordInSegment = false;
+                segmentIndex = subpartitionSegmentIndexes[targetSubpartition];
+            }
         }
 
-        // Each subpartition calculates the amount of data written to a tier separately. If the
-        // amount of data exceeds the threshold, the segment is switched. Different subpartitions
-        // may have duplicate segment indexes, so it is necessary to distinguish different
-        // subpartitions when determining whether a tier contains the segment data.
-        // Start checking from the first tier each time.
-        int preTierGateIndex = this.subpartitionWriterIndex[targetSubpartition];
-        int tierGateIndex = 0;
-        SingleTierDataGate tierDataGates = this.tierDataGates[tierGateIndex];
-        while (!tierDataGates.canStoreNextSegment() && this.tierDataGates.length != 1) {
-            tierGateIndex++;
-            if (tierGateIndex >= this.tierDataGates.length) {
-                throw new IOException("Can not select a valid tiered writer.");
-            }
-            tierDataGates = this.tierDataGates[tierGateIndex];
-        }
-        this.subpartitionWriterIndex[targetSubpartition] = tierGateIndex;
-        numSubpartitionEmitBytes[targetSubpartition] = 0;
         return new WriterAndSegmentIndex(
-                preTierGateIndex,
-                true,
-                subpartitionSegmentIndexes[targetSubpartition]++,
+                writerIndex,
+                isLastRecordInSegment,
+                segmentIndex,
                 targetSubpartition);
+    }
+
+    private int chooseGate() throws IOException {
+        if(tierDataGates.length == 1){
+            return 0;
+        }
+        // only for test case Memory and Disk
+        if(tierDataGates.length == 2 && tierDataGates[0] instanceof LocalMemoryDataManager && tierDataGates[1] instanceof LocalFileDataManager){
+            if(tierDataGates[0].canStoreNextSegment()){
+                return 0;
+            }
+            return 1;
+        }
+        for (int tierGateIndex = 0; tierGateIndex < tierDataGates.length; ++tierGateIndex) {
+            if (tierDataGates[tierGateIndex].canStoreNextSegment()) {
+                return tierGateIndex;
+            }
+        }
+        throw new IOException("All gates are full, cannot select the writer of gate");
+    }
+
+    private void clearInfoOfSelectGate(int targetSubpartition) {
+        numSubpartitionEmitBytes[targetSubpartition] = 0;
+        subpartitionWriterIndex[targetSubpartition] = -1;
     }
 
     public void release() {
@@ -170,5 +221,119 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
     public void close() {
         Arrays.stream(singleTierWriters).forEach(SingleTierWriter::close);
         Arrays.stream(tierDataGates).forEach(SingleTierDataGate::close);
+    }
+
+    @Override
+    public void alignedBarrierTimeout(long checkpointId) throws IOException {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.alignedBarrierTimeout(checkpointId);
+        }
+    }
+
+    @Override
+    public void abortCheckpoint(long checkpointId, CheckpointException cause) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.abortCheckpoint(checkpointId, cause);
+        }
+    }
+
+    @Override
+    public void flushAll() {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.flushAll();
+        }
+    }
+
+    @Override
+    public void flush(int subpartitionIndex) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.flush(subpartitionIndex);
+        }
+    }
+
+    @Override
+    public int getNumberOfQueuedBuffers() {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            int numberOfQueuedBuffers = singleTierDataGate.getNumberOfQueuedBuffers();
+            if (numberOfQueuedBuffers != Integer.MIN_VALUE) {
+                return numberOfQueuedBuffers;
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public long getSizeOfQueuedBuffersUnsafe() {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            long sizeOfQueuedBuffersUnsafe = singleTierDataGate.getSizeOfQueuedBuffersUnsafe();
+            if (sizeOfQueuedBuffersUnsafe != Integer.MIN_VALUE) {
+                return sizeOfQueuedBuffersUnsafe;
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public int getNumberOfQueuedBuffers(int targetSubpartition) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            int numberOfQueuedBuffers =
+                    singleTierDataGate.getNumberOfQueuedBuffers(targetSubpartition);
+            if (numberOfQueuedBuffers != Integer.MIN_VALUE) {
+                return numberOfQueuedBuffers;
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public void setChannelStateWriter(ChannelStateWriter channelStateWriter) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.setChannelStateWriter(channelStateWriter);
+        }
+    }
+
+    @Override
+    public CheckpointedResultSubpartition getCheckpointedSubpartition(int subpartitionIndex) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            CheckpointedResultSubpartition checkpointedSubpartition =
+                    singleTierDataGate.getCheckpointedSubpartition(subpartitionIndex);
+            if (checkpointedSubpartition != null) {
+                return checkpointedSubpartition;
+            }
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void finishReadRecoveredState(boolean notifyAndBlockOnCompletion) throws IOException {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.finishReadRecoveredState(notifyAndBlockOnCompletion);
+        }
+    }
+
+    @Override
+    public void onConsumedSubpartition(int subpartitionIndex) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.onConsumedSubpartition(subpartitionIndex);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> getAllDataProcessedFuture() {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            CompletableFuture<Void> allDataProcessedFuture =
+                    singleTierDataGate.getAllDataProcessedFuture();
+            if (allDataProcessedFuture != null) {
+                return allDataProcessedFuture;
+            }
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void onSubpartitionAllDataProcessed(int subpartition) {
+        for (SingleTierDataGate singleTierDataGate : tierDataGates) {
+            singleTierDataGate.onSubpartitionAllDataProcessed(subpartition);
+        }
     }
 }

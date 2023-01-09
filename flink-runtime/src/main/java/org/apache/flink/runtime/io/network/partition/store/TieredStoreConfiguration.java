@@ -60,6 +60,9 @@ public class TieredStoreConfiguration {
 
     private final TieredStoreConfiguration.SpillingStrategyType spillingStrategyType;
 
+    // For Memory Tier
+    private final int configuredNetworkBuffersPerChannel;
+
     // ----------------------------------------
     //        Selective Spilling Strategy
     // ----------------------------------------
@@ -100,7 +103,8 @@ public class TieredStoreConfiguration {
             float tieredStoreTriggerFlushRatio,
             TieredStoreConfiguration.SpillingStrategyType spillingStrategyType,
             long bufferPoolSizeCheckIntervalMs,
-            String baseDfsHomePath) {
+            String baseDfsHomePath,
+            int configuredNetworkBuffersPerChannel) {
         this.maxBuffersReadAhead = maxBuffersReadAhead;
         this.bufferRequestTimeout = bufferRequestTimeout;
         this.maxRequestedBuffers = maxRequestedBuffers;
@@ -116,6 +120,7 @@ public class TieredStoreConfiguration {
         this.spillingStrategyType = spillingStrategyType;
         this.bufferPoolSizeCheckIntervalMs = bufferPoolSizeCheckIntervalMs;
         this.baseDfsHomePath = baseDfsHomePath;
+        this.configuredNetworkBuffersPerChannel = configuredNetworkBuffersPerChannel;
     }
 
     public static TieredStoreConfiguration.Builder builder(
@@ -203,6 +208,10 @@ public class TieredStoreConfiguration {
         return baseDfsHomePath;
     }
 
+    public int getConfiguredNetworkBuffersPerChannel() {
+        return configuredNetworkBuffersPerChannel;
+    }
+
     /** Type of {@link HsSpillingStrategy}. */
     public enum SpillingStrategyType {
         FULL,
@@ -239,6 +248,8 @@ public class TieredStoreConfiguration {
 
         private TieredStoreConfiguration.SpillingStrategyType spillingStrategyType =
                 DEFAULT_SPILLING_STRATEGY_NAME;
+
+        private int configuredNetworkBuffersPerChannel;
 
         private final int numSubpartitions;
 
@@ -326,6 +337,11 @@ public class TieredStoreConfiguration {
             return this;
         }
 
+        public TieredStoreConfiguration.Builder setConfiguredNetworkBuffersPerChannel(int configuredNetworkBuffersPerChannel) {
+            this.configuredNetworkBuffersPerChannel = configuredNetworkBuffersPerChannel;
+            return this;
+        }
+
         public TieredStoreConfiguration build() {
             return new TieredStoreConfiguration(
                     maxBuffersReadAhead,
@@ -341,7 +357,8 @@ public class TieredStoreConfiguration {
                     tieredStoreTriggerFlushRatio,
                     spillingStrategyType,
                     bufferPoolSizeCheckIntervalMs,
-                    baseDfsHomePath);
+                    baseDfsHomePath,
+                    configuredNetworkBuffersPerChannel);
         }
     }
 }

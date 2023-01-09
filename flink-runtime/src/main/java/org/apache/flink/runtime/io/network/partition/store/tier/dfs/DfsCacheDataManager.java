@@ -26,7 +26,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.SubpartitionConsumerCacheDataManager;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.SubpartitionConsumerInternalOperations;

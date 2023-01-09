@@ -20,7 +20,7 @@ package org.apache.flink.runtime.io.network.partition.store;
 
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.util.function.FunctionWithException;
 
 import java.util.Optional;

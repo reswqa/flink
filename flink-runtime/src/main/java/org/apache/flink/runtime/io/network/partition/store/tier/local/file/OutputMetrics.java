@@ -25,10 +25,12 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreResultPart
 public class OutputMetrics {
     private final Counter numBytesOut;
     private final Counter numBuffersOut;
+    private final Counter numBytesProduced;
 
-    public OutputMetrics(Counter numBytesOut, Counter numBuffersOut) {
+    public OutputMetrics(Counter numBytesOut, Counter numBuffersOut, Counter numBytesProduced) {
         this.numBytesOut = numBytesOut;
         this.numBuffersOut = numBuffersOut;
+        this.numBytesProduced = numBytesProduced;
     }
 
     public Counter getNumBytesOut() {
@@ -37,5 +39,9 @@ public class OutputMetrics {
 
     public Counter getNumBuffersOut() {
         return numBuffersOut;
+    }
+
+    public Counter getNumBytesProduced() {
+        return numBytesProduced;
     }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.io.network.partition.store.tier.local;
+package org.apache.flink.runtime.io.network.partition.store.common;
 
 import org.apache.flink.runtime.io.network.buffer.Buffer.DataType;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;

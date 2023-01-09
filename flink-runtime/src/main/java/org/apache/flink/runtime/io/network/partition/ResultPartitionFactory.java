@@ -296,7 +296,8 @@ public class ResultPartitionFactory {
                             getStoreConfiguration(type, numberOfSubpartitions),
                             bufferCompressor,
                             getTieredStoreStorageModes(type),
-                            bufferPoolFactory);
+                            bufferPoolFactory,
+                            subpartitions);
         } else {
             throw new IllegalArgumentException("Unrecognized ResultPartitionType: " + type);
         }
@@ -312,6 +313,8 @@ public class ResultPartitionFactory {
                 new ArrayList<>();
         if (type == ResultPartitionType.TIERED_STORE
                 || type == ResultPartitionType.TIERED_STORE_SELECTIVE) {
+            storeModes.add(
+                    Pair.of(TieredStoreMode.TieredType.IN_MEM, TieredStoreMode.StorageType.MEMORY));
             storeModes.add(
                     Pair.of(TieredStoreMode.TieredType.LOCAL, TieredStoreMode.StorageType.MEMORY));
             storeModes.add(
@@ -333,6 +336,7 @@ public class ResultPartitionFactory {
                                 ? TieredStoreConfiguration.SpillingStrategyType.FULL
                                 : TieredStoreConfiguration.SpillingStrategyType.SELECTIVE)
                 .setBaseDfsHomePath(baseDfsHomePath)
+                .setConfiguredNetworkBuffersPerChannel(configuredNetworkBuffersPerChannel)
                 .build();
     }
 
