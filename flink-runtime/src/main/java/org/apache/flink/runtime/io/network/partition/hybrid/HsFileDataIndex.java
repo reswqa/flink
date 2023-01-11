@@ -64,9 +64,6 @@ public interface HsFileDataIndex {
      */
     void markBufferReleased(int subpartitionId, int bufferIndex);
 
-    /** Close this file data index. */
-    void close();
-
     /**
      * Represents a series of physically continuous buffers in the file, which are readable, from
      * the same subpartition, and has sequential buffer index.

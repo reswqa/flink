@@ -162,9 +162,7 @@ class ResultPartitionFactoryTest {
                         10,
                         sortShuffleMinParallelism,
                         false,
-                        0,
-                        256,
-                        Long.MAX_VALUE);
+                        0);
 
         final ResultPartitionDeploymentDescriptor descriptor =
                 new ResultPartitionDeploymentDescriptor(

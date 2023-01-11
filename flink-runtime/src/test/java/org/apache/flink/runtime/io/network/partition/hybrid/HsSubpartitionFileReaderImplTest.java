@@ -79,17 +79,14 @@ class HsSubpartitionFileReaderImplTest {
 
     private FileChannel dataFileChannel;
 
-    private Path indexFilePath;
-
     private long currentFileOffset;
 
     @BeforeEach
     void before(@TempDir Path tempPath) throws Exception {
         random = new Random();
         Path dataFilePath = Files.createFile(tempPath.resolve(UUID.randomUUID().toString()));
-        indexFilePath = tempPath.resolve(UUID.randomUUID().toString());
         dataFileChannel = openFileChannel(dataFilePath);
-        diskIndex = createDataIndex(1, indexFilePath);
+        diskIndex = new HsFileDataIndexImpl(1);
         subpartitionOperation = new TestingSubpartitionConsumerInternalOperation();
         currentFileOffset = 0L;
     }
@@ -100,8 +97,8 @@ class HsSubpartitionFileReaderImplTest {
     }
 
     @Test
-    void testReadBuffer(@TempDir Path tmpPath) throws Exception {
-        diskIndex = createDataIndex(2, tmpPath.resolve(".index"));
+    void testReadBuffer() throws Exception {
+        diskIndex = new HsFileDataIndexImpl(2);
         TestingSubpartitionConsumerInternalOperation viewNotifier1 =
                 new TestingSubpartitionConsumerInternalOperation();
         TestingSubpartitionConsumerInternalOperation viewNotifier2 =
@@ -138,14 +135,13 @@ class HsSubpartitionFileReaderImplTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"LZ4", "LZO", "ZSTD"})
-    void testReadBufferCompressed(String compressionFactoryName, @TempDir Path tmpPath)
-            throws Exception {
+    void testReadBufferCompressed(String compressionFactoryName) throws Exception {
         BufferCompressor bufferCompressor =
                 new BufferCompressor(bufferSize, compressionFactoryName);
         BufferDecompressor bufferDecompressor =
                 new BufferDecompressor(bufferSize, compressionFactoryName);
 
-        diskIndex = createDataIndex(1, tmpPath.resolve(".index"));
+        diskIndex = new HsFileDataIndexImpl(1);
         TestingSubpartitionConsumerInternalOperation viewNotifier =
                 new TestingSubpartitionConsumerInternalOperation();
         HsSubpartitionFileReaderImpl fileReader1 = createSubpartitionFileReader(0, viewNotifier);
@@ -364,8 +360,8 @@ class HsSubpartitionFileReaderImplTest {
     }
 
     @Test
-    void testCompareTo(@TempDir Path tempPath) throws Exception {
-        diskIndex = createDataIndex(2, tempPath.resolve(".index"));
+    void testCompareTo() throws Exception {
+        diskIndex = new HsFileDataIndexImpl(2);
         TestingSubpartitionConsumerInternalOperation viewNotifier1 =
                 new TestingSubpartitionConsumerInternalOperation();
         TestingSubpartitionConsumerInternalOperation viewNotifier2 =
@@ -604,10 +600,6 @@ class HsSubpartitionFileReaderImplTest {
                 MAX_BUFFERS_READ_AHEAD,
                 (ignore) -> {},
                 BufferReaderWriterUtil.allocatedHeaderBuffer());
-    }
-
-    private HsFileDataIndexImpl createDataIndex(int numSubpartitions, Path indexFilePath) {
-        return new HsFileDataIndexImpl(numSubpartitions, indexFilePath, 256, Long.MAX_VALUE);
     }
 
     private static FileChannel openFileChannel(Path path) throws IOException {

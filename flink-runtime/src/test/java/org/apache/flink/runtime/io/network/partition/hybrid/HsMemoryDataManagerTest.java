@@ -55,12 +55,9 @@ class HsMemoryDataManagerTest {
 
     private Path dataFilePath;
 
-    private Path indexFilePath;
-
     @BeforeEach
     void before(@TempDir Path tempDir) {
         this.dataFilePath = tempDir.resolve(".data");
-        this.indexFilePath = tempDir.resolve(".index");
     }
 
     @Test
@@ -245,9 +242,7 @@ class HsMemoryDataManagerTest {
 
     private HsMemoryDataManager createMemoryDataManager(HsSpillingStrategy spillStrategy)
             throws Exception {
-        return createMemoryDataManager(
-                spillStrategy,
-                new HsFileDataIndexImpl(NUM_SUBPARTITIONS, indexFilePath, 256, Long.MAX_VALUE));
+        return createMemoryDataManager(spillStrategy, new HsFileDataIndexImpl(NUM_SUBPARTITIONS));
     }
 
     private HsMemoryDataManager createMemoryDataManager(
@@ -260,9 +255,7 @@ class HsMemoryDataManagerTest {
     private HsMemoryDataManager createMemoryDataManager(
             HsSpillingStrategy spillingStrategy, BufferPool bufferPool) throws Exception {
         return createMemoryDataManager(
-                bufferPool,
-                spillingStrategy,
-                new HsFileDataIndexImpl(NUM_SUBPARTITIONS, indexFilePath, 256, Long.MAX_VALUE));
+                bufferPool, spillingStrategy, new HsFileDataIndexImpl(NUM_SUBPARTITIONS));
     }
 
     private HsMemoryDataManager createMemoryDataManager(

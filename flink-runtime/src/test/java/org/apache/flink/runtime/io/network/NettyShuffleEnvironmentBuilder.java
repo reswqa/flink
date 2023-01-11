@@ -91,10 +91,6 @@ public class NettyShuffleEnvironmentBuilder {
 
     private int maxNumberOfConnections = 1;
 
-    private long hybridShuffleNumRetainedInMemoryRegionsMax = Long.MAX_VALUE;
-
-    private int hybridShuffleSpilledIndexSegmentSize = 256;
-
     public NettyShuffleEnvironmentBuilder setTaskManagerLocation(ResourceID taskManagerLocation) {
         this.taskManagerLocation = taskManagerLocation;
         return this;
@@ -217,19 +213,6 @@ public class NettyShuffleEnvironmentBuilder {
         return this;
     }
 
-    public NettyShuffleEnvironmentBuilder setHybridShuffleNumRetainedInMemoryRegionsMax(
-            long hybridShuffleNumRetainedInMemoryRegionsMax) {
-        this.hybridShuffleNumRetainedInMemoryRegionsMax =
-                hybridShuffleNumRetainedInMemoryRegionsMax;
-        return this;
-    }
-
-    public NettyShuffleEnvironmentBuilder setHybridShuffleSpilledIndexSegmentSize(
-            int hybridShuffleSpilledIndexSegmentSize) {
-        this.hybridShuffleSpilledIndexSegmentSize = hybridShuffleSpilledIndexSegmentSize;
-        return this;
-    }
-
     public NettyShuffleEnvironment build() {
         return NettyShuffleServiceFactory.createNettyShuffleEnvironment(
                 new NettyShuffleEnvironmentConfiguration(
@@ -254,9 +237,7 @@ public class NettyShuffleEnvironmentBuilder {
                         debloatConfiguration,
                         maxNumberOfConnections,
                         connectionReuseEnabled,
-                        maxOverdraftBuffersPerGate,
-                        hybridShuffleSpilledIndexSegmentSize,
-                        hybridShuffleNumRetainedInMemoryRegionsMax),
+                        maxOverdraftBuffersPerGate),
                 taskManagerLocation,
                 new TaskEventDispatcher(),
                 resultPartitionManager,

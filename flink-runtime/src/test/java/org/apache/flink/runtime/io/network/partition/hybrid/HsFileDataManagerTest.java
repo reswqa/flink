@@ -96,8 +96,7 @@ class HsFileDataManagerTest {
                 new HsFileDataManager(
                         bufferPool,
                         ioExecutor,
-                        new HsFileDataIndexImpl(
-                                NUM_SUBPARTITIONS, tempDir.resolve(".index"), 256, Long.MAX_VALUE),
+                        new HsFileDataIndexImpl(NUM_SUBPARTITIONS),
                         dataFilePath,
                         factory,
                         HybridShuffleConfiguration.builder(
@@ -219,7 +218,7 @@ class HsFileDataManagerTest {
     }
 
     @Test
-    void testRunRequestBufferTimeout(@TempDir Path tempDir) throws Exception {
+    void testRunRequestBufferTimeout() throws Exception {
         Duration bufferRequestTimeout = Duration.ofSeconds(3);
 
         // request all buffer first.
@@ -230,8 +229,7 @@ class HsFileDataManagerTest {
                 new HsFileDataManager(
                         bufferPool,
                         ioExecutor,
-                        new HsFileDataIndexImpl(
-                                NUM_SUBPARTITIONS, tempDir.resolve(".index"), 256, Long.MAX_VALUE),
+                        new HsFileDataIndexImpl(NUM_SUBPARTITIONS),
                         dataFilePath,
                         factory,
                         HybridShuffleConfiguration.builder(
@@ -353,7 +351,7 @@ class HsFileDataManagerTest {
      * release subpartition reader and subpartition reader fail should not be inside lock.
      */
     @Test
-    void testConsumeWhileReleaseNoDeadlock(@TempDir Path tempDir) throws Exception {
+    void testConsumeWhileReleaseNoDeadlock() throws Exception {
         CompletableFuture<Void> consumerStart = new CompletableFuture<>();
         CompletableFuture<Void> readerFail = new CompletableFuture<>();
         HsSubpartitionConsumer subpartitionView =
@@ -365,8 +363,7 @@ class HsFileDataManagerTest {
                         DEFAULT,
                         dataFileChannel,
                         subpartitionView,
-                        new HsFileDataIndexImpl(
-                                NUM_SUBPARTITIONS, tempDir.resolve(".index"), 256, Long.MAX_VALUE),
+                        new HsFileDataIndexImpl(NUM_SUBPARTITIONS),
                         5,
                         fileDataManager::releaseSubpartitionReader,
                         BufferReaderWriterUtil.allocatedHeaderBuffer()) {

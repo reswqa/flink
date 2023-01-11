@@ -113,8 +113,7 @@ class HsSubpartitionViewTest {
                         bufferSize,
                         bufferPool,
                         spillingStrategy,
-                        new HsFileDataIndexImpl(
-                                1, dataFilePath.resolve(".index"), 256, Long.MAX_VALUE),
+                        new HsFileDataIndexImpl(1),
                         dataFilePath.resolve(".data"),
                         null,
                         0);

@@ -104,10 +104,6 @@ public class NettyShuffleEnvironmentConfiguration {
 
     private final int maxOverdraftBuffersPerGate;
 
-    private final int hybridShuffleSpilledIndexSegmentSize;
-
-    private final long hybridShuffleNumRetainedInMemoryRegionsMax;
-
     public NettyShuffleEnvironmentConfiguration(
             int numNetworkBuffers,
             int networkBufferSize,
@@ -130,9 +126,7 @@ public class NettyShuffleEnvironmentConfiguration {
             BufferDebloatConfiguration debloatConfiguration,
             int maxNumberOfConnections,
             boolean connectionReuseEnabled,
-            int maxOverdraftBuffersPerGate,
-            int hybridShuffleSpilledIndexSegmentSize,
-            long hybridShuffleNumRetainedInMemoryRegionsMax) {
+            int maxOverdraftBuffersPerGate) {
 
         this.numNetworkBuffers = numNetworkBuffers;
         this.networkBufferSize = networkBufferSize;
@@ -156,9 +150,6 @@ public class NettyShuffleEnvironmentConfiguration {
         this.maxNumberOfConnections = maxNumberOfConnections;
         this.connectionReuseEnabled = connectionReuseEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
-        this.hybridShuffleSpilledIndexSegmentSize = hybridShuffleSpilledIndexSegmentSize;
-        this.hybridShuffleNumRetainedInMemoryRegionsMax =
-                hybridShuffleNumRetainedInMemoryRegionsMax;
     }
 
     // ------------------------------------------------------------------------
@@ -253,14 +244,6 @@ public class NettyShuffleEnvironmentConfiguration {
 
     public int getMaxOverdraftBuffersPerGate() {
         return maxOverdraftBuffersPerGate;
-    }
-
-    public long getHybridShuffleNumRetainedInMemoryRegionsMax() {
-        return hybridShuffleNumRetainedInMemoryRegionsMax;
-    }
-
-    public int getHybridShuffleSpilledIndexSegmentSize() {
-        return hybridShuffleSpilledIndexSegmentSize;
     }
 
     // ------------------------------------------------------------------------
@@ -365,15 +348,6 @@ public class NettyShuffleEnvironmentConfiguration {
                 configuration.get(
                         NettyShuffleEnvironmentOptions.TCP_CONNECTION_REUSE_ACROSS_JOBS_ENABLED);
 
-        int hybridShuffleSpilledIndexSegmentSize =
-                configuration.get(
-                        NettyShuffleEnvironmentOptions.HYBRID_SHUFFLE_SPILLED_INDEX_SEGMENT_SIZE);
-
-        long hybridShuffleNumRetainedInMemoryRegionsMax =
-                configuration.get(
-                        NettyShuffleEnvironmentOptions
-                                .HYBRID_SHUFFLE_NUM_RETAINED_IN_MEMORY_REGIONS_MAX);
-
         checkArgument(buffersPerChannel >= 0, "Must be non-negative.");
         checkArgument(
                 !maxRequiredBuffersPerGate.isPresent() || maxRequiredBuffersPerGate.get() >= 1,
@@ -409,9 +383,7 @@ public class NettyShuffleEnvironmentConfiguration {
                 BufferDebloatConfiguration.fromConfiguration(configuration),
                 maxNumConnections,
                 connectionReuseEnabled,
-                maxOverdraftBuffersPerGate,
-                hybridShuffleSpilledIndexSegmentSize,
-                hybridShuffleNumRetainedInMemoryRegionsMax);
+                maxOverdraftBuffersPerGate);
     }
 
     /**
