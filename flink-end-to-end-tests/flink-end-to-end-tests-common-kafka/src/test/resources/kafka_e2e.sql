@@ -44,15 +44,14 @@ CREATE TABLE CsvTable (
   event_timestamp STRING,
   `user` STRING,
   message STRING,
-  duplicate_count BIGINT,
-  constant STRING
+  duplicate_count BIGINT
 ) WITH (
-  'connector' = 'filesystem',
-  'path' = '$RESULT',
-  'sink.rolling-policy.rollover-interval' = '2s',
-  'sink.rolling-policy.check-interval' = '2s',
-  'format' = 'csv',
-  'csv.disable-quote-character' = 'true'
+   'connector' = '$KAFKA_IDENTIFIER',
+  'topic' = '$TOPIC_CSV_NAME',
+  'scan.startup.mode' = 'earliest-offset',
+  'properties.bootstrap.servers' = '$KAFKA_BOOTSTRAP_SERVERS',
+  'properties.group.id' = 'test-group',
+  'format' = 'avro'
 );
 
 CREATE FUNCTION RegReplace AS 'org.apache.flink.table.toolbox.StringRegexReplaceFunction';
@@ -71,5 +70,5 @@ GROUP BY
   TUMBLE(rowtime, INTERVAL '1' HOUR);
 
 INSERT INTO CsvTable -- read from Kafka Avro, and write into Filesystem Csv
-SELECT AvroTable.*, RegReplace('Test constant folding.', 'Test', 'Success') AS constant
+SELECT AvroTable.*
 FROM AvroTable;

@@ -23,6 +23,7 @@ import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
 
 import org.slf4j.Logger;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
@@ -96,11 +97,14 @@ class FlinkTestcontainersConfigurator {
             } catch (ImageBuildException e) {
                 throw new RuntimeException("Failed to build TaskManager image", e);
             }
-            taskManagers.add(
+            GenericContainer<?> genericContainer =
                     configureContainer(
                             new GenericContainer<>(taskManagerImage),
                             taskManagerHostName,
-                            "TaskManager-" + i));
+                            "TaskManager-" + i);
+            genericContainer.withFileSystemBind(
+                    "/Users/guoweijie/tmp/p", "/flink", BindMode.READ_ONLY);
+            taskManagers.add(genericContainer);
         }
         return taskManagers;
     }
