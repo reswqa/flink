@@ -41,7 +41,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
 
     private static final Logger LOG = LoggerFactory.getLogger(TieredStoreProducerImpl.class);
 
-    private int numBytesInASegment = 64 * 1024; // 64M default;
+    private int numBytesInASegment = 64 * 1024 * 1024; // 64M default;
 
     private final SingleTierDataGate[] tierDataGates;
 
