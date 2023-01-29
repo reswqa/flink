@@ -79,7 +79,7 @@ public class DfsFileReader implements SingleTierReader, DfsFileReaderInternalOpe
             synchronized (lock) {
                 checkNotNull(dfsDataView, "disk data view must be not null.");
                 Optional<BufferAndBacklog> bufferToConsume =
-                        dfsDataView.consumeBuffer(lastConsumedBufferIndex + 1);
+                        dfsDataView.consumeBuffer(lastConsumedBufferIndex + 1, null);
 
                 if (bufferToConsume.isPresent()) {
                     LOG.debug("### DfsFileReader has successfully consumed one buffer!");

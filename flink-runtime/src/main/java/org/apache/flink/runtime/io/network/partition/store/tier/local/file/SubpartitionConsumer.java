@@ -22,8 +22,8 @@ import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
-import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
+import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,9 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Optional;
+import java.util.Queue;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -81,14 +83,15 @@ public class SubpartitionConsumer
     @Nullable
     @Override
     public BufferAndBacklog getNextBuffer() throws IOException {
+        Queue<Buffer> errorBuffers = new ArrayDeque<>();
         try {
             synchronized (lock) {
                 checkNotNull(diskDataView, "disk data view must be not null.");
                 checkNotNull(memoryDataView, "memory data view must be not null.");
 
-                Optional<BufferAndBacklog> bufferToConsume = tryReadFromDisk();
+                Optional<BufferAndBacklog> bufferToConsume = tryReadFromDisk(errorBuffers);
                 if (!bufferToConsume.isPresent()) {
-                    bufferToConsume = memoryDataView.consumeBuffer(lastConsumedBufferIndex + 1);
+                    bufferToConsume = memoryDataView.consumeBuffer(lastConsumedBufferIndex + 1, errorBuffers);
                 }
                 updateConsumingStatus(bufferToConsume);
                 return bufferToConsume.map(this::handleBacklog).orElse(null);
@@ -97,6 +100,11 @@ public class SubpartitionConsumer
             // release subpartition reader outside of lock to avoid deadlock.
             releaseInternal(cause);
             throw new IOException("Failed to get next buffer.", cause);
+        }finally{
+            // release the buffer loaded by error
+            while (!errorBuffers.isEmpty()){
+                errorBuffers.poll().recycleBuffer();
+            }
         }
     }
 
@@ -226,10 +234,10 @@ public class SubpartitionConsumer
     }
 
     @GuardedBy("lock")
-    private Optional<BufferAndBacklog> tryReadFromDisk() throws Throwable {
+    private Optional<BufferAndBacklog> tryReadFromDisk(Queue<Buffer> errorBuffers) throws Throwable {
         final int nextBufferIndexToConsume = lastConsumedBufferIndex + 1;
         return checkNotNull(diskDataView)
-                .consumeBuffer(nextBufferIndexToConsume)
+                .consumeBuffer(nextBufferIndexToConsume, errorBuffers)
                 .map(
                         bufferAndBacklog -> {
                             if (bufferAndBacklog.getNextDataType() == Buffer.DataType.NONE) {
@@ -238,7 +246,7 @@ public class SubpartitionConsumer
                                         bufferAndBacklog.buffersInBacklog(),
                                         checkNotNull(memoryDataView)
                                                 .peekNextToConsumeDataType(
-                                                        nextBufferIndexToConsume + 1),
+                                                        nextBufferIndexToConsume + 1, errorBuffers),
                                         bufferAndBacklog.getSequenceNumber(),
                                         bufferAndBacklog.isLastBufferInSegment());
                             }

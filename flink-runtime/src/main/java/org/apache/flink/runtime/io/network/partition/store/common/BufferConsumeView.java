@@ -18,10 +18,12 @@
 
 package org.apache.flink.runtime.io.network.partition.store.common;
 
+import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.Buffer.DataType;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
 
 import java.util.Optional;
+import java.util.Queue;
 
 /** A view to find out what data exists in LOCAL, or REMOTE, or DFS. */
 public interface BufferConsumeView {
@@ -35,7 +37,7 @@ public interface BufferConsumeView {
      * @return If the target buffer does exist, return buffer and next buffer's backlog, otherwise
      *     return {@link Optional#empty()}.
      */
-    Optional<BufferAndBacklog> consumeBuffer(int nextBufferToConsume) throws Throwable;
+    Optional<BufferAndBacklog> consumeBuffer(int nextBufferToConsume, Queue<Buffer> errorBuffers) throws Throwable;
 
     /**
      * Get dataType of next buffer to consume.
@@ -43,7 +45,7 @@ public interface BufferConsumeView {
      * @param nextBufferToConsume next buffer index to consume
      * @return next buffer's dataType. If not found in memory, return {@link DataType#NONE}.
      */
-    DataType peekNextToConsumeDataType(int nextBufferToConsume);
+    DataType peekNextToConsumeDataType(int nextBufferToConsume, Queue<Buffer> errorBuffers);
 
     /**
      * Get the number of buffers backlog.

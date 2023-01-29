@@ -496,12 +496,12 @@ class LocalDiskDataManagerTest {
 
         @Override
         public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(
-                int nextBufferToConsume) {
+                int nextBufferToConsume, Queue<Buffer> errorBuffers) {
             return Optional.empty();
         }
 
         @Override
-        public Buffer.DataType peekNextToConsumeDataType(int nextBufferToConsume) {
+        public Buffer.DataType peekNextToConsumeDataType(int nextBufferToConsume, Queue<Buffer> errorBuffers) {
             return Buffer.DataType.NONE;
         }
 

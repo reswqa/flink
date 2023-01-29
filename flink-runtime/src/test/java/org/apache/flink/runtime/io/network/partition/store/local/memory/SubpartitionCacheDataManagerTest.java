@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -174,7 +175,7 @@ class SubpartitionCacheDataManagerTest {
                 subpartitionCacheDataManager.registerNewConsumer(ConsumerId.DEFAULT);
         ArrayList<Optional<BufferAndBacklog>> bufferAndBacklogOpts = new ArrayList<>();
         for (int i = 0; i < numDataBuffers + 1; i++) {
-            bufferAndBacklogOpts.add(consumer.consumeBuffer(i));
+            bufferAndBacklogOpts.add(consumer.consumeBuffer(i, new ArrayDeque<>()));
         }
         checkConsumedBufferAndNextDataType(
                 numRecordsPerBuffer, bufferDecompressor, expectedRecords, bufferAndBacklogOpts);
@@ -214,8 +215,8 @@ class SubpartitionCacheDataManagerTest {
         subpartitionCacheDataManager.spillSubpartitionBuffers(toStartSpilling, spilledDoneFuture);
 
         // consume buffer 0, 1
-        consumer.consumeBuffer(0);
-        consumer.consumeBuffer(1);
+        consumer.consumeBuffer(0, new ArrayDeque<>());
+        consumer.consumeBuffer(1, new ArrayDeque<>());
 
         checkBufferIndex(
                 subpartitionCacheDataManager.getBuffersSatisfyStatus(

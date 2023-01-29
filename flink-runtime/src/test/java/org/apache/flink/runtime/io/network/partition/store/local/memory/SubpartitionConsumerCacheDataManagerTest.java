@@ -52,7 +52,7 @@ class SubpartitionConsumerCacheDataManagerTest {
                 createSubpartitionConsumerMemoryDataManager(memoryDataManagerOperation);
 
         subpartitionConsumerCacheDataManager.addBuffer(createBufferContext(0, false));
-        assertThat(subpartitionConsumerCacheDataManager.peekNextToConsumeDataType(1))
+        assertThat(subpartitionConsumerCacheDataManager.peekNextToConsumeDataType(1, new ArrayDeque<>()))
                 .isEqualTo(Buffer.DataType.NONE);
     }
 
@@ -72,7 +72,7 @@ class SubpartitionConsumerCacheDataManagerTest {
         buffer1.release();
         buffer2.release();
 
-        assertThat(subpartitionConsumerCacheDataManager.peekNextToConsumeDataType(2))
+        assertThat(subpartitionConsumerCacheDataManager.peekNextToConsumeDataType(2, new ArrayDeque<>()))
                 .isEqualTo(Buffer.DataType.EVENT_BUFFER);
     }
 
@@ -84,7 +84,7 @@ class SubpartitionConsumerCacheDataManagerTest {
                 createSubpartitionConsumerMemoryDataManager(memoryDataManagerOperation);
 
         subpartitionConsumerCacheDataManager.addBuffer(createBufferContext(0, false));
-        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(1)).isNotPresent();
+        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(1, new ArrayDeque<>())).isNotPresent();
     }
 
     @Test
@@ -103,7 +103,7 @@ class SubpartitionConsumerCacheDataManagerTest {
         buffer1.release();
         buffer2.release();
 
-        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(2)).isPresent();
+        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(2, new ArrayDeque<>())).isPresent();
     }
 
     @Test
@@ -116,7 +116,7 @@ class SubpartitionConsumerCacheDataManagerTest {
         subpartitionConsumerCacheDataManager.addBuffer(createBufferContext(0, false));
 
         Optional<ResultSubpartition.BufferAndBacklog> bufferOpt =
-                subpartitionConsumerCacheDataManager.consumeBuffer(0);
+                subpartitionConsumerCacheDataManager.consumeBuffer(0, new ArrayDeque<>());
         assertThat(bufferOpt)
                 .hasValueSatisfying(
                         (bufferAndBacklog ->
@@ -136,21 +136,21 @@ class SubpartitionConsumerCacheDataManagerTest {
         subpartitionConsumerCacheDataManager.addInitialBuffers(initialBuffers);
         subpartitionConsumerCacheDataManager.addBuffer(createBufferContext(2, true));
 
-        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(0))
+        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(0, new ArrayDeque<>()))
                 .hasValueSatisfying(
                         bufferAndBacklog -> {
                             assertThat(bufferAndBacklog.getSequenceNumber()).isEqualTo(0);
                             assertThat(bufferAndBacklog.buffer().getDataType())
                                     .isEqualTo(Buffer.DataType.DATA_BUFFER);
                         });
-        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(1))
+        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(1, new ArrayDeque<>()))
                 .hasValueSatisfying(
                         bufferAndBacklog -> {
                             assertThat(bufferAndBacklog.getSequenceNumber()).isEqualTo(1);
                             assertThat(bufferAndBacklog.buffer().getDataType())
                                     .isEqualTo(Buffer.DataType.DATA_BUFFER);
                         });
-        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(2))
+        assertThat(subpartitionConsumerCacheDataManager.consumeBuffer(2, new ArrayDeque<>()))
                 .hasValueSatisfying(
                         bufferAndBacklog -> {
                             assertThat(bufferAndBacklog.getSequenceNumber()).isEqualTo(2);

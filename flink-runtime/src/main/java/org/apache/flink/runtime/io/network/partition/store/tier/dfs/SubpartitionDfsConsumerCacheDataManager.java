@@ -31,6 +31,7 @@ import javax.annotation.concurrent.GuardedBy;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -93,7 +94,7 @@ public class SubpartitionDfsConsumerCacheDataManager implements BufferConsumeVie
     @SuppressWarnings("FieldAccessNotGuarded")
     // Note that: callWithLock ensure that code block guarded by resultPartitionReadLock and
     // subpartitionLock.
-    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int toConsumeIndex) {
+    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int toConsumeIndex, Queue<Buffer> errorBuffers) {
         Optional<Tuple2<BufferContext, Buffer.DataType>> bufferAndNextDataType =
                 callWithLock(
                         () -> {
@@ -130,7 +131,7 @@ public class SubpartitionDfsConsumerCacheDataManager implements BufferConsumeVie
     // Note that: callWithLock ensure that code block guarded by resultPartitionReadLock and
     // consumerLock.
     @Override
-    public Buffer.DataType peekNextToConsumeDataType(int nextToConsumeIndex) {
+    public Buffer.DataType peekNextToConsumeDataType(int nextToConsumeIndex, Queue<Buffer> errorBuffers) {
         return callWithLock(() -> peekNextToConsumeDataTypeInternal(nextToConsumeIndex));
     }
 

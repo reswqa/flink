@@ -230,9 +230,9 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
     }
 
     @Override
-    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int nextBufferToConsume)
+    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int nextBufferToConsume, Queue<Buffer> errorBuffers)
             throws Throwable {
-        if (!checkAndGetFirstBufferIndexOrError(nextBufferToConsume).isPresent()) {
+        if (!checkAndGetFirstBufferIndexOrError(nextBufferToConsume, errorBuffers).isPresent()) {
             return Optional.empty();
         }
 
@@ -260,11 +260,11 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
     }
 
     @Override
-    public Buffer.DataType peekNextToConsumeDataType(int nextBufferToConsume) {
+    public Buffer.DataType peekNextToConsumeDataType(int nextBufferToConsume, Queue<Buffer> errorBuffers) {
         Buffer.DataType dataType = Buffer.DataType.NONE;
         try {
             dataType =
-                    checkAndGetFirstBufferIndexOrError(nextBufferToConsume)
+                    checkAndGetFirstBufferIndexOrError(nextBufferToConsume, errorBuffers)
                             .map(BufferIndexOrError::getDataType)
                             .orElse(Buffer.DataType.NONE);
         } catch (Throwable throwable) {
@@ -287,7 +287,7 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
     //  Internal Methods
     // ------------------------------------------------------------------------
 
-    private Optional<BufferIndexOrError> checkAndGetFirstBufferIndexOrError(int expectedBufferIndex)
+    private Optional<BufferIndexOrError> checkAndGetFirstBufferIndexOrError(int expectedBufferIndex, Queue<Buffer> errorBuffers)
             throws Throwable {
         if (loadedBuffers.isEmpty()) {
             return Optional.empty();
@@ -295,7 +295,7 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
 
         BufferIndexOrError peek = loadedBuffers.peek();
         while (!peek.getThrowable().isPresent() && peek.getIndex() < expectedBufferIndex) {
-            loadedBuffers.poll();
+            pollAndRecycleBuffer(loadedBuffers, errorBuffers);
             peek = loadedBuffers.peek();
             if (peek == null) {
                 return Optional.empty();
@@ -309,6 +309,13 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
         }
 
         return Optional.of(peek);
+    }
+
+    private void pollAndRecycleBuffer(Deque<BufferIndexOrError> loadedBuffers, Queue<Buffer> errorBuffers){
+        BufferIndexOrError peek = loadedBuffers.peek();
+        checkNotNull(peek);
+        errorBuffers.add(checkNotNull(peek.getBuffer().get()));
+        loadedBuffers.poll();
     }
 
     private void moveFileOffsetToBuffer(int bufferIndex) throws IOException {
