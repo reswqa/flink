@@ -23,15 +23,14 @@ import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferBuilder;
 import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferIndexAndChannel;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferWithIdentity;
 import org.apache.flink.runtime.io.network.partition.store.common.CacheDataSpiller;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
-import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.FutureUtils;
-import org.apache.flink.util.function.SupplierWithException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +47,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /** This class is responsible for managing cached buffers data before flush to local files. */
 public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataManagerOperation {
@@ -68,8 +64,6 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     private final RegionBufferIndexTracker regionBufferIndexTracker;
 
     private final BufferPoolHelper bufferPoolHelper;
-
-    private final Lock lock;
 
     private final AtomicInteger numUnSpillBuffers = new AtomicInteger(0);
 
@@ -96,18 +90,11 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
         this.regionBufferIndexTracker = regionBufferIndexTracker;
         this.subpartitionCacheDataManagers = new SubpartitionCacheDataManager[numSubpartitions];
 
-        ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
-        this.lock = readWriteLock.writeLock();
-
         this.subpartitionViewOperationsMap = new ArrayList<>(numSubpartitions);
         for (int subpartitionId = 0; subpartitionId < numSubpartitions; ++subpartitionId) {
             subpartitionCacheDataManagers[subpartitionId] =
                     new SubpartitionCacheDataManager(
-                            subpartitionId,
-                            bufferSize,
-                            readWriteLock.readLock(),
-                            bufferCompressor,
-                            this);
+                            subpartitionId, bufferSize, bufferCompressor, this);
             subpartitionViewOperationsMap.add(new ConcurrentHashMap<>());
         }
         bufferPoolHelper.registerSubpartitionTieredManager(
@@ -154,14 +141,13 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
                 subpartitionViewOperationsMap.get(subpartitionId).put(consumerId, viewOperations);
         Preconditions.checkState(
                 oldView == null, "Each subpartition view should have unique consumerId.");
-        //return getSubpartitionMemoryDataManager(subpartitionId).registerNewConsumer(consumerId);
+        // return getSubpartitionMemoryDataManager(subpartitionId).registerNewConsumer(consumerId);
         return null;
     }
 
     /** Close this {@link CacheDataManager}, it means no data can append to memory. */
     public void close() {
-        TsSpillingStrategy.Decision decision =
-                callWithLock(() -> spillStrategy.onResultPartitionClosed(this));
+        TsSpillingStrategy.Decision decision = spillStrategy.onResultPartitionClosed(this);
         handleDecision(Optional.of(decision));
         spiller.close();
     }
@@ -370,14 +356,5 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
 
     private void recycleBuffer(MemorySegment buffer) {
         bufferPoolHelper.recycleBuffer(buffer, TieredStoreMode.TieredType.IN_LOCAL, false);
-    }
-
-    private <T, R extends Exception> T callWithLock(SupplierWithException<T, R> callable) throws R {
-        try {
-            lock.lock();
-            return callable.get();
-        } finally {
-            lock.unlock();
-        }
     }
 }

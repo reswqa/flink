@@ -302,7 +302,7 @@ final class BoundedBlockingSubpartition extends ResultSubpartition {
         // Nothing to do.
     }
 
-    int getBuffersInBacklogUnsafe() {
+    public int getBuffersInBacklogUnsafe() {
         return numDataBuffersWritten;
     }
 

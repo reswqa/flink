@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 import static org.apache.flink.runtime.io.network.partition.store.TieredStoreTestUtils.createBufferBuilder;
@@ -60,8 +59,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Tests for {@link SubpartitionCacheDataManager}. */
 class SubpartitionCacheDataManagerTest {
     private static final int SUBPARTITION_ID = 0;
-
-    private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private static final int RECORD_SIZE = Long.BYTES;
 
@@ -119,10 +116,10 @@ class SubpartitionCacheDataManagerTest {
         assertThat(finishedBuffers).hasValue(2);
     }
 
-    //@ParameterizedTest
-    //@ValueSource(strings = {"LZ4", "LZO", "ZSTD", "NULL"})
-    //@Ignore
-    //void testCompressBufferAndConsume(String compressionFactoryName) throws Exception {
+    // @ParameterizedTest
+    // @ValueSource(strings = {"LZ4", "LZO", "ZSTD", "NULL"})
+    // @Ignore
+    // void testCompressBufferAndConsume(String compressionFactoryName) throws Exception {
     //    final int numDataBuffers = 10;
     //    final int numRecordsPerBuffer = 10;
     //    // write numRecordsPerBuffer long record to one buffer, as a single long is
@@ -178,10 +175,10 @@ class SubpartitionCacheDataManagerTest {
     //                        assertThat(consumed.getBufferIndex())
     //                                .isEqualTo(expected.getBufferIndex());
     //                    });
-    //}
+    // }
 
-    //@Test
-    //void testGetBuffersSatisfyStatus() throws Exception {
+    // @Test
+    // void testGetBuffersSatisfyStatus() throws Exception {
     //    TestingCacheDataManagerOperation memoryDataManagerOperation =
     //            TestingCacheDataManagerOperation.builder()
     //                    .setRequestBufferFromPoolSupplier(() -> createBufferBuilder(RECORD_SIZE))
@@ -247,7 +244,7 @@ class SubpartitionCacheDataManagerTest {
     //                    SpillStatus.NOT_SPILL,
     //                    fromStatusAndConsumerId(ConsumeStatus.NOT_CONSUMED, ConsumerId.DEFAULT)),
     //            Collections.singletonList(3));
-    //}
+    // }
 
     @Test
     void testSpillSubpartitionBuffers() throws Exception {
@@ -459,11 +456,7 @@ class SubpartitionCacheDataManagerTest {
             @Nullable BufferCompressor bufferCompressor) {
         SubpartitionCacheDataManager subpartitionCacheDataManager =
                 new SubpartitionCacheDataManager(
-                        SUBPARTITION_ID,
-                        bufferSize,
-                        lock.readLock(),
-                        bufferCompressor,
-                        cacheDataManagerOperation);
+                        SUBPARTITION_ID, bufferSize, bufferCompressor, cacheDataManagerOperation);
         subpartitionCacheDataManager.setOutputMetrics(createTestingOutputMetrics());
         return subpartitionCacheDataManager;
     }
