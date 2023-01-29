@@ -32,8 +32,6 @@ import org.apache.flink.runtime.io.network.buffer.BufferConsumerWithPartialRecor
 import org.apache.flink.runtime.io.network.logger.NetworkActionsLogger;
 import org.apache.flink.runtime.io.network.partition.consumer.EndOfChannelStateEvent;
 
-import org.apache.flink.runtime.io.network.partition.store.tier.local.memory.LocalMemoryDataManagerOperations;
-
 import org.apache.flink.shaded.guava30.com.google.common.collect.Iterators;
 
 import org.slf4j.Logger;
@@ -137,8 +135,6 @@ public class PipelinedSubpartition extends ResultSubpartition
 
     int sequenceNumber = 0;
 
-    @Nullable private LocalMemoryDataManagerOperations localMemoryDataManagerOperations;
-
     // ------------------------------------------------------------------------
 
     PipelinedSubpartition(
@@ -149,20 +145,6 @@ public class PipelinedSubpartition extends ResultSubpartition
                 receiverExclusiveBuffersPerChannel >= 0,
                 "Buffers per channel must be non-negative.");
         this.receiverExclusiveBuffersPerChannel = receiverExclusiveBuffersPerChannel;
-    }
-
-    public PipelinedSubpartition(
-            int index,
-            int receiverExclusiveBuffersPerChannel,
-            ResultPartition parent,
-            LocalMemoryDataManagerOperations localMemoryDataManagerOperations) {
-        super(index, parent);
-
-        checkArgument(
-                receiverExclusiveBuffersPerChannel >= 0,
-                "Buffers per channel must be non-negative.");
-        this.receiverExclusiveBuffersPerChannel = receiverExclusiveBuffersPerChannel;
-        this.localMemoryDataManagerOperations = localMemoryDataManagerOperations;
     }
 
     @Override
@@ -202,7 +184,6 @@ public class PipelinedSubpartition extends ResultSubpartition
     }
 
     private int add(BufferConsumer bufferConsumer, int partialRecordLength, boolean finish) {
-        LOG.debug("fuck unicastBufferBuilders 4");
         checkNotNull(bufferConsumer);
 
         final boolean notifyDataAvailable;
@@ -479,7 +460,7 @@ public class PipelinedSubpartition extends ResultSubpartition
     }
 
     @Nullable
-    public BufferAndBacklog pollBuffer() {
+    BufferAndBacklog pollBuffer() {
         synchronized (buffers) {
             if (isBlocked) {
                 return null;
@@ -555,19 +536,12 @@ public class PipelinedSubpartition extends ResultSubpartition
                     buffer,
                     parent.getOwningTaskName(),
                     subpartitionInfo);
-            int currentSequenceNumber = sequenceNumber;
-            boolean isLastBufferInSegment = false;
-            if (localMemoryDataManagerOperations != null) {
-                isLastBufferInSegment =
-                        localMemoryDataManagerOperations.isLastRecordInSegment(
-                                subpartitionInfo.getSubPartitionIdx(), currentSequenceNumber);
-            }
             return new BufferAndBacklog(
                     buffer,
                     getBuffersInBacklogUnsafe(),
                     isDataAvailableUnsafe() ? getNextBufferTypeUnsafe() : Buffer.DataType.NONE,
                     sequenceNumber++,
-                    isLastBufferInSegment);
+                    false);
         }
     }
 
@@ -580,7 +554,7 @@ public class PipelinedSubpartition extends ResultSubpartition
         completeChannelStateFuture(Collections.emptyList(), null);
     }
 
-    public void resumeConsumption() {
+    void resumeConsumption() {
         synchronized (buffers) {
             checkState(isBlocked, "Should be blocked by checkpoint.");
 
@@ -730,7 +704,7 @@ public class PipelinedSubpartition extends ResultSubpartition
         return totalNumberOfBytes;
     }
 
-    public Throwable getFailureCause() {
+    Throwable getFailureCause() {
         return parent.getFailureCause();
     }
 

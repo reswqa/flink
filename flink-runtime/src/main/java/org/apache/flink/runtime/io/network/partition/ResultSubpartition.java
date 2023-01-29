@@ -103,7 +103,7 @@ public abstract class ResultSubpartition {
     public abstract boolean isReleased();
 
     /** Gets the number of non-event buffers in this subpartition. */
-    abstract int getBuffersInBacklogUnsafe();
+    protected abstract int getBuffersInBacklogUnsafe();
 
     /**
      * Makes a best effort to get the current size of the queue. This method must not acquire locks
