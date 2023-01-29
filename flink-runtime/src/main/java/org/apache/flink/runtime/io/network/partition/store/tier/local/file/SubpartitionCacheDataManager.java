@@ -249,7 +249,6 @@ public class SubpartitionCacheDataManager {
                                     targetChannel,
                                     consumerId,
                                     cacheDataManagerOperation);
-                    LOG.debug("%%% new conConsumer add allBuffers, {}", allBuffers.size());
                     newConsumer.addInitialBuffers(allBuffers);
                     consumerMap.put(consumerId, newConsumer);
                     return newConsumer;
@@ -279,7 +278,6 @@ public class SubpartitionCacheDataManager {
         BufferContext bufferContext =
                 new BufferContext(
                         buffer, finishedBufferIndex, targetChannel, isLastRecordInSegment);
-        LOG.debug("%%% add a finished Event");
         addFinishedBuffer(bufferContext);
         cacheDataManagerOperation.onBufferFinished();
     }
@@ -317,17 +315,12 @@ public class SubpartitionCacheDataManager {
                     checkNotNull(
                             unfinishedBuffers.peek(), "Expect enough capacity for the record.");
             currentWritingBuffer.append(record);
-            LOG.debug("%%% add a finished record1");
             if (currentWritingBuffer.isFull() && record.hasRemaining()) {
-                LOG.debug("%%% add a finished record2");
                 finishCurrentWritingBuffer(false);
             } else if (currentWritingBuffer.isFull() && !record.hasRemaining()) {
-                LOG.debug("%%% add a finished record3");
                 finishCurrentWritingBuffer(isLastRecordInSegment);
             } else if (!currentWritingBuffer.isFull() && !record.hasRemaining()) {
-                LOG.debug("%%% add a finished record4");
                 if (isLastRecordInSegment) {
-                    LOG.debug("%%% add a finished record5");
                     finishCurrentWritingBuffer(true);
                 }
             }
@@ -345,11 +338,9 @@ public class SubpartitionCacheDataManager {
 
     private void finishCurrentWritingBuffer(boolean isLastBufferInSegment) {
         BufferBuilder currentWritingBuffer = unfinishedBuffers.poll();
-        LOG.debug("%%% add a finished record6");
         if (currentWritingBuffer == null) {
             return;
         }
-        LOG.debug("%%% add a finished record7");
         currentWritingBuffer.finish();
         BufferConsumer bufferConsumer = currentWritingBuffer.createBufferConsumerFromBeginning();
         Buffer buffer = bufferConsumer.build();
@@ -387,13 +378,11 @@ public class SubpartitionCacheDataManager {
         List<ConsumerId> needNotify = new ArrayList<>(consumerMap.size());
         runWithLock(
                 () -> {
-                    LOG.debug("%%% add a finished Buffer");
                     finishedBufferIndex++;
                     allBuffers.add(bufferContext);
                     bufferIndexToContexts.put(
                             bufferContext.getBufferIndexAndChannel().getBufferIndex(),
                             bufferContext);
-                    LOG.debug("%%% add a finished Buffer, {}, {}", consumerMap.entrySet().size(), allBuffers.size());
                     for (Map.Entry<ConsumerId, SubpartitionConsumerCacheDataManager> consumerEntry :
                             consumerMap.entrySet()) {
                         if (consumerEntry.getValue().addBuffer(bufferContext)) {
@@ -415,7 +404,6 @@ public class SubpartitionCacheDataManager {
     @GuardedBy("subpartitionLock")
     private void trimHeadingReleasedBuffers(Deque<BufferContext> bufferQueue) {
         while (!bufferQueue.isEmpty() && bufferQueue.peekFirst().isReleased()) {
-            LOG.debug("%%% I'm trying to remove Buffer.. ");
             bufferQueue.removeFirst();
         }
     }
@@ -428,7 +416,6 @@ public class SubpartitionCacheDataManager {
         }
         bufferContext.release();
         // remove released buffers from head lazy.
-        LOG.debug("%%% I'm trying to release Buffer.. ");
         trimHeadingReleasedBuffers(allBuffers);
     }
 

@@ -103,14 +103,12 @@ class CreditBasedSequenceNumberingViewReader
                 throw new IllegalStateException("Subpartition already requested");
             }
         }
-        LOG.debug("%%% notify available when thd reader is created..");
         notifyDataAvailable();
     }
 
     @Override
     public void addCredit(int creditDeltas) {
         numCreditsAvailable += creditDeltas;
-        LOG.debug("%%% {} is adding Credit! add {}, result is {}", subpartitionView.getTaskName(), creditDeltas, numCreditsAvailable);
     }
 
     @Override
@@ -150,7 +148,6 @@ class CreditBasedSequenceNumberingViewReader
     public ResultSubpartitionView.AvailabilityWithBacklog getAvailabilityAndBacklog() {
         ResultSubpartitionView.AvailabilityWithBacklog availabilityAndBacklog = subpartitionView.getAvailabilityAndBacklog(
                 numCreditsAvailable);
-        LOG.debug("%%% {} it's PRQ is trying to get the backlog, backlog is {}, numCreditsAvailable is {}, isAvailable? {}", subpartitionView.getTaskName(), availabilityAndBacklog.getBacklog(), numCreditsAvailable, availabilityAndBacklog.isAvailable());
         return availabilityAndBacklog;
     }
 
@@ -205,12 +202,10 @@ class CreditBasedSequenceNumberingViewReader
             if (next.buffer().isBuffer() && --numCreditsAvailable < 0) {
                 throw new IllegalStateException("no credit available");
             }
-            LOG.debug("{} is trying get NextDataType", this.subpartitionView.getTaskName());
             final Buffer.DataType nextDataType = getNextDataType(next);
             return new BufferAndAvailability(
                     next.buffer(), nextDataType, next.buffersInBacklog(), next.getSequenceNumber());
         } else {
-            LOG.debug("None");
             return null;
         }
     }
@@ -242,7 +237,6 @@ class CreditBasedSequenceNumberingViewReader
 
     @Override
     public void notifyPriorityEvent(int prioritySequenceNumber) {
-        LOG.debug("%%% notify available when notifyPriorityEvent");
         notifyDataAvailable();
     }
 

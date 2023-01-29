@@ -161,7 +161,6 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     public void close() {
         TsSpillingStrategy.Decision decision =
                 callWithLock(() -> spillStrategy.onResultPartitionClosed(this));
-        LOG.debug("%%% release buffer when close");
         handleDecision(Optional.of(decision));
         spiller.close();
     }
@@ -250,13 +249,11 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     public void onBufferConsumed(BufferIndexAndChannel consumedBuffer) {
         Optional<TsSpillingStrategy.Decision> decision =
                 spillStrategy.onBufferConsumed(consumedBuffer);
-        LOG.debug("%%% release buffer when onBufferConsumed");
         handleDecision(decision);
     }
 
     @Override
     public void onBufferFinished() {
-        LOG.debug("%%% release buffer when buffer finished..");
         Optional<TsSpillingStrategy.Decision> decision =
                 spillStrategy.onBufferFinished(numUnSpillBuffers.incrementAndGet(), getPoolSize());
         handleDecision(decision);
@@ -308,7 +305,6 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     }
 
     private void flushSubpartitionCachedBuffers() {
-        LOG.debug("%%% release buffer when flushSubpartitionCachedBuffers");
         TsSpillingStrategy.Decision decision = spillStrategy.forceTriggerFlushCachedBuffers(this);
         spillBuffers(decision.getBufferToSpill());
         releaseBuffers(decision.getBufferToRelease());

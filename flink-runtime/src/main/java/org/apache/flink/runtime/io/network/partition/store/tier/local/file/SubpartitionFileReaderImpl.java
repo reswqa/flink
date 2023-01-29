@@ -166,8 +166,6 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
                 buffers.add(segment);
                 throw throwable;
             }
-
-            LOG.debug("%%% buffers are loaded, size is {}", loadedBuffers.size());
             loadedBuffers.add(BufferIndexOrError.newBuffer(buffer, indexToLoad));
             bufferIndexManager.updateLastLoaded(indexToLoad);
             cachedRegionManager.advance(
@@ -175,7 +173,6 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
             ++numLoaded;
         }
 
-        LOG.debug("%%% judge if notify {}, {}", loadedBuffers.size(), numLoaded);
         if (loadedBuffers.size() <= numLoaded) {
             operations.notifyDataAvailable();
         }
@@ -421,7 +418,7 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
          * Maps the given buffer index to the offset in file.
          *
          * @return a tuple of {@code <numSkip,offset>}. The offset of the given buffer index can be
-         *     derived by starting from the {@code offset} and skipping {@code numSkip} buffers.
+         *         derived by starting from the {@code offset} and skipping {@code numSkip} buffers.
          */
         private Tuple2<Integer, Long> getNumSkipAndFileOffset(int bufferIndex) {
             updateCachedRegionIfNeeded(bufferIndex);

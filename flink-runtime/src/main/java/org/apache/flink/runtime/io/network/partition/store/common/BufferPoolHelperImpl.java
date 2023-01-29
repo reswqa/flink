@@ -233,7 +233,6 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     @Override
     public void checkNeedFlushCachedBuffers() {
-        LOG.debug("{} is checking", taskName);
         int availableBuffers = bufferPool.getNetworkBufferPoolAvailableBuffers();
         checkState(availableBuffers >= 0);
         int totalBuffers = bufferPool.getNetworkBufferPoolTotalBuffers();
@@ -242,13 +241,11 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         if ((numTotalCacheBuffers.get() + numInMemoryBuffers.get() < numTriggerFlushBuffers)
                         && (numTotalCacheBuffers.get() < 64) && availableRatio < 0.8
                 || !isTriggeringFlush.isDone()) {
-            LOG.debug("{} is checking1", taskName);
             return;
         }
 
         isTriggeringFlush = new CompletableFuture<>();
         sortToFlushSubpartitions();
-        LOG.debug("{} is checking2", taskName);
         notifySubpartitionFlush();
         isTriggeringFlush.complete(null);
     }
@@ -294,18 +291,10 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     private void notifySubpartitionFlush() {
         int numMaxNotified = subpartitionCachedBuffersCounters.size();
-        LOG.debug("{} is checking3", taskName);
         while ((numTotalCacheBuffers.get() + numInMemoryBuffers.get() >= numStopNotifyFlushBuffers
                 && numMaxNotified > 0)) {
-            LOG.debug("{} is checking4", taskName);
             SubpartitionCachedBuffersCounter buffersCounter =
                     checkNotNull(subpartitionCachedBuffersCounters.poll());
-            LOG.debug(
-                    "{} is checking5, Tier is {}, Subpartition Id is {} , num caches {}",
-                    taskName,
-                    buffersCounter.subpartitionTier.tieredType,
-                    buffersCounter.subpartitionTier.subpartitionId,
-                    buffersCounter.numCachedBuffers.get());
             buffersCounter.getNotifyFlushListener().notifyFlushCachedBuffers();
             subpartitionCachedBuffersCounters.add(buffersCounter);
             numMaxNotified--;

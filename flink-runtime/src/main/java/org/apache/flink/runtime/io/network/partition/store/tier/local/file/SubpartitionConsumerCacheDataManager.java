@@ -82,11 +82,8 @@ public class SubpartitionConsumerCacheDataManager implements BufferConsumeView {
     @GuardedBy("consumerLock")
     // this method only called from subpartitionMemoryDataManager with write lock.
     public boolean addBuffer(BufferContext bufferContext) {
-        LOG.debug("%%% add a buffer, current size1 {}", unConsumedBuffers.size());
         unConsumedBuffers.add(bufferContext);
-        LOG.debug("%%% add a buffer, current size2 {}", unConsumedBuffers.size());
         trimHeadingReleasedBuffers();
-        LOG.debug("%%% add a buffer, current size3 {}", unConsumedBuffers.size());
         return unConsumedBuffers.size() <= 1;
     }
 
