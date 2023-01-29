@@ -71,11 +71,6 @@ public class SubpartitionConsumer
     // diskDataView can be null only before initialization.
     private BufferConsumeView diskDataView;
 
-    @Nullable
-    @GuardedBy("lock")
-    // memoryDataView can be null only before initialization.
-    private BufferConsumeView memoryDataView;
-
     public SubpartitionConsumer(BufferAvailabilityListener availabilityListener) {
         this.availabilityListener = availabilityListener;
     }
@@ -87,12 +82,7 @@ public class SubpartitionConsumer
         try {
             synchronized (lock) {
                 checkNotNull(diskDataView, "disk data view must be not null.");
-                checkNotNull(memoryDataView, "memory data view must be not null.");
-
                 Optional<BufferAndBacklog> bufferToConsume = tryReadFromDisk(errorBuffers);
-                if (!bufferToConsume.isPresent()) {
-                    bufferToConsume = memoryDataView.consumeBuffer(lastConsumedBufferIndex + 1, errorBuffers);
-                }
                 updateConsumingStatus(bufferToConsume);
                 return bufferToConsume.map(this::handleBacklog).orElse(null);
             }
@@ -100,9 +90,9 @@ public class SubpartitionConsumer
             // release subpartition reader outside of lock to avoid deadlock.
             releaseInternal(cause);
             throw new IOException("Failed to get next buffer.", cause);
-        }finally{
+        } finally {
             // release the buffer loaded by error
-            while (!errorBuffers.isEmpty()){
+            while (!errorBuffers.isEmpty()) {
                 errorBuffers.poll().recycleBuffer();
             }
         }
@@ -186,18 +176,6 @@ public class SubpartitionConsumer
         }
     }
 
-    /**
-     * Set {@link BufferConsumeView} for this subpartition, this method only called when {@link
-     * SubpartitionFileReader} is creating.
-     */
-    public void setMemoryDataView(BufferConsumeView memoryDataView) {
-        synchronized (lock) {
-            checkState(
-                    this.memoryDataView == null, "repeatedly set memory data view is not allowed.");
-            this.memoryDataView = memoryDataView;
-        }
-    }
-
     @Override
     public int unsynchronizedGetNumberOfQueuedBuffers() {
         return getSubpartitionBacklog();
@@ -216,10 +194,10 @@ public class SubpartitionConsumer
 
     @SuppressWarnings("FieldAccessNotGuarded")
     private int getSubpartitionBacklog() {
-        if (memoryDataView == null || diskDataView == null) {
+        if (diskDataView == null) {
             return 0;
         }
-        return Math.max(memoryDataView.getBacklog(), diskDataView.getBacklog());
+        return diskDataView.getBacklog();
     }
 
     private BufferAndBacklog handleBacklog(BufferAndBacklog bufferToConsume) {
@@ -234,24 +212,11 @@ public class SubpartitionConsumer
     }
 
     @GuardedBy("lock")
-    private Optional<BufferAndBacklog> tryReadFromDisk(Queue<Buffer> errorBuffers) throws Throwable {
+    private Optional<BufferAndBacklog> tryReadFromDisk(Queue<Buffer> errorBuffers)
+            throws Throwable {
         final int nextBufferIndexToConsume = lastConsumedBufferIndex + 1;
         return checkNotNull(diskDataView)
-                .consumeBuffer(nextBufferIndexToConsume, errorBuffers)
-                .map(
-                        bufferAndBacklog -> {
-                            if (bufferAndBacklog.getNextDataType() == Buffer.DataType.NONE) {
-                                return new BufferAndBacklog(
-                                        bufferAndBacklog.buffer(),
-                                        bufferAndBacklog.buffersInBacklog(),
-                                        checkNotNull(memoryDataView)
-                                                .peekNextToConsumeDataType(
-                                                        nextBufferIndexToConsume + 1, errorBuffers),
-                                        bufferAndBacklog.getSequenceNumber(),
-                                        bufferAndBacklog.isLastBufferInSegment());
-                            }
-                            return bufferAndBacklog;
-                        });
+                .consumeBuffer(nextBufferIndexToConsume, errorBuffers);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -274,7 +239,6 @@ public class SubpartitionConsumer
 
     private void releaseInternal(@Nullable Throwable throwable) {
         boolean releaseDiskView;
-        boolean releaseMemoryView;
         synchronized (lock) {
             if (isReleased) {
                 return;
@@ -282,7 +246,6 @@ public class SubpartitionConsumer
             isReleased = true;
             failureCause = throwable;
             releaseDiskView = diskDataView != null;
-            releaseMemoryView = memoryDataView != null;
         }
 
         if (throwable != null) {
@@ -292,10 +255,6 @@ public class SubpartitionConsumer
         if (releaseDiskView) {
             //noinspection FieldAccessNotGuarded
             diskDataView.releaseDataView();
-        }
-        if (releaseMemoryView) {
-            //noinspection FieldAccessNotGuarded
-            memoryDataView.releaseDataView();
         }
     }
 }

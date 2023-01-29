@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.io.network.partition.store.tier.local.file;
 
-import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
@@ -29,7 +28,6 @@ import org.apache.flink.runtime.io.network.partition.CheckpointedResultSubpartit
 import org.apache.flink.runtime.io.network.partition.PartitionNotFoundException;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
-import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
@@ -49,6 +47,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
@@ -154,14 +153,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
     }
 
     private TsSpillingStrategy getSpillingStrategy(TieredStoreConfiguration storeConfiguration) {
-        switch (TieredStoreMode.SpillingType.valueOf(storeConfiguration.getTieredStoreSpillingType())) {
-            case FULL:
-                return new FullSpillingStrategy(storeConfiguration);
-            case SELECTIVE:
-                return new SelectiveSpillingStrategy(storeConfiguration);
-            default:
-                throw new IllegalConfigurationException("Illegal spilling strategy.");
-        }
+        return new FullSpillingStrategy(storeConfiguration);
     }
 
     @Override
@@ -220,13 +212,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
         BufferConsumeView diskDataView =
                 localDiskDataManager.registerNewConsumer(
                         subpartitionId, consumerId, subpartitionConsumer);
-
-        BufferConsumeView memoryDataView =
-                checkNotNull(cacheDataManager)
-                        .registerNewConsumer(subpartitionId, consumerId, subpartitionConsumer);
-
         subpartitionConsumer.setDiskDataView(diskDataView);
-        subpartitionConsumer.setMemoryDataView(memoryDataView);
         return subpartitionConsumer;
     }
 
@@ -286,8 +272,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
 
     private static void checkMultipleConsumerIsAllowed(
             ConsumerId lastConsumerId, TieredStoreConfiguration storeConfiguration) {
-        if (TieredStoreMode.SpillingType.valueOf(storeConfiguration.getTieredStoreSpillingType())
-                == SELECTIVE) {
+        if (Objects.equals(storeConfiguration.getTieredStoreSpillingType(), SELECTIVE.toString())) {
             checkState(
                     lastConsumerId == null,
                     "Multiple consumer is not allowed for %s spilling strategy mode",

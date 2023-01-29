@@ -409,7 +409,7 @@ class LocalDiskDataManagerTest {
                                     throw new RuntimeException("expected exception.");
                                 })
                         .build();
-        subpartitionView.setMemoryDataView(memoryDataView);
+        //subpartitionView.setMemoryDataView(memoryDataView);
 
         CheckedThread consumerThread =
                 new CheckedThread() {

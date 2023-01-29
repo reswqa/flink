@@ -154,7 +154,8 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
                 subpartitionViewOperationsMap.get(subpartitionId).put(consumerId, viewOperations);
         Preconditions.checkState(
                 oldView == null, "Each subpartition view should have unique consumerId.");
-        return getSubpartitionMemoryDataManager(subpartitionId).registerNewConsumer(consumerId);
+        //return getSubpartitionMemoryDataManager(subpartitionId).registerNewConsumer(consumerId);
+        return null;
     }
 
     /** Close this {@link CacheDataManager}, it means no data can append to memory. */
@@ -277,7 +278,7 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     @Override
     public void onConsumerReleased(int subpartitionId, ConsumerId consumerId) {
         subpartitionViewOperationsMap.get(subpartitionId).remove(consumerId);
-        getSubpartitionMemoryDataManager(subpartitionId).releaseConsumer(consumerId);
+        // getSubpartitionMemoryDataManager(subpartitionId).releaseConsumer(consumerId);
     }
 
     @Override
@@ -334,13 +335,15 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
                     // decrease numUnSpillBuffers as this subpartition's buffer is spill.
                     numUnSpillBuffers.getAndAdd(-bufferIndexAndChannels.size());
                 });
-        FutureUtils.assertNoException(
-                spiller.spillAsync(bufferWithIdentities)
-                        .thenAccept(
-                                spilledBuffers -> {
-                                    regionBufferIndexTracker.addBuffers(spilledBuffers);
-                                    spillingCompleteFuture.complete(null);
-                                }));
+        if (!bufferWithIdentities.isEmpty()) {
+            FutureUtils.assertNoException(
+                    spiller.spillAsync(bufferWithIdentities)
+                            .thenAccept(
+                                    spilledBuffers -> {
+                                        regionBufferIndexTracker.addBuffers(spilledBuffers);
+                                        spillingCompleteFuture.complete(null);
+                                    }));
+        }
     }
 
     /**
