@@ -329,7 +329,7 @@ public class NettyShuffleEnvironmentOptions {
     public static final ConfigOption<String> TIERED_STORE_TIERS =
             key("tiered.store.tiers")
                     .stringType()
-                    .defaultValue(null)
+                    .defaultValue("MEMORY_LOCAL")
                     .withDescription(
                             "The tiers of Tiered Store");
 
@@ -337,7 +337,7 @@ public class NettyShuffleEnvironmentOptions {
     public static final ConfigOption<String> TIERED_STORE_SPILLING_TYPE =
             key("tiered.store.spilling.type")
                     .stringType()
-                    .defaultValue(null)
+                    .defaultValue("SELECTIVE")
                     .withDescription(
                             "The spilling type of Tiered Store");
 
