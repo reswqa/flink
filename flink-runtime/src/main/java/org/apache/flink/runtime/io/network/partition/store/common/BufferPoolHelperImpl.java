@@ -36,6 +36,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,7 +83,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
     private final AtomicInteger numTotalCacheBuffers = new AtomicInteger(0);
 
     private Queue<SubpartitionCachedBuffersCounter> subpartitionCachedBuffersCounters =
-            new PriorityQueue<>();
+            new PriorityBlockingQueue<>();
 
     private CompletableFuture<Void> isTriggeringFlush = FutureUtils.completedVoidFuture();
 
