@@ -32,7 +32,6 @@ import org.apache.flink.runtime.io.network.buffer.NetworkBuffer;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.ChannelStateHolder;
 import org.apache.flink.runtime.io.network.partition.CheckpointedResultSubpartition;
-import org.apache.flink.runtime.io.network.partition.PipelinedSubpartition;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
@@ -202,7 +201,7 @@ public class LocalMemoryDataManager
         //                + " this result partition.");
         for (int i = 0; i < subpartitions.length; i++) {
             subpartitions[i] =
-                    new PipelinedSubpartition(
+                    new SubpartitionLocalMemoryDataManager(
                             i,
                             configuredNetworkBuffersPerChannel,
                             tieredStoreResultPartition,
@@ -556,7 +555,7 @@ public class LocalMemoryDataManager
     public void setChannelStateWriter(ChannelStateWriter channelStateWriter) {
         for (final ResultSubpartition subpartition : subpartitions) {
             if (subpartition instanceof ChannelStateHolder) {
-                ((PipelinedSubpartition) subpartition).setChannelStateWriter(channelStateWriter);
+                ((SubpartitionLocalMemoryDataManager)subpartition).setChannelStateWriter(channelStateWriter);
             }
         }
     }
