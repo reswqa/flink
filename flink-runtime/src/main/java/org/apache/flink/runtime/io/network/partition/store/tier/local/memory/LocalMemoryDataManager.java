@@ -136,7 +136,7 @@ public class LocalMemoryDataManager
 
     private final int numSubpartitions;
 
-    private int numBytesInASegment = 50 * 32 * 1024;
+    private int numBytesInASegment = 10 * 32 * 1024;
 
     private final int bufferNumberInSegment = numBytesInASegment / 32 / 1024;
 
