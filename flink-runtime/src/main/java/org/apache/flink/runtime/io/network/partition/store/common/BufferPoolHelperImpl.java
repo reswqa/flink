@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -353,7 +352,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
     }
 
     private void sortToFlushSubpartitions() {
-        subpartitionBuffersCounters = new PriorityQueue<>(subpartitionBuffersCounters);
+        subpartitionBuffersCounters = new PriorityBlockingQueue<>(subpartitionBuffersCounters);
     }
 
     private void notifySubpartitionFlush() {
