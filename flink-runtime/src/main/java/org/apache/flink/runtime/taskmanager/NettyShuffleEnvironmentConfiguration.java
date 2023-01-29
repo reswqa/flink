@@ -101,9 +101,13 @@ public class NettyShuffleEnvironmentConfiguration {
 
     private final int maxOverdraftBuffersPerGate;
 
+    private final boolean isUsingTieredStore;
+
     @Nullable private final String baseDfsHomePath;
 
-    private final boolean isUsingTieredStore;
+    private final String tieredStoreTiers;
+
+    private final String tieredStoreSpillingType;
 
     public NettyShuffleEnvironmentConfiguration(
             int numNetworkBuffers,
@@ -128,7 +132,9 @@ public class NettyShuffleEnvironmentConfiguration {
             boolean connectionReuseEnabled,
             int maxOverdraftBuffersPerGate,
             @Nullable String baseDfsHomePath,
-            boolean isUsingTieredStore) {
+            boolean isUsingTieredStore,
+            String tieredStoreTiers,
+            String tieredStoreSpillingType) {
 
         this.numNetworkBuffers = numNetworkBuffers;
         this.networkBufferSize = networkBufferSize;
@@ -153,6 +159,8 @@ public class NettyShuffleEnvironmentConfiguration {
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
         this.baseDfsHomePath = baseDfsHomePath;
         this.isUsingTieredStore = isUsingTieredStore;
+        this.tieredStoreTiers = tieredStoreTiers;
+        this.tieredStoreSpillingType = tieredStoreSpillingType;
     }
 
     // ------------------------------------------------------------------------
@@ -251,6 +259,14 @@ public class NettyShuffleEnvironmentConfiguration {
 
     public boolean isUsingTieredStore() {
         return isUsingTieredStore;
+    }
+
+    public String getTieredStoreTiers() {
+        return tieredStoreTiers;
+    }
+
+    public String getTieredStoreSpillingType() {
+        return tieredStoreSpillingType;
     }
 
     // ------------------------------------------------------------------------
@@ -357,9 +373,13 @@ public class NettyShuffleEnvironmentConfiguration {
         boolean usingTieredStore =
                 configuration
                         .get(ExecutionOptions.BATCH_SHUFFLE_MODE)
-                        .equals(BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE_FULL) || configuration
-                        .get(ExecutionOptions.BATCH_SHUFFLE_MODE)
-                        .equals(BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE_SELECTIVE) ;
+                        .equals(BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE);
+
+        String tieredStoreTiers =
+                configuration.get(NettyShuffleEnvironmentOptions.TIERED_STORE_TIERS);
+
+        String tieredStoreSpillingType =
+                configuration.get(NettyShuffleEnvironmentOptions.TIERED_STORE_SPILLING_TYPE);
 
         return new NettyShuffleEnvironmentConfiguration(
                 numberOfNetworkBuffers,
@@ -384,7 +404,9 @@ public class NettyShuffleEnvironmentConfiguration {
                 connectionReuseEnabled,
                 maxOverdraftBuffersPerGate,
                 baseDfsHomePath,
-                usingTieredStore);
+                usingTieredStore,
+                tieredStoreTiers,
+                tieredStoreSpillingType);
     }
 
     /**

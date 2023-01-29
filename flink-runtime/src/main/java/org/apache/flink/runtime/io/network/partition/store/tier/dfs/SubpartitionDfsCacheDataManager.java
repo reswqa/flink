@@ -150,7 +150,7 @@ public class SubpartitionDfsCacheDataManager {
                 new CacheDataDfsFileSpiller(
                         jobID, resultPartitionID, targetChannel, baseDfsPath, ioExecutor);
         bufferPoolHelper.registerSubpartitionTieredManager(
-                targetChannel, TieredStoreMode.TieredType.DFS, this::flushCachedBuffers);
+                targetChannel, TieredStoreMode.TieredType.IN_DFS, this::flushCachedBuffers);
         this.isBroadcastOnly = isBroadcastOnly;
     }
 
@@ -390,12 +390,12 @@ public class SubpartitionDfsCacheDataManager {
     public BufferBuilder requestBufferFromPool() {
         MemorySegment segment =
                 bufferPoolHelper.requestMemorySegmentBlocking(
-                        targetChannel, TieredStoreMode.TieredType.DFS, false);
+                        targetChannel, TieredStoreMode.TieredType.IN_DFS, false);
         return new BufferBuilder(segment, this::recycleBuffer);
     }
 
     private void recycleBuffer(MemorySegment buffer) {
-        bufferPoolHelper.recycleBuffer(targetChannel, buffer, TieredStoreMode.TieredType.DFS, false);
+        bufferPoolHelper.recycleBuffer(targetChannel, buffer, TieredStoreMode.TieredType.IN_DFS, false);
     }
 
     @SuppressWarnings("FieldAccessNotGuarded")

@@ -29,6 +29,7 @@ import org.apache.flink.runtime.io.network.partition.CheckpointedResultSubpartit
 import org.apache.flink.runtime.io.network.partition.PartitionNotFoundException;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
+import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
@@ -52,6 +53,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.SpillingType.SELECTIVE;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
@@ -152,7 +154,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
     }
 
     private TsSpillingStrategy getSpillingStrategy(TieredStoreConfiguration storeConfiguration) {
-        switch (storeConfiguration.getSpillingStrategyType()) {
+        switch (TieredStoreMode.SpillingType.valueOf(storeConfiguration.getTieredStoreSpillingType())) {
             case FULL:
                 return new FullSpillingStrategy(storeConfiguration);
             case SELECTIVE:
@@ -284,12 +286,12 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
 
     private static void checkMultipleConsumerIsAllowed(
             ConsumerId lastConsumerId, TieredStoreConfiguration storeConfiguration) {
-        if (storeConfiguration.getSpillingStrategyType()
-                == TieredStoreConfiguration.SpillingStrategyType.SELECTIVE) {
+        if (TieredStoreMode.SpillingType.valueOf(storeConfiguration.getTieredStoreSpillingType())
+                == SELECTIVE) {
             checkState(
                     lastConsumerId == null,
                     "Multiple consumer is not allowed for %s spilling strategy mode",
-                    storeConfiguration.getSpillingStrategyType());
+                    storeConfiguration.getTieredStoreSpillingType());
         }
     }
 

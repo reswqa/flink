@@ -324,6 +324,24 @@ public class NettyShuffleEnvironmentOptions {
                                     + "if the DFS tier is used, this option must be specified, otherwise, "
                                     + "an exception maybe thrown.");
 
+
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<String> TIERED_STORE_TIERS =
+            key("tiered.store.tiers")
+                    .stringType()
+                    .defaultValue(null)
+                    .withDescription(
+                            "The tiers of Tiered Store");
+
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<String> TIERED_STORE_SPILLING_TYPE =
+            key("tiered.store.spilling.type")
+                    .stringType()
+                    .defaultValue(null)
+                    .withDescription(
+                            "The spilling type of Tiered Store");
+
+
     @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
     public static final ConfigOption<String> NETWORK_BLOCKING_SHUFFLE_TYPE =
             key("taskmanager.network.blocking-shuffle.type")

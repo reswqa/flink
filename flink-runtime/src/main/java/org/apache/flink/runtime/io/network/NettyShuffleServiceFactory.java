@@ -222,7 +222,9 @@ public class NettyShuffleServiceFactory
                         config.sortShuffleMinParallelism(),
                         config.isSSLEnabled(),
                         config.getMaxOverdraftBuffersPerGate(),
-                        config.getBaseDfsHomePath());
+                        config.getBaseDfsHomePath(),
+                        config.getTieredStoreTiers(),
+                        config.getTieredStoreSpillingType());
 
         SingleInputGateFactory singleInputGateFactory =
                 config.isUsingTieredStore()

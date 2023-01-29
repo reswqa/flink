@@ -20,7 +20,6 @@ package org.apache.flink.runtime.io.network.partition.store;
 
 import org.apache.flink.runtime.io.network.partition.hybrid.HsFullSpillingStrategy;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsSelectiveSpillingStrategy;
-import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingStrategy;
 
 import java.time.Duration;
 
@@ -49,16 +48,11 @@ public class TieredStoreConfiguration {
 
     private static final long DEFAULT_BUFFER_POLL_SIZE_CHECK_INTERVAL_MS = 1000;
 
-    private static final TieredStoreConfiguration.SpillingStrategyType
-            DEFAULT_SPILLING_STRATEGY_NAME = TieredStoreConfiguration.SpillingStrategyType.FULL;
-
     private final int maxBuffersReadAhead;
 
     private final Duration bufferRequestTimeout;
 
     private final int maxRequestedBuffers;
-
-    private final TieredStoreConfiguration.SpillingStrategyType spillingStrategyType;
 
     // For Memory Tier
     private final int configuredNetworkBuffersPerChannel;
@@ -87,7 +81,13 @@ public class TieredStoreConfiguration {
 
     private final long bufferPoolSizeCheckIntervalMs;
 
+    // For Tiered Store
+
     private final String baseDfsHomePath;
+
+    private final String tieredStoreTiers;
+
+    private final String tieredStoreSpillingType;
 
     private TieredStoreConfiguration(
             int maxBuffersReadAhead,
@@ -101,10 +101,11 @@ public class TieredStoreConfiguration {
             float tieredStoreBufferInMemoryRatio,
             float tieredStoreFlushBufferRatio,
             float tieredStoreTriggerFlushRatio,
-            TieredStoreConfiguration.SpillingStrategyType spillingStrategyType,
             long bufferPoolSizeCheckIntervalMs,
             String baseDfsHomePath,
-            int configuredNetworkBuffersPerChannel) {
+            int configuredNetworkBuffersPerChannel,
+            String tieredStoreTiers,
+            String tieredStoreSpillingType) {
         this.maxBuffersReadAhead = maxBuffersReadAhead;
         this.bufferRequestTimeout = bufferRequestTimeout;
         this.maxRequestedBuffers = maxRequestedBuffers;
@@ -117,20 +118,16 @@ public class TieredStoreConfiguration {
         this.tieredStoreBufferInMemoryRatio = tieredStoreBufferInMemoryRatio;
         this.tieredStoreFlushBufferRatio = tieredStoreFlushBufferRatio;
         this.tieredStoreTriggerFlushRatio = tieredStoreTriggerFlushRatio;
-        this.spillingStrategyType = spillingStrategyType;
         this.bufferPoolSizeCheckIntervalMs = bufferPoolSizeCheckIntervalMs;
         this.baseDfsHomePath = baseDfsHomePath;
         this.configuredNetworkBuffersPerChannel = configuredNetworkBuffersPerChannel;
+        this.tieredStoreTiers = tieredStoreTiers;
+        this.tieredStoreSpillingType = tieredStoreSpillingType;
     }
 
     public static TieredStoreConfiguration.Builder builder(
             int numSubpartitions, int numBuffersPerRequest) {
         return new TieredStoreConfiguration.Builder(numSubpartitions, numBuffersPerRequest);
-    }
-
-    /** Get {@link TieredStoreConfiguration.SpillingStrategyType} for hybrid shuffle mode. */
-    public TieredStoreConfiguration.SpillingStrategyType getSpillingStrategyType() {
-        return spillingStrategyType;
     }
 
     public int getMaxRequestedBuffers() {
@@ -212,10 +209,12 @@ public class TieredStoreConfiguration {
         return configuredNetworkBuffersPerChannel;
     }
 
-    /** Type of {@link HsSpillingStrategy}. */
-    public enum SpillingStrategyType {
-        FULL,
-        SELECTIVE
+    public String getTieredStoreTiers() {
+        return tieredStoreTiers;
+    }
+
+    public String getTieredStoreSpillingType() {
+        return tieredStoreSpillingType;
     }
 
     /** Builder for {@link TieredStoreConfiguration}. */
@@ -246,10 +245,11 @@ public class TieredStoreConfiguration {
 
         private String baseDfsHomePath = null;
 
-        private TieredStoreConfiguration.SpillingStrategyType spillingStrategyType =
-                DEFAULT_SPILLING_STRATEGY_NAME;
-
         private int configuredNetworkBuffersPerChannel;
+
+        private String tieredStoreTiers;
+
+        private String tieredStoreSpillingType;
 
         private final int numSubpartitions;
 
@@ -320,12 +320,6 @@ public class TieredStoreConfiguration {
             return this;
         }
 
-        public TieredStoreConfiguration.Builder setSpillingStrategyType(
-                TieredStoreConfiguration.SpillingStrategyType spillingStrategyType) {
-            this.spillingStrategyType = spillingStrategyType;
-            return this;
-        }
-
         public TieredStoreConfiguration.Builder setBufferPoolSizeCheckIntervalMs(
                 long bufferPoolSizeCheckIntervalMs) {
             this.bufferPoolSizeCheckIntervalMs = bufferPoolSizeCheckIntervalMs;
@@ -337,8 +331,19 @@ public class TieredStoreConfiguration {
             return this;
         }
 
-        public TieredStoreConfiguration.Builder setConfiguredNetworkBuffersPerChannel(int configuredNetworkBuffersPerChannel) {
+        public TieredStoreConfiguration.Builder setConfiguredNetworkBuffersPerChannel(
+                int configuredNetworkBuffersPerChannel) {
             this.configuredNetworkBuffersPerChannel = configuredNetworkBuffersPerChannel;
+            return this;
+        }
+
+        public TieredStoreConfiguration.Builder setTieredStoreTiers(String tieredStoreTiers) {
+            this.tieredStoreTiers = tieredStoreTiers;
+            return this;
+        }
+
+        public TieredStoreConfiguration.Builder setTieredStoreSpillingType(String tieredStoreSpillingType) {
+            this.tieredStoreSpillingType = tieredStoreSpillingType;
             return this;
         }
 
@@ -355,10 +360,11 @@ public class TieredStoreConfiguration {
                     tieredStoreBufferInMemoryRatio,
                     tieredStoreFlushBufferRatio,
                     tieredStoreTriggerFlushRatio,
-                    spillingStrategyType,
                     bufferPoolSizeCheckIntervalMs,
                     baseDfsHomePath,
-                    configuredNetworkBuffersPerChannel);
+                    configuredNetworkBuffersPerChannel,
+                    tieredStoreTiers,
+                    tieredStoreSpillingType);
         }
     }
 }

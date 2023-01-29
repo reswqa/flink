@@ -111,7 +111,7 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
             subpartitionViewOperationsMap.add(new ConcurrentHashMap<>());
         }
         bufferPoolHelper.registerSubpartitionTieredManager(
-                TieredStoreMode.TieredType.LOCAL, this::flushSubpartitionCachedBuffers);
+                TieredStoreMode.TieredType.IN_LOCAL, this::flushSubpartitionCachedBuffers);
     }
 
     // ------------------------------------
@@ -241,7 +241,7 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     public BufferBuilder requestBufferFromPool() throws InterruptedException {
         MemorySegment segment =
                 bufferPoolHelper.requestMemorySegmentBlocking(
-                        TieredStoreMode.TieredType.LOCAL, false);
+                        TieredStoreMode.TieredType.IN_LOCAL, false);
         return new BufferBuilder(segment, this::recycleBuffer);
     }
 
@@ -366,7 +366,7 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
     }
 
     private void recycleBuffer(MemorySegment buffer) {
-        bufferPoolHelper.recycleBuffer(buffer, TieredStoreMode.TieredType.LOCAL, false);
+        bufferPoolHelper.recycleBuffer(buffer, TieredStoreMode.TieredType.IN_LOCAL, false);
     }
 
     private <T, R extends Exception> T callWithLock(SupplierWithException<T, R> callable) throws R {

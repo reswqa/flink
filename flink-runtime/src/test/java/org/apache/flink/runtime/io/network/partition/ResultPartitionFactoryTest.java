@@ -167,7 +167,9 @@ public class ResultPartitionFactoryTest extends TestLogger {
                         sortShuffleMinParallelism,
                         false,
                         0,
-                        null);
+                        null,
+                        "",
+                        "");
 
         final ResultPartitionDeploymentDescriptor descriptor =
                 new ResultPartitionDeploymentDescriptor(

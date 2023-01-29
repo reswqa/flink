@@ -46,7 +46,6 @@ import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.util.IOUtils;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -365,6 +364,8 @@ class TieredStoreResultPartitionTest {
                         bufferPool,
                         TieredStoreConfiguration.builder(
                                         numSubpartitions, readBufferPool.getNumBuffersPerRequest())
+                                .setTieredStoreTiers("LOCAL")
+                                .setTieredStoreSpillingType("FULL")
                                 .setFullStrategyNumBuffersTriggerSpillingRatio(0.6f)
                                 .setFullStrategyReleaseBufferRatio(0.8f)
                                 .build());
@@ -412,22 +413,6 @@ class TieredStoreResultPartitionTest {
                 .isInstanceOf(PartitionNotFoundException.class);
     }
 
-    void testAvailability() throws Exception {
-        // final int numBuffers = 3;
-        //
-        // BufferPool bufferPool = globalPool.createBufferPool(numBuffers, numBuffers);
-        // TieredStoreResultPartition partition = createTieredStoreResultPartition(1, bufferPool);
-        //
-        // partition.emitRecord(ByteBuffer.allocate(bufferSize * numBuffers), 0);
-        // assertThat(partition.isAvailable()).isFalse();
-        //
-        //// release partition to recycle buffer.
-        // partition.close();
-        // partition.release();
-        //
-        // assertThat(partition.isAvailable()).isTrue();
-    }
-
     @Test
     void testMetricsUpdate() throws Exception {
         BufferPool bufferPool = globalPool.createBufferPool(3, 3);
@@ -455,8 +440,8 @@ class TieredStoreResultPartitionTest {
                         bufferPool,
                         TieredStoreConfiguration.builder(
                                         numSubpartitions, readBufferPool.getNumBuffersPerRequest())
-                                .setSpillingStrategyType(
-                                        TieredStoreConfiguration.SpillingStrategyType.SELECTIVE)
+                                .setTieredStoreTiers("LOCAL")
+                                .setTieredStoreSpillingType("SELECTIVE")
                                 .build())) {
             partition.createSubpartitionView(0, new NoOpBufferAvailablityListener());
             assertThatThrownBy(
@@ -478,8 +463,8 @@ class TieredStoreResultPartitionTest {
                         bufferPool,
                         TieredStoreConfiguration.builder(
                                         numSubpartitions, readBufferPool.getNumBuffersPerRequest())
-                                .setSpillingStrategyType(
-                                        TieredStoreConfiguration.SpillingStrategyType.FULL)
+                                .setTieredStoreTiers("LOCAL")
+                                .setTieredStoreSpillingType("FULL")
                                 .build())) {
             partition.createSubpartitionView(0, new NoOpBufferAvailablityListener());
             assertThatNoException()
@@ -592,6 +577,8 @@ class TieredStoreResultPartitionTest {
                 isBroadcastOnly,
                 TieredStoreConfiguration.builder(
                                 numSubpartitions, readBufferPool.getNumBuffersPerRequest())
+                        .setTieredStoreTiers("LOCAL")
+                        .setTieredStoreSpillingType("FULL")
                         .build());
     }
 
@@ -602,17 +589,13 @@ class TieredStoreResultPartitionTest {
             TieredStoreConfiguration tieredStoreConfiguration)
             throws IOException {
 
-        List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>> sortedTieredTypes =
-                new ArrayList<>();
-        sortedTieredTypes.add(
-                Pair.of(TieredStoreMode.TieredType.LOCAL, TieredStoreMode.StorageType.MEMORY));
         TieredStoreResultPartition tieredStoreResultPartition =
                 new TieredStoreResultPartition(
                         new JobID(),
                         "TieredStoreResultPartitionTest",
                         0,
                         new ResultPartitionID(),
-                        ResultPartitionType.TIERED_STORE_SELECTIVE,
+                        ResultPartitionType.TIERED_STORE,
                         numSubpartitions,
                         numSubpartitions,
                         readBufferPool,
@@ -623,7 +606,6 @@ class TieredStoreResultPartitionTest {
                         isBroadcastOnly,
                         tieredStoreConfiguration,
                         null,
-                        sortedTieredTypes,
                         () -> bufferPool,
                         null);
         taskIOMetricGroup =

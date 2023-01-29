@@ -105,10 +105,7 @@ public enum ResultPartitionType {
     HYBRID_SELECTIVE(
             false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER),
 
-    TIERED_STORE(false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER),
-
-    TIERED_STORE_SELECTIVE(
-            false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER);
+    TIERED_STORE(false, false, false, ConsumingConstraint.CAN_BE_PIPELINED, ReleaseBy.SCHEDULER);
 
     /**
      * Can this result partition be consumed by multiple downstream consumers for multiple times.
@@ -227,8 +224,7 @@ public enum ResultPartitionType {
         return isBlockingOrBlockingPersistentResultPartition()
                 || this == HYBRID_FULL
                 || this == HYBRID_SELECTIVE
-                || this == TIERED_STORE
-                || this == TIERED_STORE_SELECTIVE;
+                || this == TIERED_STORE;
     }
 
     public boolean isReconsumable() {

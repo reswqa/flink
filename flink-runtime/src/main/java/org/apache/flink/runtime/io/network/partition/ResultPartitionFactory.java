@@ -30,13 +30,11 @@ import org.apache.flink.runtime.io.network.buffer.BufferPoolFactory;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsResultPartition;
 import org.apache.flink.runtime.io.network.partition.hybrid.HybridShuffleConfiguration;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfiguration;
-import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreResultPartition;
 import org.apache.flink.runtime.shuffle.NettyShuffleUtils;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.ProcessorArchitecture;
-import org.apache.flink.util.StringUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -45,8 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 
 /** Factory for {@link ResultPartition} to use in {@link NettyShuffleEnvironment}. */
@@ -88,6 +85,10 @@ public class ResultPartitionFactory {
 
     private final String baseDfsHomePath;
 
+    private final String tieredStoreTiers;
+
+    private String tieredStoreSpillingType;
+
     public ResultPartitionFactory(
             ResultPartitionManager partitionManager,
             FileChannelManager channelManager,
@@ -105,7 +106,9 @@ public class ResultPartitionFactory {
             int sortShuffleMinParallelism,
             boolean sslEnabled,
             int maxOverdraftBuffersPerGate,
-            String baseDfsHomePath) {
+            String baseDfsHomePath,
+            String tieredStoreTiers,
+            String tieredStoreSpillingType) {
 
         this.partitionManager = partitionManager;
         this.channelManager = channelManager;
@@ -124,6 +127,8 @@ public class ResultPartitionFactory {
         this.sslEnabled = sslEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
         this.baseDfsHomePath = baseDfsHomePath;
+        this.tieredStoreTiers = tieredStoreTiers;
+        this.tieredStoreSpillingType = tieredStoreSpillingType;
     }
 
     public ResultPartition create(
@@ -267,17 +272,14 @@ public class ResultPartitionFactory {
                             bufferCompressor,
                             isBroadcast,
                             bufferPoolFactory);
-        } else if (type == ResultPartitionType.TIERED_STORE
-                || type == ResultPartitionType.TIERED_STORE_SELECTIVE) {
-            if (type == ResultPartitionType.TIERED_STORE_SELECTIVE && isBroadcast) {
+        } else if (type == ResultPartitionType.TIERED_STORE) {
+            if (isBroadcast) {
                 // for broadcast result partition, it can be optimized to always use full spilling
                 // strategy to significantly reduce shuffle data writing cost.
-                LOG.info(
-                        "{} result partition has been replaced by {} result partition to reduce shuffle data writing cost.",
-                        type,
-                        ResultPartitionType.TIERED_STORE);
-                type = ResultPartitionType.TIERED_STORE;
+                tieredStoreSpillingType = Objects.equals(tieredStoreSpillingType, "NO_FLUSH") ? tieredStoreSpillingType : "FULL";
             }
+            TieredStoreConfiguration storeConfiguration = getStoreConfiguration(
+                    numberOfSubpartitions);
             partition =
                     new TieredStoreResultPartition(
                             jobID,
@@ -293,9 +295,8 @@ public class ResultPartitionFactory {
                             networkBufferSize,
                             channelManager.createChannel().getPath(),
                             isBroadcast,
-                            getStoreConfiguration(type, numberOfSubpartitions),
+                            storeConfiguration,
                             bufferCompressor,
-                            getTieredStoreStorageModes(type),
                             bufferPoolFactory,
                             subpartitions);
         } else {
@@ -307,34 +308,11 @@ public class ResultPartitionFactory {
         return partition;
     }
 
-    private List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>>
-            getTieredStoreStorageModes(ResultPartitionType type) {
-        List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>> storeModes =
-                new ArrayList<>();
-        if (type == ResultPartitionType.TIERED_STORE
-                || type == ResultPartitionType.TIERED_STORE_SELECTIVE) {
-            storeModes.add(
-                    Pair.of(TieredStoreMode.TieredType.IN_MEM, TieredStoreMode.StorageType.MEMORY));
-            storeModes.add(
-                    Pair.of(TieredStoreMode.TieredType.LOCAL, TieredStoreMode.StorageType.MEMORY));
-            storeModes.add(
-                    Pair.of(TieredStoreMode.TieredType.LOCAL, TieredStoreMode.StorageType.DISK));
-            if (!StringUtils.isNullOrWhitespaceOnly(baseDfsHomePath)) {
-                storeModes.add(
-                        Pair.of(TieredStoreMode.TieredType.DFS, TieredStoreMode.StorageType.DISK));
-            }
-        }
-        return storeModes;
-    }
-
-    private TieredStoreConfiguration getStoreConfiguration(
-            ResultPartitionType type, int numberOfSubpartitions) {
+    private TieredStoreConfiguration getStoreConfiguration(int numberOfSubpartitions) {
         return TieredStoreConfiguration.builder(
                         numberOfSubpartitions, batchShuffleReadBufferPool.getNumBuffersPerRequest())
-                .setSpillingStrategyType(
-                        type == ResultPartitionType.TIERED_STORE
-                                ? TieredStoreConfiguration.SpillingStrategyType.FULL
-                                : TieredStoreConfiguration.SpillingStrategyType.SELECTIVE)
+                .setTieredStoreTiers(tieredStoreTiers)
+                .setTieredStoreSpillingType(tieredStoreSpillingType)
                 .setBaseDfsHomePath(baseDfsHomePath)
                 .setConfiguredNetworkBuffersPerChannel(configuredNetworkBuffersPerChannel)
                 .build();

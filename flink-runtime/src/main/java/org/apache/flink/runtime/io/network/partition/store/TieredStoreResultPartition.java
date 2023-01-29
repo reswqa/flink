@@ -54,20 +54,24 @@ import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.util.StringUtils;
 import org.apache.flink.util.function.SupplierWithException;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static org.apache.flink.util.Preconditions.checkArgument;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.SpillingType.FULL;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.SpillingType.NO_FLUSH;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.DFS;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.LOCAL;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.LOCAL_DFS;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.MEMORY;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.MEMORY_DFS;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.MEMORY_LOCAL;
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.Tiers.MEMORY_LOCAL_DFS;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
@@ -92,9 +96,6 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
 
     private SingleTierDataGate[] tierDataGates;
 
-    private final List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>>
-            sortedTieredTypes;
-
     private TieredStoreProducer tieredStoreProducer;
 
     private boolean hasNotifiedEndOfUserRecords;
@@ -117,7 +118,6 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
             boolean isBroadcast,
             TieredStoreConfiguration storeConfiguration,
             @Nullable BufferCompressor bufferCompressor,
-            List<Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType>> sortedTieredTypes,
             SupplierWithException<BufferPool, IOException> bufferPoolFactory,
             ResultSubpartition[] subpartitions) {
         super(
@@ -131,14 +131,10 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
                 bufferCompressor,
                 bufferPoolFactory);
 
-        checkArgument(
-                sortedTieredTypes != null && !sortedTieredTypes.isEmpty(), "Empty tiered types.");
-
         this.jobID = jobID;
         this.readBufferPool = readBufferPool;
         this.readIOExecutor = readIOExecutor;
         this.networkBufferSize = networkBufferSize;
-        this.sortedTieredTypes = sortedTieredTypes;
         this.dataFileBasePath = dataFileBasePath;
         this.isBroadcast = isBroadcast;
         this.storeConfiguration = storeConfiguration;
@@ -167,68 +163,154 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
     public void setMetricGroup(TaskIOMetricGroup metrics) {
         super.setMetricGroup(metrics);
         for (SingleTierDataGate singleTierDataGate : this.tierDataGates) {
-            singleTierDataGate.setOutputMetrics(new OutputMetrics(numBytesOut, numBuffersOut, numBytesProduced));
+            singleTierDataGate.setOutputMetrics(
+                    new OutputMetrics(numBytesOut, numBuffersOut, numBytesProduced));
             singleTierDataGate.setTimerGauge(metrics.getHardBackPressuredTimePerSecond());
         }
     }
 
     private void setupTierDataGates() throws IOException {
-        Queue<TieredStoreMode.TieredType> allTiredTypes = new LinkedList<>();
-        for (Pair<TieredStoreMode.TieredType, TieredStoreMode.StorageType> tieredType :
-                sortedTieredTypes) {
-            if (!allTiredTypes.contains(tieredType.getLeft())) {
-                allTiredTypes.add(tieredType.getLeft());
-            }
+        TieredStoreMode.Tiers tiers;
+        TieredStoreMode.SpillingType spillingType;
+        try {
+            tiers = TieredStoreMode.Tiers.valueOf(storeConfiguration.getTieredStoreTiers());
+            spillingType =
+                    TieredStoreMode.SpillingType.valueOf(
+                            storeConfiguration.getTieredStoreSpillingType());
+        } catch (Exception e) {
+            throw new RuntimeException("Illegal tiers or spilling types for Tiered Store.", e);
         }
-        this.tierDataGates = new SingleTierDataGate[allTiredTypes.size()];
-        int i = 0;
-        while (!allTiredTypes.isEmpty()) {
-            tierDataGates[i] = getTieredDataByType(allTiredTypes.poll());
-            tierDataGates[i].setup();
-            i++;
+
+        switch (tiers) {
+            case MEMORY:
+                checkState(
+                        spillingType == NO_FLUSH,
+                        "spilling type must be %s if the tiers is %s",
+                        NO_FLUSH,
+                        MEMORY);
+                this.tierDataGates = new SingleTierDataGate[1];
+                this.tierDataGates[0] = getLocalMemoryDataManager();
+                this.tierDataGates[0].setup();
+                break;
+            case LOCAL:
+                checkState(
+                        spillingType != NO_FLUSH,
+                        "spilling type must not be %s if the tiers is %s",
+                        NO_FLUSH,
+                        LOCAL);
+                this.tierDataGates = new SingleTierDataGate[1];
+                this.tierDataGates[0] = getLocalFileDataManager();
+                this.tierDataGates[0].setup();
+                break;
+            case DFS:
+                checkState(
+                        spillingType == FULL,
+                        "spilling type must be %s if the tiers is %s",
+                        FULL,
+                        DFS);
+                this.tierDataGates = new SingleTierDataGate[1];
+                this.tierDataGates[0] = getDfsDataManager();
+                this.tierDataGates[0].setup();
+                break;
+            case MEMORY_LOCAL:
+                checkState(
+                        spillingType != NO_FLUSH,
+                        "spilling type must not be %s if the tiers is %s",
+                        NO_FLUSH,
+                        MEMORY_LOCAL);
+                this.tierDataGates = new SingleTierDataGate[2];
+                this.tierDataGates[0] = getLocalMemoryDataManager();
+                this.tierDataGates[1] = getLocalFileDataManager();
+                for(SingleTierDataGate tierDataGate : tierDataGates){
+                    tierDataGate.setup();
+                }
+                break;
+            case MEMORY_DFS:
+                checkState(
+                        spillingType != NO_FLUSH,
+                        "spilling type must not be %s if the tiers is %s",
+                        NO_FLUSH,
+                        MEMORY_DFS);
+                this.tierDataGates = new SingleTierDataGate[2];
+                this.tierDataGates[0] = getLocalMemoryDataManager();
+                this.tierDataGates[1] = getDfsDataManager();
+                for(SingleTierDataGate tierDataGate : tierDataGates){
+                    tierDataGate.setup();
+                }
+                break;
+            case MEMORY_LOCAL_DFS:
+                checkState(
+                        spillingType != NO_FLUSH,
+                        "spilling type must not be %s if the tiers is %s",
+                        NO_FLUSH,
+                        MEMORY_LOCAL_DFS);
+                this.tierDataGates = new SingleTierDataGate[3];
+                this.tierDataGates[0] = getLocalMemoryDataManager();
+                this.tierDataGates[1] = getLocalFileDataManager();
+                this.tierDataGates[2] = getDfsDataManager();
+                for(SingleTierDataGate tierDataGate : tierDataGates){
+                    tierDataGate.setup();
+                }
+                break;
+            case LOCAL_DFS:
+                checkState(
+                        spillingType == FULL,
+                        "spilling type must be %s if the tiers is %s",
+                        FULL,
+                        LOCAL_DFS);
+                this.tierDataGates = new SingleTierDataGate[2];
+                this.tierDataGates[0] = getLocalFileDataManager();
+                this.tierDataGates[1] = getDfsDataManager();
+                for(SingleTierDataGate tierDataGate : tierDataGates){
+                    tierDataGate.setup();
+                }
+                break;
+            default:
+                throw new RuntimeException("Illegal tiers for Tiered Store.");
         }
     }
 
-    private SingleTierDataGate getTieredDataByType(TieredStoreMode.TieredType tieredType)
-            throws IOException {
-        switch (tieredType) {
-            case IN_MEM:
-                return new LocalMemoryDataManager(
-                        subpartitions, numSubpartitions, this, bufferPoolHelper, isBroadcast, storeConfiguration.getConfiguredNetworkBuffersPerChannel());
-            case LOCAL:
-                return new LocalFileDataManager(
-                        numSubpartitions,
-                        networkBufferSize,
-                        getPartitionId(),
-                        bufferPoolHelper,
-                        dataFileBasePath,
-                        isBroadcast,
-                        bufferCompressor,
-                        readBufferPool,
-                        readIOExecutor,
-                        storeConfiguration);
-            case DFS:
-                String baseDfsPath = storeConfiguration.getBaseDfsHomePath();
-                if (StringUtils.isNullOrWhitespaceOnly(baseDfsPath)) {
-                    throw new IllegalArgumentException(
-                            String.format(
-                                    "Must specify DFS home path by %s when using DFS in Tiered Store.",
-                                    NettyShuffleEnvironmentOptions.SHUFFLE_BASE_DFS_HOME_PATH
-                                            .key()));
-                }
+    private LocalMemoryDataManager getLocalMemoryDataManager() {
+        return new LocalMemoryDataManager(
+                subpartitions,
+                numSubpartitions,
+                this,
+                bufferPoolHelper,
+                isBroadcast,
+                storeConfiguration.getConfiguredNetworkBuffersPerChannel());
+    }
 
-                return new DfsDataManager(
-                        jobID,
-                        numSubpartitions,
-                        networkBufferSize,
-                        getPartitionId(),
-                        bufferPoolHelper,
-                        isBroadcast,
-                        baseDfsPath,
-                        bufferCompressor);
-            default:
-                throw new IOException("This tiered type is not supported. " + tieredType);
+    private LocalFileDataManager getLocalFileDataManager() {
+        return new LocalFileDataManager(
+                numSubpartitions,
+                networkBufferSize,
+                getPartitionId(),
+                bufferPoolHelper,
+                dataFileBasePath,
+                isBroadcast,
+                bufferCompressor,
+                readBufferPool,
+                readIOExecutor,
+                storeConfiguration);
+    }
+
+    private DfsDataManager getDfsDataManager() throws IOException {
+        String baseDfsPath = storeConfiguration.getBaseDfsHomePath();
+        if (StringUtils.isNullOrWhitespaceOnly(baseDfsPath)) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Must specify DFS home path by %s when using DFS in Tiered Store.",
+                            NettyShuffleEnvironmentOptions.SHUFFLE_BASE_DFS_HOME_PATH.key()));
         }
+        return new DfsDataManager(
+                jobID,
+                numSubpartitions,
+                networkBufferSize,
+                getPartitionId(),
+                bufferPoolHelper,
+                isBroadcast,
+                baseDfsPath,
+                bufferCompressor);
     }
 
     @Override

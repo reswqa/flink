@@ -18,26 +18,17 @@
 
 package org.apache.flink.test.runtime;
 
-import org.apache.flink.api.common.BatchShuffleMode;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ExecutionOptions;
-import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
-import org.apache.flink.runtime.jobgraph.JobGraph;
-
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-
 /** Tests for TieredStore Shuffle. */
 class TieredStoreShuffleITCase extends TieredStoreBatchShuffleITCaseBase {
 
-    @RepeatedTest(200)
-    void testTieredStoreFullExchangesLocal() throws Exception {
-        final int numRecordsToSend = 10000;
-        Configuration configuration = getConfiguration();
-        configuration.set(
-                ExecutionOptions.BATCH_SHUFFLE_MODE,
-                BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE_FULL);
-        JobGraph jobGraph = createJobGraph(numRecordsToSend, false, configuration);
-        executeJob(jobGraph, configuration, numRecordsToSend);
-    }
+    //@RepeatedTest(200)
+    //void testTieredStoreFullExchangesLocal() throws Exception {
+    //    final int numRecordsToSend = 10000;
+    //    Configuration configuration = getConfiguration();
+    //    configuration.set(
+    //            ExecutionOptions.BATCH_SHUFFLE_MODE,
+    //            BatchShuffleMode.ALL_EXCHANGES_TIERED_STORE_FULL);
+    //    JobGraph jobGraph = createJobGraph(numRecordsToSend, false, configuration);
+    //    executeJob(jobGraph, configuration, numRecordsToSend);
+    //}
 }

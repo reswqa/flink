@@ -90,6 +90,10 @@ public class ResultPartitionBuilder {
 
     private String baseDfsHomePath = null;
 
+    private String tieredStoreTiers = null;
+
+    private String tieredStoreSpillingType = null;
+
     public void setJobID(JobID jobID) {
         this.jobID = jobID;
     }
@@ -227,6 +231,16 @@ public class ResultPartitionBuilder {
         return this;
     }
 
+    public ResultPartitionBuilder setTieredStoreTiers(String tieredStoreTiers) {
+        this.tieredStoreTiers = tieredStoreTiers;
+        return this;
+    }
+
+    public ResultPartitionBuilder setTieredStoreSpillingType(String tieredStoreSpillingType) {
+        this.tieredStoreSpillingType = tieredStoreSpillingType;
+        return this;
+    }
+
     public ResultPartitionBuilder setBroadcast(boolean broadcast) {
         isBroadcast = broadcast;
         return this;
@@ -251,7 +265,9 @@ public class ResultPartitionBuilder {
                         sortShuffleMinParallelism,
                         sslEnabled,
                         maxOverdraftBuffersPerGate,
-                        baseDfsHomePath);
+                        baseDfsHomePath,
+                        tieredStoreTiers,
+                        tieredStoreSpillingType);
 
         SupplierWithException<BufferPool, IOException> factory =
                 bufferPoolFactory.orElseGet(

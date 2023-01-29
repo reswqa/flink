@@ -88,17 +88,11 @@ public enum BatchShuffleMode implements DescribedEnum {
                             + "This adapts the resource usage to whatever is available. "
                             + "This type will selective spilling data to reduce disk writes as much as possible.")),
 
-    ALL_EXCHANGES_TIERED_STORE_FULL(
+    ALL_EXCHANGES_TIERED_STORE(
             text(
                     "Downstream can start running anytime, as long as the upstream has started. "
                             + "This adapts the resource usage to whatever is available. "
-                            + "This type will spill all data to disk to support re-consume.")),
-
-    ALL_EXCHANGES_TIERED_STORE_SELECTIVE(
-            text(
-                    "Downstream can start running anytime, as long as the upstream has started. "
-                            + "This adapts the resource usage to whatever is available. "
-                            + "This type will selective spilling data to reduce disk writes as much as possible."));
+                            + "This type will spill all data to disk to support re-consume."));
 
     private final InlineElement description;
 
