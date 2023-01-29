@@ -26,6 +26,9 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 
+/**
+ * The Reader of Single Tier.
+ */
 public interface SingleTierReader {
 
     @Nullable
