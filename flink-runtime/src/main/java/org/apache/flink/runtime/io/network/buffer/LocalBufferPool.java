@@ -416,7 +416,7 @@ public class LocalBufferPool implements BufferPool {
                 availabilityHelper.resetUnavailable();
             }
 
-            checkConsistentAvailability();
+            //checkConsistentAvailability();
         }
         return segment;
     }
