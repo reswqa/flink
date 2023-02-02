@@ -52,6 +52,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
@@ -185,6 +186,7 @@ public class LocalMemoryDataManager
         this.bufferIndexOfLastRecordInSegment =
                 new BufferIndexOfLastRecordInSegmentTracker(numSubpartitions);
         this.finishedBufferIndex = new int[numSubpartitions];
+        Arrays.fill(finishedBufferIndex, -1);
         this.isBroadcastOnly = isBroadcastOnly;
         this.configuredNetworkBuffersPerChannel = configuredNetworkBuffersPerChannel;
     }
@@ -240,7 +242,7 @@ public class LocalMemoryDataManager
     protected void flushSubpartition(int targetSubpartition, boolean finishProducers) {
         if (finishProducers) {
             finishBroadcastBufferBuilder();
-            finishUnicastBufferBuilder(targetSubpartition);
+            finishUnicastBufferBuilder(targetSubpartition, false);
         }
 
         subpartitions[targetSubpartition].flush();
@@ -307,26 +309,31 @@ public class LocalMemoryDataManager
 
             while (record.hasRemaining()) {
                 // full buffer, partial record
-                finishUnicastBufferBuilder(targetSubpartition);
+                finishUnicastBufferBuilder(targetSubpartition, false);
                 buffer = appendUnicastDataForRecordContinuation(record, targetSubpartition);
             }
 
             if (buffer.isFull() || isLastRecordInSegment) {
                 // full buffer, full record, or isLastRecordInSegment
-                if (isLastRecordInSegment) {
-                    synchronized (finishedBufferIndex) {
-                        bufferIndexOfLastRecordInSegment.addBufferIndexOfLastRecordInSegment(
-                                targetSubpartition, finishedBufferIndex[targetSubpartition]);
-                    }
+                finishUnicastBufferBuilder(targetSubpartition, isLastRecordInSegment);
+                // notify available when finished && isLastRecordInSegment
+                if(isLastRecordInSegment){
+                    ((SubpartitionLocalMemoryDataManager)subpartitions[targetSubpartition]).notifyAvailable();
                 }
-                finishUnicastBufferBuilder(targetSubpartition);
             }
 
             // partial buffer, full record
         } else {
-            finishUnicastBufferBuilder(targetSubpartition);
+            finishUnicastBufferBuilder(targetSubpartition, false);
 
             if (isEndOfPartition) {
+                synchronized (finishedBufferIndex) {
+                    finishedBufferIndex[targetSubpartition]++;
+                    if (isLastRecordInSegment) {
+                        bufferIndexOfLastRecordInSegment.addBufferIndexOfLastRecordInSegment(
+                                targetSubpartition, finishedBufferIndex[targetSubpartition]);
+                    }
+                }
                 subpartitions[targetSubpartition].finish();
                 return;
             }
@@ -336,13 +343,16 @@ public class LocalMemoryDataManager
                             new NetworkBuffer(data, FreeingBufferRecycler.INSTANCE, dataType),
                             data.size());
             synchronized (finishedBufferIndex) {
+                finishedBufferIndex[targetSubpartition]++;
                 if (isLastRecordInSegment) {
                     bufferIndexOfLastRecordInSegment.addBufferIndexOfLastRecordInSegment(
                             targetSubpartition, finishedBufferIndex[targetSubpartition]);
                 }
-                finishedBufferIndex[targetSubpartition]++;
             }
             subpartitions[targetSubpartition].add(bufferConsumer, 0);
+            if(isLastRecordInSegment){
+                ((SubpartitionLocalMemoryDataManager)subpartitions[targetSubpartition]).notifyAvailable();
+            }
         }
 
         // decreaseRedundantBufferNumberInSegment
@@ -503,11 +513,17 @@ public class LocalMemoryDataManager
 
     }
 
-    private void finishUnicastBufferBuilder(int targetSubpartition) {
+    private void finishUnicastBufferBuilder(int targetSubpartition, boolean isLastBufferInSegment) {
         final BufferBuilder bufferBuilder = unicastBufferBuilders[targetSubpartition];
         if (bufferBuilder != null) {
             synchronized (finishedBufferIndex) {
                 finishedBufferIndex[targetSubpartition]++;
+            }
+            if (isLastBufferInSegment) {
+                synchronized (finishedBufferIndex) {
+                    bufferIndexOfLastRecordInSegment.addBufferIndexOfLastRecordInSegment(
+                            targetSubpartition, finishedBufferIndex[targetSubpartition]);
+                }
             }
             int bytes = bufferBuilder.finish();
             numBytesProduced.inc(bytes);
@@ -520,7 +536,7 @@ public class LocalMemoryDataManager
 
     private void finishUnicastBufferBuilders() {
         for (int channelIndex = 0; channelIndex < numSubpartitions; channelIndex++) {
-            finishUnicastBufferBuilder(channelIndex);
+            finishUnicastBufferBuilder(channelIndex, false);
         }
     }
 

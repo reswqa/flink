@@ -143,7 +143,16 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
 
     int sequenceNumber = 0;
 
-    @Nullable private LocalMemoryDataManagerOperations localMemoryDataManagerOperations;
+    int bufferIndex = -1;
+
+    private LocalMemoryDataManagerOperations localMemoryDataManagerOperations;
+
+    private List<Integer> bufferIndexRecorder = new ArrayList<>();
+
+    private List<Boolean> isLastBufferInSegmentRecorder = new ArrayList<>();
+
+    private List<Boolean> hasPollRecorder = new ArrayList<>();
+
 
     // ------------------------------------------------------------------------
 
@@ -301,7 +310,9 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
                                     "%s has uncompleted channelStateFuture of checkpointId=%s, but it received "
                                             + "a new timeoutable checkpoint barrier of checkpointId=%s, it maybe "
                                             + "a bug due to currently not supported concurrent unaligned checkpoint.",
-                                    this, channelStateCheckpointId, checkpointId)));
+                                    this,
+                                    channelStateCheckpointId,
+                                    checkpointId)));
         }
         channelStateFuture = new CompletableFuture<>();
         channelStateCheckpointId = checkpointId;
@@ -330,7 +341,7 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
         checkState(
                 barrier.getCheckpointOptions().isTimeoutable()
                         && Buffer.DataType.TIMEOUTABLE_ALIGNED_CHECKPOINT_BARRIER
-                                == bufferConsumer.getDataType());
+                        == bufferConsumer.getDataType());
         return barrier;
     }
 
@@ -486,7 +497,7 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
             if (buffers.isEmpty()) {
                 flushRequested = false;
             }
-
+            boolean hasPoll = false;
             while (!buffers.isEmpty()) {
                 BufferConsumerWithPartialRecordLength bufferConsumerWithPartialRecordLength =
                         buffers.peek();
@@ -509,6 +520,8 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
 
                 if (bufferConsumer.isFinished()) {
                     requireNonNull(buffers.poll()).getBufferConsumer().close();
+                    bufferIndex++;
+                    hasPoll = true;
                     decreaseBuffersInBacklogUnsafe(bufferConsumer.isBuffer());
                 }
 
@@ -551,13 +564,13 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
                     buffer,
                     parent.getOwningTaskName(),
                     subpartitionInfo);
-            int currentSequenceNumber = sequenceNumber;
-            boolean isLastBufferInSegment = false;
-            if (localMemoryDataManagerOperations != null) {
-                isLastBufferInSegment =
-                        localMemoryDataManagerOperations.isLastRecordInSegment(
-                                subpartitionInfo.getSubPartitionIdx(), currentSequenceNumber);
-            }
+            boolean isLastBufferInSegment =
+                    hasPoll && localMemoryDataManagerOperations.isLastRecordInSegment(
+                            subpartitionInfo.getSubPartitionIdx(),
+                            bufferIndex);
+            bufferIndexRecorder.add(bufferIndex);
+            isLastBufferInSegmentRecorder.add(isLastBufferInSegment);
+            hasPollRecorder.add(hasPoll);
             return new BufferAndBacklog(
                     buffer,
                     getBuffersInBacklogUnsafe(),
@@ -789,6 +802,10 @@ public class SubpartitionLocalMemoryDataManager extends ResultSubpartition
         if (readView != null) {
             readView.notifyDataAvailable();
         }
+    }
+
+    public void notifyAvailable() {
+        notifyDataAvailable();
     }
 
     private void notifyPriorityEvent(int prioritySequenceNumber) {
