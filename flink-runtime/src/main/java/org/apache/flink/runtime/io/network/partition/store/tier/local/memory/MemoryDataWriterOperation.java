@@ -24,10 +24,10 @@ import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
 import java.util.Collection;
 
 /**
- * This interface is used by {@link SubpartitionConsumerCacheDataManager} to operate {@link
- * CacheDataManager}. Spilling decision may be made and handled inside these operations.
+ * This interface is used by {@link SubpartitionConsumerMemoryDataManager} to operate {@link
+ * MemoryDataWriter}. Spilling decision may be made and handled inside these operations.
  */
-public interface CacheDataManagerOperation {
+public interface MemoryDataWriterOperation {
     /**
      * Request buffer from buffer pool.
      *

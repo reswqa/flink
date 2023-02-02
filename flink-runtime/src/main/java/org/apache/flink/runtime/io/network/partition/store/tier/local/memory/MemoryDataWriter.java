@@ -26,6 +26,8 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
+import org.apache.flink.runtime.io.network.partition.store.common.SingleTierWriter;
+import org.apache.flink.runtime.io.network.partition.store.common.SubpartitionSegmentIndexTracker;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
 import org.apache.flink.util.Preconditions;
 
@@ -41,13 +43,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** This class is responsible for managing cached buffers data before flush to local files. */
-public class CacheDataManager implements CacheDataManagerOperation {
+public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOperation {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CacheDataManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MemoryDataWriter.class);
 
     private final int numSubpartitions;
 
-    private final SubpartitionCacheDataManager[] subpartitionCacheDataManagers;
+    private final SubpartitionMemoryDataManager[] subpartitionMemoryDataManagers;
 
     private final BufferPoolHelper bufferPoolHelper;
 
@@ -58,42 +60,47 @@ public class CacheDataManager implements CacheDataManagerOperation {
     private final List<Map<ConsumerId, SubpartitionConsumerInternalOperations>>
             subpartitionViewOperationsMap;
 
-    public CacheDataManager(
+    private final SubpartitionSegmentIndexTracker subpartitionSegmentIndexTracker;
+
+    public MemoryDataWriter(
             int numSubpartitions,
             int bufferSize,
             BufferPoolHelper bufferPoolHelper,
-            BufferCompressor bufferCompressor)
-            throws IOException {
+            BufferCompressor bufferCompressor,
+            SubpartitionSegmentIndexTracker subpartitionSegmentIndexTracker) {
         this.numSubpartitions = numSubpartitions;
         this.bufferPoolHelper = bufferPoolHelper;
-        this.subpartitionCacheDataManagers = new SubpartitionCacheDataManager[numSubpartitions];
+        this.subpartitionMemoryDataManagers = new SubpartitionMemoryDataManager[numSubpartitions];
+        this.subpartitionSegmentIndexTracker = subpartitionSegmentIndexTracker;
 
         this.subpartitionViewOperationsMap = new ArrayList<>(numSubpartitions);
         for (int subpartitionId = 0; subpartitionId < numSubpartitions; ++subpartitionId) {
-            subpartitionCacheDataManagers[subpartitionId] =
-                    new SubpartitionCacheDataManager(
-                            subpartitionId,
-                            bufferSize,
-                            bufferCompressor,
-                            this);
+            subpartitionMemoryDataManagers[subpartitionId] =
+                    new SubpartitionMemoryDataManager(
+                            subpartitionId, bufferSize, bufferCompressor, this);
             subpartitionViewOperationsMap.add(new ConcurrentHashMap<>());
         }
     }
 
-    // ------------------------------------
-    //          For ResultPartition
-    // ------------------------------------
+    @Override
+    public void setup() throws IOException {}
 
-    /**
-     * Append record to {@link CacheDataManager}, It will be managed by {@link
-     * SubpartitionConsumerCacheDataManager} witch it belongs to.
-     *
-     * @param record to be managed by this class.
-     * @param targetChannel target subpartition of this record.
-     * @param dataType the type of this record. In other words, is it data or event.
-     * @param isLastRecordInSegment whether this record is the last record in a segment.
-     */
-    public void append(
+    @Override
+    public void emit(
+            ByteBuffer record,
+            int targetSubpartition,
+            Buffer.DataType dataType,
+            boolean isBroadcast,
+            boolean isLastRecordInSegment,
+            boolean isEndOfPartition,
+            int segmentIndex)
+            throws IOException {
+        subpartitionSegmentIndexTracker.addSubpartitionSegmentIndex(
+                targetSubpartition, segmentIndex);
+        append(record, targetSubpartition, dataType, isLastRecordInSegment);
+    }
+
+    private void append(
             ByteBuffer record,
             int targetChannel,
             Buffer.DataType dataType,
@@ -124,12 +131,14 @@ public class CacheDataManager implements CacheDataManagerOperation {
         return getSubpartitionMemoryDataManager(subpartitionId).registerNewConsumer(consumerId);
     }
 
-    /** Close this {@link CacheDataManager}, it means no data will be appended to memory. */
+    /** Close this {@link MemoryDataWriter}, it means no data will be appended to memory. */
+    @Override
     public void close() {}
 
     /**
-     * Release this {@link CacheDataManager}, it means all memory taken by this class will recycle.
+     * Release this {@link MemoryDataWriter}, it means all memory taken by this class will recycle.
      */
+    @Override
     public void release() {
         for (int i = 0; i < numSubpartitions; i++) {
             getSubpartitionMemoryDataManager(i).release();
@@ -187,8 +196,8 @@ public class CacheDataManager implements CacheDataManagerOperation {
     //           Internal Method
     // ------------------------------------
 
-    private SubpartitionCacheDataManager getSubpartitionMemoryDataManager(int targetChannel) {
-        return subpartitionCacheDataManagers[targetChannel];
+    private SubpartitionMemoryDataManager getSubpartitionMemoryDataManager(int targetChannel) {
+        return subpartitionMemoryDataManagers[targetChannel];
     }
 
     private void recycleBuffer(MemorySegment buffer) {

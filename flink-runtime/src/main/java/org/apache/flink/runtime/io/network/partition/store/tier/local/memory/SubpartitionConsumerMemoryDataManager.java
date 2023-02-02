@@ -41,12 +41,12 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
  * This class is responsible for managing the data of a single consumer. {@link
- * SubpartitionConsumerCacheDataManager} will create a new {@link
- * SubpartitionConsumerCacheDataManager} when a consumer is registered.
+ * SubpartitionConsumerMemoryDataManager} will create a new {@link
+ * SubpartitionConsumerMemoryDataManager} when a consumer is registered.
  */
-public class SubpartitionConsumerCacheDataManager implements BufferConsumeView {
+public class SubpartitionConsumerMemoryDataManager implements BufferConsumeView {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SubpartitionConsumerCacheDataManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SubpartitionConsumerMemoryDataManager.class);
 
     @GuardedBy("consumerLock")
     private final Deque<BufferContext> unConsumedBuffers = new LinkedList<>();
@@ -57,17 +57,17 @@ public class SubpartitionConsumerCacheDataManager implements BufferConsumeView {
 
     private final int subpartitionId;
 
-    private final CacheDataManagerOperation cacheDataManagerOperation;
+    private final MemoryDataWriterOperation memoryDataWriterOperation;
 
-    public SubpartitionConsumerCacheDataManager(
+    public SubpartitionConsumerMemoryDataManager(
             Lock consumerLock,
             int subpartitionId,
             ConsumerId consumerId,
-            CacheDataManagerOperation cacheDataManagerOperation) {
+            MemoryDataWriterOperation memoryDataWriterOperation) {
         this.consumerLock = consumerLock;
         this.subpartitionId = subpartitionId;
         this.consumerId = consumerId;
-        this.cacheDataManagerOperation = cacheDataManagerOperation;
+        this.memoryDataWriterOperation = memoryDataWriterOperation;
     }
 
     @GuardedBy("consumerLock")
@@ -118,7 +118,7 @@ public class SubpartitionConsumerCacheDataManager implements BufferConsumeView {
                                 getBacklog(),
                                 tuple.f1,
                                 toConsumeIndex,
-                                cacheDataManagerOperation.isLastBufferInSegment(
+                                memoryDataWriterOperation.isLastBufferInSegment(
                                         tuple.f0.getBufferIndexAndChannel().getChannel(),
                                         tuple.f0.getBufferIndexAndChannel().getBufferIndex())));
     }
@@ -165,7 +165,7 @@ public class SubpartitionConsumerCacheDataManager implements BufferConsumeView {
 
     @Override
     public void releaseDataView() {
-        cacheDataManagerOperation.onConsumerReleased(subpartitionId, consumerId);
+        memoryDataWriterOperation.onConsumerReleased(subpartitionId, consumerId);
     }
 
     @GuardedBy("consumerLock")

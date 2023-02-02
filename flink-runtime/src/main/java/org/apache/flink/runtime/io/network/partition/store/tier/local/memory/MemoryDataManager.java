@@ -20,7 +20,6 @@ package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
 
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
-import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.CheckpointedResultSubpartition;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.SpillingType.SELECTIVE;
@@ -50,7 +48,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /** The DataManager of LOCAL file. */
-public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
+public class MemoryDataManager implements SingleTierDataGate {
 
     private static final Logger LOG = LoggerFactory.getLogger(MemoryDataManager.class);
 
@@ -71,7 +69,7 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
     /** Record the last assigned consumerId for each subpartition. */
     private final ConsumerId[] lastConsumerIds;
 
-    private CacheDataManager cacheDataManager;
+    private MemoryDataWriter memoryDataWriter;
 
     private final SubpartitionSegmentIndexTracker segmentIndexTracker;
 
@@ -104,40 +102,16 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
 
     @Override
     public void setup() throws IOException {
-        this.cacheDataManager =
-                new CacheDataManager(
+        this.memoryDataWriter =
+                new MemoryDataWriter(
                         isBroadcastOnly ? 1 : numSubpartitions,
                         networkBufferSize,
                         bufferPoolHelper,
-                        bufferCompressor);
+                        bufferCompressor,
+                        segmentIndexTracker);
+        this.memoryDataWriter.setup();
     }
 
-    boolean isLastRecordInSegment(int subpartitionId, int bufferIndex) {
-        return cacheDataManager.isLastBufferInSegment(subpartitionId, bufferIndex);
-    }
-
-    @Override
-    public void emit(
-            ByteBuffer record,
-            int targetSubpartition,
-            Buffer.DataType dataType,
-            boolean isBroadcast,
-            boolean isLastRecordInSegment,
-            boolean isEndOfPartition,
-            int segmentIndex)
-            throws IOException {
-        segmentIndexTracker.addSubpartitionSegmentIndex(targetSubpartition, segmentIndex);
-        emit(record, targetSubpartition, dataType, isLastRecordInSegment);
-    }
-
-    private void emit(
-            ByteBuffer record,
-            int targetSubpartition,
-            Buffer.DataType dataType,
-            boolean isLastRecordInSegment)
-            throws IOException {
-        cacheDataManager.append(record, targetSubpartition, dataType, isLastRecordInSegment);
-    }
 
     /**
      * In the local tier, only one memory data manager and only one file disk data manager are used,
@@ -145,7 +119,7 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
      */
     @Override
     public SingleTierWriter createPartitionTierWriter() {
-        return this;
+        return memoryDataWriter;
     }
 
     @Override
@@ -156,7 +130,7 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
         // channel.
         subpartitionId = isBroadcastOnly ? BROADCAST_CHANNEL : subpartitionId;
 
-        SubpartitionConsumer subpartitionConsumer = new SubpartitionConsumer(availabilityListener);
+        MemoryReader memoryReader = new MemoryReader(availabilityListener);
         ConsumerId lastConsumerId = lastConsumerIds[subpartitionId];
         checkMultipleConsumerIsAllowed(lastConsumerId, storeConfiguration);
         // assign a unique id for each consumer, now it is guaranteed by the value that is one
@@ -165,11 +139,11 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
         lastConsumerIds[subpartitionId] = consumerId;
 
         BufferConsumeView memoryDataView =
-                checkNotNull(cacheDataManager)
-                        .registerNewConsumer(subpartitionId, consumerId, subpartitionConsumer);
+                checkNotNull(memoryDataWriter)
+                        .registerNewConsumer(subpartitionId, consumerId, memoryReader);
 
-        subpartitionConsumer.setMemoryDataView(memoryDataView);
-        return subpartitionConsumer;
+        memoryReader.setMemoryDataView(memoryDataView);
+        return memoryReader;
     }
 
     @Override
@@ -195,8 +169,6 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
     @Override
     public void close() {
         if (!isClosed) {
-            // close is called when task is finished or failed.
-            checkNotNull(cacheDataManager).close();
             isClosed = true;
         }
     }
@@ -209,7 +181,6 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
         // 2. delete shuffle file.
         // 3. release all data in memory.
         if (!isReleased) {
-            checkNotNull(cacheDataManager).release();
             segmentIndexTracker.release();
             isReleased = true;
         }
@@ -217,7 +188,7 @@ public class MemoryDataManager implements SingleTierWriter, SingleTierDataGate {
 
     @Override
     public void setOutputMetrics(OutputMetrics tieredStoreOutputMetrics) {
-        checkNotNull(cacheDataManager).setOutputMetrics(tieredStoreOutputMetrics);
+        checkNotNull(memoryDataWriter).setOutputMetrics(tieredStoreOutputMetrics);
     }
 
     @Override

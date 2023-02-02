@@ -58,18 +58,18 @@ import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * This class is responsible for managing the data in a single subpartition. One {@link
- * CacheDataManager} will hold multiple {@link
- * org.apache.flink.runtime.io.network.partition.store.tier.local.memory.SubpartitionConsumerCacheDataManager}.
+ * MemoryDataWriter} will hold multiple {@link
+ * SubpartitionConsumerMemoryDataManager}.
  */
-public class SubpartitionCacheDataManager {
+public class SubpartitionMemoryDataManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SubpartitionCacheDataManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SubpartitionMemoryDataManager.class);
 
     private final int targetChannel;
 
     private final int bufferSize;
 
-    private final CacheDataManagerOperation cacheDataManagerOperation;
+    private final MemoryDataWriterOperation memoryDataWriterOperation;
 
     // Not guarded by lock because it is expected only accessed from task's main thread.
     private final Queue<BufferBuilder> unfinishedBuffers = new LinkedList<>();
@@ -92,22 +92,21 @@ public class SubpartitionCacheDataManager {
     @GuardedBy("subpartitionLock")
     private final Map<
                     ConsumerId,
-                    org.apache.flink.runtime.io.network.partition.store.tier.local.memory
-                            .SubpartitionConsumerCacheDataManager>
+            SubpartitionConsumerMemoryDataManager>
             consumerMap;
 
     @Nullable private final BufferCompressor bufferCompressor;
 
     @Nullable private OutputMetrics outputMetrics;
 
-    public SubpartitionCacheDataManager(
+    public SubpartitionMemoryDataManager(
             int targetChannel,
             int bufferSize,
             @Nullable BufferCompressor bufferCompressor,
-            CacheDataManagerOperation cacheDataManagerOperation) {
+            MemoryDataWriterOperation memoryDataWriterOperation) {
         this.targetChannel = targetChannel;
         this.bufferSize = bufferSize;
-        this.cacheDataManagerOperation = cacheDataManagerOperation;
+        this.memoryDataWriterOperation = memoryDataWriterOperation;
         this.bufferCompressor = bufferCompressor;
         this.consumerMap = new HashMap<>();
         this.lastBufferIndexOfSegments = new HashSet<>();
@@ -118,7 +117,7 @@ public class SubpartitionCacheDataManager {
     // ------------------------------------------------------------------------
 
     /**
-     * Append record to {@link SubpartitionConsumerCacheDataManager}.
+     * Append record to {@link SubpartitionConsumerMemoryDataManager}.
      *
      * @param record to be managed by this class.
      * @param dataType the type of this record. In other words, is it data or event.
@@ -146,16 +145,16 @@ public class SubpartitionCacheDataManager {
     }
 
     @SuppressWarnings("FieldAccessNotGuarded")
-    public SubpartitionConsumerCacheDataManager registerNewConsumer(ConsumerId consumerId) {
+    public SubpartitionConsumerMemoryDataManager registerNewConsumer(ConsumerId consumerId) {
         return callWithLock(
                 () -> {
                     checkState(!consumerMap.containsKey(consumerId));
-                    SubpartitionConsumerCacheDataManager newConsumer =
-                            new SubpartitionConsumerCacheDataManager(
+                    SubpartitionConsumerMemoryDataManager newConsumer =
+                            new SubpartitionConsumerMemoryDataManager(
                                     subpartitionLock.readLock(),
                                     targetChannel,
                                     consumerId,
-                                    cacheDataManagerOperation);
+                                    memoryDataWriterOperation);
                     newConsumer.addInitialBuffers(allBuffers);
                     consumerMap.put(consumerId, newConsumer);
                     return newConsumer;
@@ -209,7 +208,7 @@ public class SubpartitionCacheDataManager {
 
         while (availableBytes < numRecordBytes) {
             // request unfinished buffer.
-            BufferBuilder bufferBuilder = cacheDataManagerOperation.requestBufferFromPool();
+            BufferBuilder bufferBuilder = memoryDataWriterOperation.requestBufferFromPool();
             unfinishedBuffers.add(bufferBuilder);
             availableBytes += bufferSize;
         }
@@ -288,7 +287,7 @@ public class SubpartitionCacheDataManager {
                     bufferIndexToContexts.put(
                             bufferContext.getBufferIndexAndChannel().getBufferIndex(),
                             bufferContext);
-                    for (Map.Entry<ConsumerId, SubpartitionConsumerCacheDataManager> consumerEntry :
+                    for (Map.Entry<ConsumerId, SubpartitionConsumerMemoryDataManager> consumerEntry :
                             consumerMap.entrySet()) {
                         if (consumerEntry.getValue().addBuffer(bufferContext)) {
                             needNotify.add(consumerEntry.getKey());
@@ -299,7 +298,7 @@ public class SubpartitionCacheDataManager {
                         lastBufferIndexOfSegments.add(finishedBufferIndex - 1);
                     }
                 });
-        cacheDataManagerOperation.onDataAvailable(targetChannel, needNotify);
+        memoryDataWriterOperation.onDataAvailable(targetChannel, needNotify);
     }
 
     private void updateStatistics(Buffer buffer) {
