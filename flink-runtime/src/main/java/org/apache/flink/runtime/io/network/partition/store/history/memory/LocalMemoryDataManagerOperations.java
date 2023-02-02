@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
+package org.apache.flink.runtime.io.network.partition.store.history.memory;
 
 /** The interface including operations in {@link LocalMemoryDataManager}. */
 public interface LocalMemoryDataManagerOperations {

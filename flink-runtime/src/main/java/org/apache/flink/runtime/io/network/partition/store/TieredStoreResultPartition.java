@@ -48,7 +48,7 @@ import org.apache.flink.runtime.io.network.partition.store.common.TieredStorePro
 import org.apache.flink.runtime.io.network.partition.store.tier.dfs.DfsDataManager;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.LocalFileDataManager;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.memory.LocalMemoryDataManager;
+import org.apache.flink.runtime.io.network.partition.store.history.memory.LocalMemoryDataManager;
 import org.apache.flink.runtime.io.network.partition.store.writer.TieredStoreProducerImpl;
 import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.util.StringUtils;

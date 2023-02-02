@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
+package org.apache.flink.runtime.io.network.partition.store.history.memory;
 
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;

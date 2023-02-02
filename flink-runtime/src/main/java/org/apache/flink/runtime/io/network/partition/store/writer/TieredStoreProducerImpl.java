@@ -28,7 +28,7 @@ import org.apache.flink.runtime.io.network.partition.store.common.SingleTierWrit
 import org.apache.flink.runtime.io.network.partition.store.common.TieredStoreProducer;
 
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.LocalFileDataManager;
-import org.apache.flink.runtime.io.network.partition.store.tier.local.memory.LocalMemoryDataManager;
+import org.apache.flink.runtime.io.network.partition.store.history.memory.LocalMemoryDataManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

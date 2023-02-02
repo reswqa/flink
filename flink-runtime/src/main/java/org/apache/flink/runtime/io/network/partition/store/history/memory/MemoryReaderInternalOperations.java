@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
+package org.apache.flink.runtime.io.network.partition.store.history.memory;
 
 /**
  * Operations provided by {@link MemoryReader} that will be used in {@link
