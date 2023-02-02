@@ -126,6 +126,10 @@ public class CacheDataManager implements BufferSpillingInfoProvider, CacheDataMa
         } catch (InterruptedException e) {
             throw new IOException(e);
         }
+        // force spill all buffers to disk.
+        if(isLastRecordInSegment){
+            flushSubpartitionCachedBuffers();
+        }
     }
 
     /**

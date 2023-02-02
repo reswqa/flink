@@ -60,10 +60,7 @@ public class FullSpillingStrategy implements TsSpillingStrategy {
     @Override
     public Decision forceTriggerFlushCachedBuffers(
             BufferSpillingInfoProvider spillingInfoProvider) {
-        Decision.Builder builder = Decision.builder();
-        getToSpillBuffers(spillingInfoProvider, builder);
-        getToReleaseBuffers(spillingInfoProvider, spillingInfoProvider.getPoolSize(), builder);
-        return builder.build();
+        return onResultPartitionClosed(spillingInfoProvider);
     }
 
     @Override
