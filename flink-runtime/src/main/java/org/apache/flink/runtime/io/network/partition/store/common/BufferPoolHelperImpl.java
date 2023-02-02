@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -56,7 +57,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     private int numInMemoryMaxBuffers;
 
-    private final int[] memoryTierSubpartitionRequiredBuffers;
+    //private final int[] memoryTierSubpartitionRequiredBuffers;
 
     private final AtomicInteger numInMemoryBuffers = new AtomicInteger(0);
 
@@ -109,7 +110,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         this.flushBufferRatio = flushBufferRatio;
         this.triggerFlushRatio = triggerFlushRatio;
         this.numTotalBuffers = this.bufferPool.getNumBuffers();
-        this.memoryTierSubpartitionRequiredBuffers = new int[numSubpartitions];
+        //this.memoryTierSubpartitionRequiredBuffers = new int[numSubpartitions];
 
         checkState(flushBufferRatio < triggerFlushRatio);
 
@@ -149,30 +150,33 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
     @Override
     public boolean canStoreNextSegmentForMemoryTier(int bufferNumberInSegment) {
         int currentNumberBuffer = numInMemoryBuffers.get();
-        if ((currentNumberBuffer + bufferNumberInSegment) <= numInMemoryMaxBuffers) {
-            numInMemoryBuffers.addAndGet(bufferNumberInSegment);
-            return true;
-        } else {
-            return false;
-        }
+        return new Random().nextBoolean();
+        //return false;
+        //if ((currentNumberBuffer + bufferNumberInSegment) <= numInMemoryMaxBuffers) {
+        //    return true;
+        //} else {
+        //    return false;
+        //}
     }
 
     @Override
     public void decreaseRedundantBufferNumberInSegment(
             int subpartitionId, int bufferNumberInSegment) {
-        int actualRequiredBufferNum = memoryTierSubpartitionRequiredBuffers[subpartitionId];
-        if (actualRequiredBufferNum < bufferNumberInSegment) {
-            checkState(
-                    numInMemoryBuffers.addAndGet(
-                                    -1 * (bufferNumberInSegment - actualRequiredBufferNum))
-                            >= 0,
-                    "Wrong buffer number of a single subpartition is recorded.");
-        }
-        memoryTierSubpartitionRequiredBuffers[subpartitionId] = 0;
+        //int actualRequiredBufferNum = memoryTierSubpartitionRequiredBuffers[subpartitionId];
+        //if (actualRequiredBufferNum < bufferNumberInSegment) {
+        //    checkState(
+        //            numInMemoryBuffers.addAndGet(
+        //                    -1 * (bufferNumberInSegment - actualRequiredBufferNum))
+        //                    >= 0,
+        //            "Wrong number of in-mem buffers.", numInMemoryBuffers.get());
+        //}
+        //memoryTierSubpartitionRequiredBuffers[subpartitionId] = 0;
     }
 
     void decInMemoryBuffer() {
-        numInMemoryBuffers.decrementAndGet();
+        checkState(
+                numInMemoryBuffers.decrementAndGet() >= 0,
+                "Wrong number of in-mem buffers.", numInMemoryBuffers.get());
     }
 
     // ------------------------------------
@@ -332,7 +336,7 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         }
         if (isInMemory) {
             checkState(tieredType == TieredStoreMode.TieredType.IN_MEM);
-            memoryTierSubpartitionRequiredBuffers[subpartitionId] += 1;
+            numInMemoryBuffers.incrementAndGet();
         } else {
             incCachedBuffers(subpartitionId, tieredType);
             checkNeedFlushCachedBuffers();
