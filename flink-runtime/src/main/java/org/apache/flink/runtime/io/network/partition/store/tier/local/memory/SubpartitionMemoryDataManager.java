@@ -28,6 +28,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferConsumer;
 import org.apache.flink.runtime.io.network.buffer.FreeingBufferRecycler;
 import org.apache.flink.runtime.io.network.buffer.NetworkBuffer;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferContext;
+import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
 import org.apache.flink.util.function.SupplierWithException;
@@ -52,6 +53,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.TieredType.IN_MEM;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -89,6 +91,8 @@ public class SubpartitionMemoryDataManager {
     /** DO NOT USE DIRECTLY. Use {@link #runWithLock} or {@link #callWithLock} instead. */
     private final ReentrantReadWriteLock subpartitionLock = new ReentrantReadWriteLock();
 
+    private final BufferPoolHelper bufferPoolHelper;
+
     @GuardedBy("subpartitionLock")
     private final Map<
                     ConsumerId,
@@ -103,11 +107,13 @@ public class SubpartitionMemoryDataManager {
             int targetChannel,
             int bufferSize,
             @Nullable BufferCompressor bufferCompressor,
-            MemoryDataWriterOperation memoryDataWriterOperation) {
+            MemoryDataWriterOperation memoryDataWriterOperation,
+            BufferPoolHelper bufferPoolHelper) {
         this.targetChannel = targetChannel;
         this.bufferSize = bufferSize;
         this.memoryDataWriterOperation = memoryDataWriterOperation;
         this.bufferCompressor = bufferCompressor;
+        this.bufferPoolHelper = bufferPoolHelper;
         this.consumerMap = new HashMap<>();
         this.lastBufferIndexOfSegments = new HashSet<>();
     }
@@ -208,8 +214,8 @@ public class SubpartitionMemoryDataManager {
 
         while (availableBytes < numRecordBytes) {
             // request unfinished buffer.
-            BufferBuilder bufferBuilder = memoryDataWriterOperation.requestBufferFromPool();
-            unfinishedBuffers.add(bufferBuilder);
+            MemorySegment memorySegment = memoryDataWriterOperation.requestBufferFromPool(targetChannel);
+            unfinishedBuffers.add(new BufferBuilder(memorySegment, this::recycle));
             availableBytes += bufferSize;
         }
     }
@@ -299,6 +305,10 @@ public class SubpartitionMemoryDataManager {
                     }
                 });
         memoryDataWriterOperation.onDataAvailable(targetChannel, needNotify);
+    }
+
+    private void recycle(MemorySegment memorySegment){
+        bufferPoolHelper.recycleBuffer(targetChannel, memorySegment, IN_MEM, true);
     }
 
     private void updateStatistics(Buffer buffer) {

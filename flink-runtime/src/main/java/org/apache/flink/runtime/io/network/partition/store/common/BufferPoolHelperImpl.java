@@ -24,12 +24,15 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -49,6 +52,8 @@ import static org.apache.flink.util.Preconditions.checkState;
  */
 public class BufferPoolHelperImpl implements BufferPoolHelper {
 
+    private static final Logger LOG = LoggerFactory.getLogger(BufferPoolHelperImpl.class);
+
     // ------------------------------------
     //          For Local Memory Tier
     // ------------------------------------
@@ -57,9 +62,11 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     private int numInMemoryMaxBuffers;
 
-    //private final int[] memoryTierSubpartitionRequiredBuffers;
+    private final int[] memoryTierSubpartitionRequiredBuffers;
 
     private final AtomicInteger numInMemoryBuffers = new AtomicInteger(0);
+
+    private int bufferNumberInSegment = -1;
 
     // ------------------------------------
     //          For Local Disk Tier
@@ -110,6 +117,8 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         this.flushBufferRatio = flushBufferRatio;
         this.triggerFlushRatio = triggerFlushRatio;
         this.numTotalBuffers = this.bufferPool.getNumBuffers();
+        this.memoryTierSubpartitionRequiredBuffers = new int[numSubpartitions];
+        Arrays.fill(memoryTierSubpartitionRequiredBuffers, 0);
         //this.memoryTierSubpartitionRequiredBuffers = new int[numSubpartitions];
 
         checkState(flushBufferRatio < triggerFlushRatio);
@@ -119,15 +128,8 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         if (poolSizeCheckInterval > 0) {
             poolSizeChecker.scheduleAtFixedRate(
                     () -> {
-                        int newSize = this.bufferPool.getNumBuffers();
-                        boolean needCheckFlush = numTotalBuffers > newSize;
-                        if (numTotalBuffers != newSize) {
-                            numTotalBuffers = newSize;
                             calculateNumBuffersLimit();
-                            if (needCheckFlush) {
-                                checkNeedFlushCachedBuffers();
-                            }
-                        }
+                            checkNeedFlushCachedBuffers();
                     },
                     poolSizeCheckInterval,
                     poolSizeCheckInterval,
@@ -149,28 +151,29 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     @Override
     public boolean canStoreNextSegmentForMemoryTier(int bufferNumberInSegment) {
+        calculateNumBuffersLimit();
+        if(this.bufferNumberInSegment == -1){
+            this.bufferNumberInSegment = bufferNumberInSegment;
+        }
         int currentNumberBuffer = numInMemoryBuffers.get();
-        return new Random().nextBoolean();
+        if ((currentNumberBuffer + bufferNumberInSegment) <= numInMemoryMaxBuffers) {
+            numInMemoryBuffers.getAndAdd(bufferNumberInSegment);
+            return true;
+        } else {
+            return false;
+        }
+        //return new Random().nextBoolean();
         //return false;
-        //if ((currentNumberBuffer + bufferNumberInSegment) <= numInMemoryMaxBuffers) {
-        //    return true;
-        //} else {
-        //    return false;
-        //}
     }
 
     @Override
     public void decreaseRedundantBufferNumberInSegment(
             int subpartitionId, int bufferNumberInSegment) {
-        //int actualRequiredBufferNum = memoryTierSubpartitionRequiredBuffers[subpartitionId];
-        //if (actualRequiredBufferNum < bufferNumberInSegment) {
-        //    checkState(
-        //            numInMemoryBuffers.addAndGet(
-        //                    -1 * (bufferNumberInSegment - actualRequiredBufferNum))
-        //                    >= 0,
-        //            "Wrong number of in-mem buffers.", numInMemoryBuffers.get());
-        //}
-        //memoryTierSubpartitionRequiredBuffers[subpartitionId] = 0;
+        int actualRequiredBufferNum = memoryTierSubpartitionRequiredBuffers[subpartitionId];
+        if (actualRequiredBufferNum < bufferNumberInSegment) {
+            numInMemoryBuffers.getAndAdd(actualRequiredBufferNum - bufferNumberInSegment);
+        }
+        memoryTierSubpartitionRequiredBuffers[subpartitionId] = 0;
     }
 
     void decInMemoryBuffer() {
@@ -213,22 +216,25 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
 
     @Override
     public void checkNeedFlushCachedBuffers() {
-        int availableBuffers = bufferPool.getNetworkBufferPoolAvailableBuffers();
-        checkState(availableBuffers >= 0);
-        int totalBuffers = bufferPool.getNetworkBufferPoolTotalBuffers();
-        checkState(totalBuffers > 0);
-        double availableRatio = availableBuffers * 1.0 / totalBuffers;
-        if ((numTotalCacheBuffers.get() + numInMemoryBuffers.get() < numTriggerFlushBuffers)
-                        && (numTotalCacheBuffers.get() < 64)
-                        && availableRatio < 0.8
-                || !isTriggeringFlush.isDone()) {
-            return;
+        // if last flush triggering is running, return
+        synchronized (this){
+            if(!isTriggeringFlush.isDone()){
+                return;
+            }
+            int availableBuffers = bufferPool.getNetworkBufferPoolAvailableBuffers();
+            checkState(availableBuffers >= 0);
+            int totalBuffers = bufferPool.getNetworkBufferPoolTotalBuffers();
+            checkState(totalBuffers > 0);
+            double networkBufferAvailableRatio = availableBuffers * 1.0 / totalBuffers;
+            // if the buffer is enough, the cached buffers will be not flushed.
+            if((numTotalCacheBuffers.get() + numInMemoryBuffers.get() < numTriggerFlushBuffers) && networkBufferAvailableRatio >= 0.2){
+                return;
+            }
+            isTriggeringFlush = new CompletableFuture<>();
+            sortToFlushSubpartitions();
+            notifySubpartitionFlush();
+            isTriggeringFlush.complete(null);
         }
-
-        isTriggeringFlush = new CompletableFuture<>();
-        sortToFlushSubpartitions();
-        notifySubpartitionFlush();
-        isTriggeringFlush.complete(null);
     }
 
     void incCachedBuffers(int subpartitionId, TieredStoreMode.TieredType tieredType) {
@@ -336,7 +342,10 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
         }
         if (isInMemory) {
             checkState(tieredType == TieredStoreMode.TieredType.IN_MEM);
-            numInMemoryBuffers.incrementAndGet();
+            int bufferNumber = ++memoryTierSubpartitionRequiredBuffers[subpartitionId];
+            if (bufferNumber > bufferNumberInSegment) {
+                numInMemoryBuffers.getAndIncrement();
+            }
         } else {
             incCachedBuffers(subpartitionId, tieredType);
             checkNeedFlushCachedBuffers();
@@ -345,9 +354,10 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
     }
 
     private void calculateNumBuffersLimit() {
-        synchronized (BufferPoolHelperImpl.class) {
+        synchronized (this) {
             // If the buffer pool only has one buffer, the in memory buffer and cached buffer use
             // the buffer in FIFO order.
+            numTotalBuffers = bufferPool.getNumBuffers();
             numInMemoryMaxBuffers = Math.max(1, (int) (numTotalBuffers * bufferInMemoryRatio));
             numStopNotifyFlushBuffers =
                     (int) (numTotalBuffers * (triggerFlushRatio - flushBufferRatio));
@@ -360,14 +370,13 @@ public class BufferPoolHelperImpl implements BufferPoolHelper {
     }
 
     private void notifySubpartitionFlush() {
-        int numMaxNotified = subpartitionBuffersCounters.size();
-        while ((numTotalCacheBuffers.get() + numInMemoryBuffers.get() >= numStopNotifyFlushBuffers
-                && numMaxNotified > 0)) {
+        int notifyTimes = subpartitionBuffersCounters.size();
+        while (notifyTimes > 0) {
             SubpartitionBuffersCounter buffersCounter =
                     checkNotNull(subpartitionBuffersCounters.poll());
             buffersCounter.getNotifyFlushListener().notifyFlushCachedBuffers();
             subpartitionBuffersCounters.add(buffersCounter);
-            numMaxNotified--;
+            notifyTimes--;
         }
     }
 

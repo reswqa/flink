@@ -697,7 +697,7 @@ public class LocalMemoryDataManager
     }
 
     @Override
-    public boolean canStoreNextSegment() {
+    public boolean canStoreNextSegment(int subpartitionId) {
         return bufferPoolHelper.canStoreNextSegmentForMemoryTier(bufferNumberInSegment);
     }
 

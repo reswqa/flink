@@ -50,7 +50,7 @@ public class RemoteDataManager implements SingleTierDataGate {
     }
 
     @Override
-    public boolean canStoreNextSegment() {
+    public boolean canStoreNextSegment(int subpartitionId) {
         return false;
     }
 

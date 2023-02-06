@@ -42,7 +42,7 @@ public interface SingleTierDataGate extends ChannelStateHolder, CheckpointedResu
     SingleTierReader createSubpartitionTierReader(
             int subpartitionId, BufferAvailabilityListener availabilityListener) throws IOException;
 
-    boolean canStoreNextSegment();
+    boolean canStoreNextSegment(int subpartitionId);
 
     int getNewSegmentSize();
 

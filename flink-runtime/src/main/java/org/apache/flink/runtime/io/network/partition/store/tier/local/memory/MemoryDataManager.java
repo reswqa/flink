@@ -108,7 +108,9 @@ public class MemoryDataManager implements SingleTierDataGate {
                         networkBufferSize,
                         bufferPoolHelper,
                         bufferCompressor,
-                        segmentIndexTracker);
+                        segmentIndexTracker,
+                        isBroadcastOnly,
+                        numSubpartitions);
         this.memoryDataWriter.setup();
     }
 
@@ -147,8 +149,9 @@ public class MemoryDataManager implements SingleTierDataGate {
     }
 
     @Override
-    public boolean canStoreNextSegment() {
-        return bufferPoolHelper.canStoreNextSegmentForMemoryTier(bufferNumberInSegment);
+    public boolean canStoreNextSegment(int subpartitionId) {
+        return bufferPoolHelper.canStoreNextSegmentForMemoryTier(bufferNumberInSegment)
+                && memoryDataWriter.isConsumerRegistered(subpartitionId);
     }
 
     @Override

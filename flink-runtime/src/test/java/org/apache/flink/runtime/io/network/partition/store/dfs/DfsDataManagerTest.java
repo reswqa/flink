@@ -55,7 +55,7 @@ class DfsDataManagerTest {
     @Test
     void testDataManagerStoreSegment() throws Exception {
         DfsDataManager dataManager = createDfsDataManager();
-        assertThat(dataManager.canStoreNextSegment()).isTrue();
+        assertThat(dataManager.canStoreNextSegment(0)).isTrue();
     }
 
     @Test

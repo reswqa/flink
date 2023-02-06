@@ -217,7 +217,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
     }
 
     @Override
-    public boolean canStoreNextSegment() {
+    public boolean canStoreNextSegment(int subpartitionId) {
         return new Random().nextBoolean();
     }
 

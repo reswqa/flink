@@ -20,7 +20,6 @@ package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
 
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
-import org.apache.flink.runtime.io.network.buffer.BufferBuilder;
 import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
@@ -62,28 +61,37 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
 
     private final SubpartitionSegmentIndexTracker subpartitionSegmentIndexTracker;
 
+    private final boolean isBroadcastOnly;
+
+    private final int numTotalConsumers;
+
     public MemoryDataWriter(
             int numSubpartitions,
             int bufferSize,
             BufferPoolHelper bufferPoolHelper,
             BufferCompressor bufferCompressor,
-            SubpartitionSegmentIndexTracker subpartitionSegmentIndexTracker) {
+            SubpartitionSegmentIndexTracker subpartitionSegmentIndexTracker,
+            boolean isBroadcastOnly,
+            int numTotalConsumers) {
         this.numSubpartitions = numSubpartitions;
+        this.numTotalConsumers = numTotalConsumers;
         this.bufferPoolHelper = bufferPoolHelper;
         this.subpartitionMemoryDataManagers = new SubpartitionMemoryDataManager[numSubpartitions];
         this.subpartitionSegmentIndexTracker = subpartitionSegmentIndexTracker;
+        this.isBroadcastOnly = isBroadcastOnly;
 
         this.subpartitionViewOperationsMap = new ArrayList<>(numSubpartitions);
         for (int subpartitionId = 0; subpartitionId < numSubpartitions; ++subpartitionId) {
             subpartitionMemoryDataManagers[subpartitionId] =
                     new SubpartitionMemoryDataManager(
-                            subpartitionId, bufferSize, bufferCompressor, this);
+                            subpartitionId, bufferSize, bufferCompressor, this, bufferPoolHelper);
             subpartitionViewOperationsMap.add(new ConcurrentHashMap<>());
         }
     }
 
     @Override
-    public void setup() throws IOException {}
+    public void setup() throws IOException {
+    }
 
     @Override
     public void emit(
@@ -133,7 +141,8 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
 
     /** Close this {@link MemoryDataWriter}, it means no data will be appended to memory. */
     @Override
-    public void close() {}
+    public void close() {
+    }
 
     /**
      * Release this {@link MemoryDataWriter}, it means all memory taken by this class will recycle.
@@ -153,16 +162,26 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
         }
     }
 
+    public boolean isConsumerRegistered(int subpartitionId) {
+        int numConsumers = subpartitionViewOperationsMap.get(subpartitionId).size();
+        if (isBroadcastOnly) {
+            return numConsumers == numTotalConsumers;
+        }
+        return numConsumers > 0;
+    }
+
     // ------------------------------------
     //      Callback for subpartition
     // ------------------------------------
 
     @Override
-    public BufferBuilder requestBufferFromPool() throws InterruptedException {
+    public MemorySegment requestBufferFromPool(int subpartitionId) throws InterruptedException {
         MemorySegment segment =
                 bufferPoolHelper.requestMemorySegmentBlocking(
-                        TieredStoreMode.TieredType.IN_MEM, true);
-        return new BufferBuilder(segment, this::recycleBuffer);
+                        subpartitionId,
+                        TieredStoreMode.TieredType.IN_MEM,
+                        true);
+        return segment;
     }
 
     @Override
@@ -198,9 +217,5 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
 
     private SubpartitionMemoryDataManager getSubpartitionMemoryDataManager(int targetChannel) {
         return subpartitionMemoryDataManagers[targetChannel];
-    }
-
-    private void recycleBuffer(MemorySegment buffer) {
-        bufferPoolHelper.recycleBuffer(buffer, TieredStoreMode.TieredType.IN_MEM, true);
     }
 }

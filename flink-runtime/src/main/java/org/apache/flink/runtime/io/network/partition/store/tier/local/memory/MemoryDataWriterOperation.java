@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition.store.tier.local.memory;
 
-import org.apache.flink.runtime.io.network.buffer.BufferBuilder;
+import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
 
 import java.util.Collection;
@@ -33,7 +33,7 @@ public interface MemoryDataWriterOperation {
      *
      * @return requested buffer.
      */
-    BufferBuilder requestBufferFromPool() throws InterruptedException;
+    MemorySegment requestBufferFromPool(int subpartitionId) throws InterruptedException;
 
     /**
      * This method is called when subpartition data become available.
@@ -58,4 +58,6 @@ public interface MemoryDataWriterOperation {
      * @param bufferIndex the index the consumer needs.
      */
     boolean isLastBufferInSegment(int subpartitionId, int bufferIndex);
+
+    boolean isConsumerRegistered(int subpartitionId);
 }

@@ -120,7 +120,7 @@ public class DfsDataManager implements SingleTierDataGate, DataManagerOperation 
     }
 
     @Override
-    public boolean canStoreNextSegment() {
+    public boolean canStoreNextSegment(int subpartitionId) {
         return true;
     }
 

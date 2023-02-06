@@ -147,7 +147,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
 
         // For the record that haven't selected a gate to emit
         if (subpartitionWriterIndex[targetSubpartition] == -1) {
-            writerIndex = chooseGate();
+            writerIndex = chooseGate(targetSubpartition);
             subpartitionWriterIndex[targetSubpartition] = writerIndex;
             checkState(numSubpartitionEmitBytes[targetSubpartition] == 0);
             numSubpartitionEmitBytes[targetSubpartition] += numRecordBytes;
@@ -188,19 +188,19 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
                 targetSubpartition);
     }
 
-    private int chooseGate() throws IOException {
+    private int chooseGate(int targetSubpartition) throws IOException {
         if(tierDataGates.length == 1){
             return 0;
         }
         // only for test case Memory and Disk
         if(tierDataGates.length == 2 && tierDataGates[0] instanceof MemoryDataManager && tierDataGates[1] instanceof LocalFileDataManager){
-            if(tierDataGates[0].canStoreNextSegment()){
+            if(tierDataGates[0].canStoreNextSegment(targetSubpartition)){
                 return 0;
             }
             return 1;
         }
         for (int tierGateIndex = 0; tierGateIndex < tierDataGates.length; ++tierGateIndex) {
-            if (tierDataGates[tierGateIndex].canStoreNextSegment()) {
+            if (tierDataGates[tierGateIndex].canStoreNextSegment(targetSubpartition)) {
                 return tierGateIndex;
             }
         }
