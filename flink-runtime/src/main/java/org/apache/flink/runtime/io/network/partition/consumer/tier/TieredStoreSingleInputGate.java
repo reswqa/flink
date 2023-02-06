@@ -108,22 +108,23 @@ public class TieredStoreSingleInputGate extends SingleInputGate {
     @Override
     public void setup() throws IOException {
         super.setup();
-        try {
-            tieredStoreDataFetcher.setup(
-                    this.jobID,
-                    this.resultPartitionIDs,
-                    getNewLocalBufferPool(),
-                    subpartitionIndex,
-                    baseDfsPath);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if(this.baseDfsPath != null){
+            try {
+                tieredStoreDataFetcher.setup(
+                        this.jobID,
+                        this.resultPartitionIDs,
+                        getNewLocalBufferPool(),
+                        subpartitionIndex,
+                        baseDfsPath);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("TieredStoreDataFetcher failed to setup.");
+            }
         }
     }
 
     private BufferPool getNewLocalBufferPool() throws IOException {
         NetworkBufferPool networkBufferPool = (NetworkBufferPool) getMemorySegmentProvider();
-        BufferPool bufferPool = networkBufferPool.createBufferPool(10, 100);
-        return bufferPool;
+        return networkBufferPool.createBufferPool(10, 100);
     }
 
     @Override
