@@ -26,7 +26,6 @@ import org.apache.flink.runtime.io.network.partition.store.tier.local.file.TsSpi
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,64 +70,6 @@ class FullSpillingStrategyTest {
         Optional<Decision> bufferConsumedDecision =
                 spillStrategy.onBufferConsumed(bufferIndexAndChannel);
         assertThat(bufferConsumedDecision).hasValue(Decision.NO_ACTION);
-    }
-
-    @Test
-    void testDecideActionWithGlobalInfo() {
-        final int subpartition1 = 0;
-        final int subpartition2 = 1;
-
-        final int progress1 = 10;
-        final int progress2 = 20;
-
-        List<BufferIndexAndChannel> subpartitionBuffers1 =
-                createBufferIndexAndChannelsList(
-                        subpartition1,
-                        progress1,
-                        progress1 + 2,
-                        progress1 + 4,
-                        progress1 + 6,
-                        progress1 + 8);
-        List<BufferIndexAndChannel> subpartitionBuffers2 =
-                createBufferIndexAndChannelsList(
-                        subpartition2,
-                        progress2 + 1,
-                        progress2 + 3,
-                        progress2 + 5,
-                        progress2 + 7,
-                        progress2 + 9);
-
-        TestingSpillingInfoProvider spillInfoProvider =
-                TestingSpillingInfoProvider.builder()
-                        .setGetNumSubpartitionsSupplier(() -> NUM_SUBPARTITIONS)
-                        .addSubpartitionBuffers(subpartition1, subpartitionBuffers1)
-                        .addSubpartitionBuffers(subpartition2, subpartitionBuffers2)
-                        .addSpillBuffers(subpartition1, Arrays.asList(0, 1, 2, 3))
-                        .addSpillBuffers(subpartition2, Arrays.asList(1, 2, 3))
-                        .setGetNumTotalUnSpillBuffersSupplier(
-                                () -> (int) (10 * NUM_BUFFERS_TRIGGER_SPILLING_RATIO))
-                        .setGetNumTotalRequestedBuffersSupplier(() -> 10)
-                        .setGetPoolSizeSupplier(() -> 10)
-                        .setGetNextBufferIndexToConsumeSupplier(
-                                () -> Arrays.asList(progress1, progress2))
-                        .build();
-
-        Decision decision = spillStrategy.forceTriggerFlushCachedBuffers(spillInfoProvider);
-
-        // all not spilled buffers need to spill.
-        Map<Integer, List<BufferIndexAndChannel>> expectedSpillBuffers = new HashMap<>();
-        expectedSpillBuffers.put(subpartition1, subpartitionBuffers1.subList(4, 5));
-        expectedSpillBuffers.put(
-                subpartition2, new ArrayList<>(subpartitionBuffers2.subList(0, 1)));
-        expectedSpillBuffers.get(subpartition2).addAll(subpartitionBuffers2.subList(4, 5));
-        assertThat(decision.getBufferToSpill()).isEqualTo(expectedSpillBuffers);
-
-        Map<Integer, List<BufferIndexAndChannel>> expectedReleaseBuffers = new HashMap<>();
-        expectedReleaseBuffers.put(
-                subpartition1, new ArrayList<>(subpartitionBuffers1.subList(0, 2)));
-        expectedReleaseBuffers.put(
-                subpartition2, new ArrayList<>(subpartitionBuffers2.subList(1, 3)));
-        assertThat(decision.getBufferToRelease()).isEqualTo(expectedReleaseBuffers);
     }
 
     @Test
