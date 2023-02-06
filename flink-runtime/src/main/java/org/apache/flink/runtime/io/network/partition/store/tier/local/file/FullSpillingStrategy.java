@@ -37,8 +37,7 @@ public class FullSpillingStrategy implements TsSpillingStrategy {
     private final float releaseThreshold;
 
     public FullSpillingStrategy(TieredStoreConfiguration storeConfiguration) {
-        this.numBuffersTriggerSpillingRatio =
-                storeConfiguration.getFullStrategyNumBuffersTriggerSpillingRatio();
+        this.numBuffersTriggerSpillingRatio = storeConfiguration.getFullStrategyNumBuffersTriggerSpillingRatio();
         this.releaseThreshold = storeConfiguration.getFullStrategyReleaseThreshold();
         this.releaseBufferRatio = storeConfiguration.getFullStrategyReleaseBufferRatio();
     }
@@ -67,20 +66,13 @@ public class FullSpillingStrategy implements TsSpillingStrategy {
     public Decision onResultPartitionClosed(BufferSpillingInfoProvider spillingInfoProvider) {
         Decision.Builder builder = Decision.builder();
         for (int subpartitionId = 0;
-                subpartitionId < spillingInfoProvider.getNumSubpartitions();
-                subpartitionId++) {
-            builder.addBufferToSpill(
-                            subpartitionId,
-                            // get all not start spilling buffers.
-                            spillingInfoProvider.getBuffersInOrder(
-                                    subpartitionId,
-                                    SpillStatus.NOT_SPILL,
-                                    ConsumeStatusWithId.ALL_ANY))
-                    .addBufferToRelease(
-                            subpartitionId,
-                            // get all not released buffers.
-                            spillingInfoProvider.getBuffersInOrder(
-                                    subpartitionId, SpillStatus.ALL, ConsumeStatusWithId.ALL_ANY));
+             subpartitionId < spillingInfoProvider.getNumSubpartitions(); subpartitionId++) {
+            Deque<BufferIndexAndChannel> buffersInOrder = spillingInfoProvider.getBuffersInOrder(subpartitionId,
+                    SpillStatus.NOT_SPILL,
+                    ConsumeStatusWithId.ALL_ANY);
+            builder
+                    .addBufferToSpill(subpartitionId, buffersInOrder)
+                    .addBufferToRelease(subpartitionId, buffersInOrder);
         }
         return builder.build();
     }
@@ -101,10 +93,10 @@ public class FullSpillingStrategy implements TsSpillingStrategy {
     void getToSpillBuffers(
             BufferSpillingInfoProvider spillingInfoProvider, Decision.Builder builder) {
         for (int i = 0; i < spillingInfoProvider.getNumSubpartitions(); i++) {
-            builder.addBufferToSpill(
-                    i,
-                    spillingInfoProvider.getBuffersInOrder(
-                            i, SpillStatus.NOT_SPILL, ConsumeStatusWithId.ALL_ANY));
+            builder.addBufferToSpill(i,
+                    spillingInfoProvider.getBuffersInOrder(i,
+                            SpillStatus.NOT_SPILL,
+                            ConsumeStatusWithId.ALL_ANY));
         }
     }
 
@@ -119,9 +111,10 @@ public class FullSpillingStrategy implements TsSpillingStrategy {
         TreeMap<Integer, Deque<BufferIndexAndChannel>> bufferToRelease = new TreeMap<>();
 
         for (int subpartitionId = 0; subpartitionId < numSubpartitions; subpartitionId++) {
-            Deque<BufferIndexAndChannel> buffersInOrder =
-                    spillingInfoProvider.getBuffersInOrder(
-                            subpartitionId, SpillStatus.SPILL, ConsumeStatusWithId.ALL_ANY);
+            Deque<BufferIndexAndChannel> buffersInOrder = spillingInfoProvider.getBuffersInOrder(
+                    subpartitionId,
+                    SpillStatus.SPILL,
+                    ConsumeStatusWithId.ALL_ANY);
             // if the number of subpartition buffers less than survived buffers, reserved all of
             // them.
             int releaseNum = Math.max(0, buffersInOrder.size() - subpartitionSurvivedNum);
