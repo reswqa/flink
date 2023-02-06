@@ -97,10 +97,6 @@ class FullSpillingStrategyTest {
         expectedToSpillBuffers.put(subpartition1, subpartitionBuffer1.subList(0, 2));
         expectedToSpillBuffers.put(subpartition2, subpartitionBuffer2.subList(0, 2));
         assertThat(decision.getBufferToSpill()).isEqualTo(expectedToSpillBuffers);
-
-        Map<Integer, List<BufferIndexAndChannel>> expectedToReleaseBuffers = new HashMap<>();
-        expectedToReleaseBuffers.put(subpartition1, subpartitionBuffer1.subList(0, 4));
-        expectedToReleaseBuffers.put(subpartition2, subpartitionBuffer2.subList(0, 3));
-        assertThat(decision.getBufferToRelease()).isEqualTo(expectedToReleaseBuffers);
+        assertThat(decision.getBufferToRelease()).isEqualTo(expectedToSpillBuffers);
     }
 }
