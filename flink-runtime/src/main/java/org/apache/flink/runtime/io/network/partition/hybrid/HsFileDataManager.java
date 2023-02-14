@@ -66,9 +66,6 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
     /** Executor to run the shuffle data reading task. */
     private final ScheduledExecutorService ioExecutor;
 
-    /** Maximum number of buffers can be allocated by this partition reader. */
-    private final int maxRequestedBuffers;
-
     /**
      * Maximum time to wait when requesting read buffers from the buffer pool before throwing an
      * exception.
@@ -133,7 +130,6 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
         this.dataFilePath = checkNotNull(dataFilePath);
         this.bufferPool = checkNotNull(bufferPool);
         this.ioExecutor = checkNotNull(ioExecutor);
-        this.maxRequestedBuffers = hybridShuffleConfiguration.getMaxRequestedBuffers();
         this.bufferRequestTimeout =
                 checkNotNull(hybridShuffleConfiguration.getBufferRequestTimeout());
     }
@@ -282,6 +278,13 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
 
     private void mayTriggerReading() {
         synchronized (lock) {
+            // one partition reader can consume at most Math.max(16M, 2 * numReaders) (the expected
+            // buffers per request is 4M) buffers for data read, which means larger parallelism,
+            // more buffers. Currently, it is only an empirical strategy which can not be
+            // configured.
+            int maxRequestedBuffers =
+                    Math.max(4 * bufferPool.getNumBuffersPerRequest(), 2 * allReaders.size());
+
             if (!isRunning
                     && !allReaders.isEmpty()
                     && numRequestedBuffers + bufferPool.getNumBuffersPerRequest()
