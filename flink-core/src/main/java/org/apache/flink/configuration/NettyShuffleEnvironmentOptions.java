@@ -472,6 +472,10 @@ public class NettyShuffleEnvironmentOptions {
                                     + " based on the platform. Note that the \"epoll\" mode can get better performance, less GC and have more advanced features which are"
                                     + " only available on modern Linux.");
 
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Integer> MAX_BUFFERS_READ_AHEAD =
+            key("hybrid-max-buffers-read-ahead").intType().defaultValue(5);
+
     // ------------------------------------------------------------------------
     //  Partition Request Options
     // ------------------------------------------------------------------------

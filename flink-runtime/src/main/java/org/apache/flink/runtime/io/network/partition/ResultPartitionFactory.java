@@ -79,6 +79,8 @@ public class ResultPartitionFactory {
 
     private final int maxOverdraftBuffersPerGate;
 
+    private final int maxBuffersReadAhead;
+
     public ResultPartitionFactory(
             ResultPartitionManager partitionManager,
             FileChannelManager channelManager,
@@ -95,7 +97,8 @@ public class ResultPartitionFactory {
             int sortShuffleMinBuffers,
             int sortShuffleMinParallelism,
             boolean sslEnabled,
-            int maxOverdraftBuffersPerGate) {
+            int maxOverdraftBuffersPerGate,
+            int maxBuffersReadAhead) {
 
         this.partitionManager = partitionManager;
         this.channelManager = channelManager;
@@ -113,6 +116,7 @@ public class ResultPartitionFactory {
         this.sortShuffleMinParallelism = sortShuffleMinParallelism;
         this.sslEnabled = sslEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
+        this.maxBuffersReadAhead = maxBuffersReadAhead;
     }
 
     public ResultPartition create(
@@ -240,6 +244,7 @@ public class ResultPartitionFactory {
                                                             .SpillingStrategyType.FULL
                                                     : HybridShuffleConfiguration
                                                             .SpillingStrategyType.SELECTIVE)
+                                    .setMaxBuffersReadAhead(maxBuffersReadAhead)
                                     .build(),
                             bufferCompressor,
                             isBroadcast,

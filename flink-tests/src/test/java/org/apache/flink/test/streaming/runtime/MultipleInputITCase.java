@@ -17,6 +17,7 @@
 
 package org.apache.flink.test.streaming.runtime;
 
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -29,7 +30,10 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.operators.AbstractInput;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperatorV2;
+import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.Input;
+import org.apache.flink.streaming.api.operators.InputSelectable;
+import org.apache.flink.streaming.api.operators.InputSelection;
 import org.apache.flink.streaming.api.operators.MultipleInputStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.api.operators.StreamOperatorParameters;
@@ -107,6 +111,43 @@ public class MultipleInputITCase extends AbstractTestBase {
         Collections.sort(result);
         long actualSum = result.get(result.size() - 1);
         assertEquals(1 + 10 + 2 + 11 + 42 + 44, actualSum);
+    }
+
+    @Test
+    public void testSelectable() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        env.setRuntimeMode(RuntimeExecutionMode.BATCH);
+
+        TestListResultSink<Long> resultSink = new TestListResultSink<>();
+
+        DataStream<Long> source1 = env.fromSequence(1L, 10000L);
+        DataStream<Long> source2 = env.fromElements(2L, 11L);
+
+        MultipleInputTransformation<Long> multipleInput =
+                new MultipleInputTransformation<>(
+                        "My Operator",
+                        new SumAllInputOperatorFactory(2),
+                        BasicTypeInfo.LONG_TYPE_INFO,
+                        1);
+
+        MultipleInputTransformation<Long> multipleInputTransformation;
+
+        multipleInputTransformation =
+                multipleInput
+                        .addInput(source1.getTransformation())
+                        .addInput(source2.getTransformation());
+
+        env.addOperator(multipleInputTransformation);
+
+        new MultipleConnectedStreams(env).transform(multipleInput).addSink(resultSink);
+
+        env.execute();
+
+        List<Long> result = resultSink.getResult();
+        Collections.sort(result);
+        long actualSum = result.get(result.size() - 1);
+        assertEquals(1 + 10 + 2 + 11, actualSum);
     }
 
     @Test
@@ -205,9 +246,11 @@ public class MultipleInputITCase extends AbstractTestBase {
 
     /** 3 input operator that sums all of it inputs. */
     public static class SumAllInputOperator extends AbstractStreamOperatorV2<Long>
-            implements MultipleInputStreamOperator<Long> {
+            implements MultipleInputStreamOperator<Long>, InputSelectable, BoundedMultiInput {
         private final int numberOfInputs;
         private long sum;
+
+        private boolean buildEnd;
 
         public SumAllInputOperator(StreamOperatorParameters<Long> parameters, int numberOfInputs) {
             super(parameters, numberOfInputs);
@@ -224,6 +267,26 @@ public class MultipleInputITCase extends AbstractTestBase {
                     .subList(0, numberOfInputs);
         }
 
+        @Override
+        public InputSelection nextSelection() {
+            return buildEnd ? InputSelection.SECOND : InputSelection.FIRST;
+        }
+
+        @Override
+        public void endInput(int inputId) throws Exception {
+            switch (inputId) {
+                case 1:
+                    checkState(!buildEnd, "Should not build ended.");
+                    LOG.info("Finish build phase.");
+                    buildEnd = true;
+                    break;
+                case 2:
+                    checkState(buildEnd, "Should build ended.");
+                    LOG.info("Finish probe phase.");
+                    break;
+            }
+        }
+
         /** Summing input for {@link SumAllInputOperator}. */
         public class SumInput<T> extends AbstractInput<T, Long> {
             public SumInput(AbstractStreamOperatorV2<Long> owner, int inputId) {
@@ -233,6 +296,7 @@ public class MultipleInputITCase extends AbstractTestBase {
             @Override
             public void processElement(StreamRecord<T> element) throws Exception {
                 sum += Long.valueOf(element.getValue().toString());
+                System.out.println(element.getValue().toString());
                 output.collect(new StreamRecord<>(sum));
             }
         }

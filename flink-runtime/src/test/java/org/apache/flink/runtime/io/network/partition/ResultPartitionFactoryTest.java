@@ -162,7 +162,8 @@ class ResultPartitionFactoryTest {
                         10,
                         sortShuffleMinParallelism,
                         false,
-                        0);
+                        0,
+                        5);
 
         final ResultPartitionDeploymentDescriptor descriptor =
                 new ResultPartitionDeploymentDescriptor(

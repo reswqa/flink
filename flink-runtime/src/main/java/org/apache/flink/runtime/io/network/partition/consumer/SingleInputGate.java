@@ -293,6 +293,7 @@ public class SingleInputGate extends IndexedInputGate {
     @Override
     public void requestPartitions() {
         synchronized (requestLock) {
+            System.out.println("request partitions");
             if (!requestedPartitionsFlag) {
                 if (closeFuture.isDone()) {
                     throw new IllegalStateException("Already released.");

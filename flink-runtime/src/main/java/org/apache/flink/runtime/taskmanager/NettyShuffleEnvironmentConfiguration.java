@@ -104,6 +104,8 @@ public class NettyShuffleEnvironmentConfiguration {
 
     private final int maxOverdraftBuffersPerGate;
 
+    private final int maxBuffersReadAhead;
+
     public NettyShuffleEnvironmentConfiguration(
             int numNetworkBuffers,
             int networkBufferSize,
@@ -126,7 +128,8 @@ public class NettyShuffleEnvironmentConfiguration {
             BufferDebloatConfiguration debloatConfiguration,
             int maxNumberOfConnections,
             boolean connectionReuseEnabled,
-            int maxOverdraftBuffersPerGate) {
+            int maxOverdraftBuffersPerGate,
+            int maxBuffersReadAhead) {
 
         this.numNetworkBuffers = numNetworkBuffers;
         this.networkBufferSize = networkBufferSize;
@@ -150,6 +153,7 @@ public class NettyShuffleEnvironmentConfiguration {
         this.maxNumberOfConnections = maxNumberOfConnections;
         this.connectionReuseEnabled = connectionReuseEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
+        this.maxBuffersReadAhead = maxBuffersReadAhead;
     }
 
     // ------------------------------------------------------------------------
@@ -244,6 +248,10 @@ public class NettyShuffleEnvironmentConfiguration {
 
     public int getMaxOverdraftBuffersPerGate() {
         return maxOverdraftBuffersPerGate;
+    }
+
+    public int getMaxBuffersReadAhead() {
+        return maxBuffersReadAhead;
     }
 
     // ------------------------------------------------------------------------
@@ -348,6 +356,9 @@ public class NettyShuffleEnvironmentConfiguration {
                 configuration.get(
                         NettyShuffleEnvironmentOptions.TCP_CONNECTION_REUSE_ACROSS_JOBS_ENABLED);
 
+        int maxBuffersReadAhead =
+                configuration.get(NettyShuffleEnvironmentOptions.MAX_BUFFERS_READ_AHEAD);
+
         checkArgument(buffersPerChannel >= 0, "Must be non-negative.");
         checkArgument(
                 !maxRequiredBuffersPerGate.isPresent() || maxRequiredBuffersPerGate.get() >= 1,
@@ -383,7 +394,8 @@ public class NettyShuffleEnvironmentConfiguration {
                 BufferDebloatConfiguration.fromConfiguration(configuration),
                 maxNumConnections,
                 connectionReuseEnabled,
-                maxOverdraftBuffersPerGate);
+                maxOverdraftBuffersPerGate,
+                maxBuffersReadAhead);
     }
 
     /**
