@@ -38,6 +38,8 @@ public class HybridShuffleConfiguration {
 
     private static final long DEFAULT_BUFFER_POLL_SIZE_CHECK_INTERVAL_MS = 1000;
 
+    private static final long DEFAULT_NO_DATA_SLEEP_TIME_MS = 5;
+
     private static final SpillingStrategyType DEFAULT_SPILLING_STRATEGY_NAME =
             SpillingStrategyType.FULL;
 
@@ -67,6 +69,9 @@ public class HybridShuffleConfiguration {
 
     private final long bufferPoolSizeCheckIntervalMs;
 
+    // Only used for testing.
+    private final long noDataSleepTime;
+
     private HybridShuffleConfiguration(
             int maxBuffersReadAhead,
             Duration bufferRequestTimeout,
@@ -77,7 +82,8 @@ public class HybridShuffleConfiguration {
             float fullStrategyReleaseThreshold,
             float fullStrategyReleaseBufferRatio,
             SpillingStrategyType spillingStrategyType,
-            long bufferPoolSizeCheckIntervalMs) {
+            long bufferPoolSizeCheckIntervalMs,
+            long noDataSleepTime) {
         this.maxBuffersReadAhead = maxBuffersReadAhead;
         this.bufferRequestTimeout = bufferRequestTimeout;
         this.maxRequestedBuffers = maxRequestedBuffers;
@@ -89,6 +95,7 @@ public class HybridShuffleConfiguration {
         this.fullStrategyReleaseBufferRatio = fullStrategyReleaseBufferRatio;
         this.spillingStrategyType = spillingStrategyType;
         this.bufferPoolSizeCheckIntervalMs = bufferPoolSizeCheckIntervalMs;
+        this.noDataSleepTime = noDataSleepTime;
     }
 
     public static Builder builder(int numSubpartitions, int numBuffersPerRequest) {
@@ -159,6 +166,10 @@ public class HybridShuffleConfiguration {
         return bufferPoolSizeCheckIntervalMs;
     }
 
+    public long getNoDataSleepTime() {
+        return noDataSleepTime;
+    }
+
     /** Type of {@link HsSpillingStrategy}. */
     public enum SpillingStrategyType {
         FULL,
@@ -186,6 +197,8 @@ public class HybridShuffleConfiguration {
         private long bufferPoolSizeCheckIntervalMs = DEFAULT_BUFFER_POLL_SIZE_CHECK_INTERVAL_MS;
 
         private SpillingStrategyType spillingStrategyType = DEFAULT_SPILLING_STRATEGY_NAME;
+
+        private long nonDataSleepTime = DEFAULT_NO_DATA_SLEEP_TIME_MS;
 
         private final int numSubpartitions;
 
@@ -244,6 +257,11 @@ public class HybridShuffleConfiguration {
             return this;
         }
 
+        public Builder setNoDataSleepTime(long noDataSleepTime) {
+            this.nonDataSleepTime = noDataSleepTime;
+            return this;
+        }
+
         public HybridShuffleConfiguration build() {
             return new HybridShuffleConfiguration(
                     maxBuffersReadAhead,
@@ -255,7 +273,8 @@ public class HybridShuffleConfiguration {
                     fullStrategyReleaseThreshold,
                     fullStrategyReleaseBufferRatio,
                     spillingStrategyType,
-                    bufferPoolSizeCheckIntervalMs);
+                    bufferPoolSizeCheckIntervalMs,
+                    nonDataSleepTime);
         }
     }
 }

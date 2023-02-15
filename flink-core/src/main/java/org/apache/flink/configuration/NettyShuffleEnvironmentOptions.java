@@ -476,6 +476,10 @@ public class NettyShuffleEnvironmentOptions {
     public static final ConfigOption<Integer> MAX_BUFFERS_READ_AHEAD =
             key("hybrid-max-buffers-read-ahead").intType().defaultValue(5);
 
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Long> NO_DATA_SLEEP_TIME =
+            key("hybrid-no-data-sleep-time").longType().defaultValue(5L);
+
     // ------------------------------------------------------------------------
     //  Partition Request Options
     // ------------------------------------------------------------------------

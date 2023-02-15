@@ -237,7 +237,8 @@ public class ResultPartitionBuilder {
                         sortShuffleMinParallelism,
                         sslEnabled,
                         maxOverdraftBuffersPerGate,
-                        5);
+                        5,
+                        5L);
 
         SupplierWithException<BufferPool, IOException> factory =
                 bufferPoolFactory.orElseGet(

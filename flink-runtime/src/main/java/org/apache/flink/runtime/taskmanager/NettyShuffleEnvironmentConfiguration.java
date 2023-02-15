@@ -106,6 +106,8 @@ public class NettyShuffleEnvironmentConfiguration {
 
     private final int maxBuffersReadAhead;
 
+    private final long noDataSleepTime;
+
     public NettyShuffleEnvironmentConfiguration(
             int numNetworkBuffers,
             int networkBufferSize,
@@ -129,7 +131,8 @@ public class NettyShuffleEnvironmentConfiguration {
             int maxNumberOfConnections,
             boolean connectionReuseEnabled,
             int maxOverdraftBuffersPerGate,
-            int maxBuffersReadAhead) {
+            int maxBuffersReadAhead,
+            long noDataSleepTime) {
 
         this.numNetworkBuffers = numNetworkBuffers;
         this.networkBufferSize = networkBufferSize;
@@ -154,6 +157,7 @@ public class NettyShuffleEnvironmentConfiguration {
         this.connectionReuseEnabled = connectionReuseEnabled;
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
         this.maxBuffersReadAhead = maxBuffersReadAhead;
+        this.noDataSleepTime = noDataSleepTime;
     }
 
     // ------------------------------------------------------------------------
@@ -252,6 +256,10 @@ public class NettyShuffleEnvironmentConfiguration {
 
     public int getMaxBuffersReadAhead() {
         return maxBuffersReadAhead;
+    }
+
+    public long getNoDataSleepTime() {
+        return noDataSleepTime;
     }
 
     // ------------------------------------------------------------------------
@@ -359,6 +367,8 @@ public class NettyShuffleEnvironmentConfiguration {
         int maxBuffersReadAhead =
                 configuration.get(NettyShuffleEnvironmentOptions.MAX_BUFFERS_READ_AHEAD);
 
+        long noDataSleepTime = configuration.get(NettyShuffleEnvironmentOptions.NO_DATA_SLEEP_TIME);
+
         checkArgument(buffersPerChannel >= 0, "Must be non-negative.");
         checkArgument(
                 !maxRequiredBuffersPerGate.isPresent() || maxRequiredBuffersPerGate.get() >= 1,
@@ -395,7 +405,8 @@ public class NettyShuffleEnvironmentConfiguration {
                 maxNumConnections,
                 connectionReuseEnabled,
                 maxOverdraftBuffersPerGate,
-                maxBuffersReadAhead);
+                maxBuffersReadAhead,
+                noDataSleepTime);
     }
 
     /**

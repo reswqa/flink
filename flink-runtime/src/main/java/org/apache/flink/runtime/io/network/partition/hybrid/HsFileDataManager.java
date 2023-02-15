@@ -117,6 +117,8 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
     @GuardedBy("lock")
     private FileChannel dataFileChannel;
 
+    private final long noDataSleepTime;
+
     public HsFileDataManager(
             BatchShuffleReadBufferPool bufferPool,
             ScheduledExecutorService ioExecutor,
@@ -132,6 +134,7 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
         this.ioExecutor = checkNotNull(ioExecutor);
         this.bufferRequestTimeout =
                 checkNotNull(hybridShuffleConfiguration.getBufferRequestTimeout());
+        this.noDataSleepTime = hybridShuffleConfiguration.getNoDataSleepTime();
     }
 
     /** Setup read buffer pool. */
@@ -379,7 +382,7 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
             // consumed from memory. HsFileDataManager will encounter busy-loop
             // problem, which will lead to a meaningless surge in CPU utilization
             // and seriously affect performance.
-            ioExecutor.schedule(this::mayTriggerReading, 5, TimeUnit.MILLISECONDS);
+            ioExecutor.schedule(this::mayTriggerReading, noDataSleepTime, TimeUnit.MILLISECONDS);
         } else {
             mayTriggerReading();
         }
