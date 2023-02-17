@@ -108,6 +108,22 @@ public class NettyShuffleEnvironmentConfiguration {
 
     private final long noDataSleepTime;
 
+    // ----------------------------------------
+    //        Selective Spilling Strategy
+    // ----------------------------------------
+    private final float selectiveStrategySpillThreshold;
+
+    private final float selectiveStrategySpillBufferRatio;
+
+    // ----------------------------------------
+    //        Full Spilling Strategy
+    // ----------------------------------------
+    private final float fullStrategyNumBuffersTriggerSpillingRatio;
+
+    private final float fullStrategyReleaseThreshold;
+
+    private final float fullStrategyReleaseBufferRatio;
+
     public NettyShuffleEnvironmentConfiguration(
             int numNetworkBuffers,
             int networkBufferSize,
@@ -132,7 +148,12 @@ public class NettyShuffleEnvironmentConfiguration {
             boolean connectionReuseEnabled,
             int maxOverdraftBuffersPerGate,
             int maxBuffersReadAhead,
-            long noDataSleepTime) {
+            long noDataSleepTime,
+            float selectiveStrategySpillThreshold,
+            float selectiveStrategySpillBufferRatio,
+            float fullStrategyNumBuffersTriggerSpillingRatio,
+            float fullStrategyReleaseThreshold,
+            float fullStrategyReleaseBufferRatio) {
 
         this.numNetworkBuffers = numNetworkBuffers;
         this.networkBufferSize = networkBufferSize;
@@ -158,6 +179,12 @@ public class NettyShuffleEnvironmentConfiguration {
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
         this.maxBuffersReadAhead = maxBuffersReadAhead;
         this.noDataSleepTime = noDataSleepTime;
+        this.selectiveStrategySpillThreshold = selectiveStrategySpillThreshold;
+        this.selectiveStrategySpillBufferRatio = selectiveStrategySpillBufferRatio;
+        this.fullStrategyNumBuffersTriggerSpillingRatio =
+                fullStrategyNumBuffersTriggerSpillingRatio;
+        this.fullStrategyReleaseThreshold = fullStrategyReleaseThreshold;
+        this.fullStrategyReleaseBufferRatio = fullStrategyReleaseBufferRatio;
     }
 
     // ------------------------------------------------------------------------
@@ -369,6 +396,21 @@ public class NettyShuffleEnvironmentConfiguration {
 
         long noDataSleepTime = configuration.get(NettyShuffleEnvironmentOptions.NO_DATA_SLEEP_TIME);
 
+        float selectiveStrategySpillThreshold =
+                configuration.get(NettyShuffleEnvironmentOptions.SELECTIVE_SPILL_THRESHOLD);
+
+        float selectiveStrategySpillBufferRatio =
+                configuration.get(NettyShuffleEnvironmentOptions.SELECTIVE_SPILL_BUFFER_RATIO);
+
+        float fullStrategyNumBuffersTriggerSpillingRatio =
+                configuration.get(NettyShuffleEnvironmentOptions.FULL_TRIGGER_SPILL_RATIO);
+
+        float fullStrategyReleaseThreshold =
+                configuration.get(NettyShuffleEnvironmentOptions.FULL_RELEASE_THRESHOLD);
+
+        float fullStrategyReleaseBufferRatio =
+                configuration.get(NettyShuffleEnvironmentOptions.FULL_RELEASE_RATIO);
+
         checkArgument(buffersPerChannel >= 0, "Must be non-negative.");
         checkArgument(
                 !maxRequiredBuffersPerGate.isPresent() || maxRequiredBuffersPerGate.get() >= 1,
@@ -406,7 +448,12 @@ public class NettyShuffleEnvironmentConfiguration {
                 connectionReuseEnabled,
                 maxOverdraftBuffersPerGate,
                 maxBuffersReadAhead,
-                noDataSleepTime);
+                noDataSleepTime,
+                selectiveStrategySpillThreshold,
+                selectiveStrategySpillBufferRatio,
+                fullStrategyNumBuffersTriggerSpillingRatio,
+                fullStrategyReleaseThreshold,
+                fullStrategyReleaseBufferRatio);
     }
 
     /**

@@ -238,7 +238,12 @@ public class ResultPartitionBuilder {
                         sslEnabled,
                         maxOverdraftBuffersPerGate,
                         5,
-                        5L);
+                        5L,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0);
 
         SupplierWithException<BufferPool, IOException> factory =
                 bufferPoolFactory.orElseGet(

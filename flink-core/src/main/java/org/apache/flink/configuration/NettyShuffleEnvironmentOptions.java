@@ -480,6 +480,26 @@ public class NettyShuffleEnvironmentOptions {
     public static final ConfigOption<Long> NO_DATA_SLEEP_TIME =
             key("hybrid-no-data-sleep-time").longType().defaultValue(5L);
 
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Float> SELECTIVE_SPILL_THRESHOLD =
+            key("hybrid-selective-spill-threshold").floatType().defaultValue(0.7f);
+
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Float> SELECTIVE_SPILL_BUFFER_RATIO =
+            key("hybrid-selective-spill-buffer-ratio").floatType().defaultValue(0.4f);
+
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Float> FULL_TRIGGER_SPILL_RATIO =
+            key("hybrid-full-trigger-spill-ratio").floatType().defaultValue(0.5f);
+
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Float> FULL_RELEASE_THRESHOLD =
+            key("hybrid-full-release-threshold").floatType().defaultValue(0.7f);
+
+    @Documentation.Section(Documentation.Sections.ALL_TASK_MANAGER_NETWORK)
+    public static final ConfigOption<Float> FULL_RELEASE_RATIO =
+            key("hybrid-full-release-ratio").floatType().defaultValue(0.4f);
+
     // ------------------------------------------------------------------------
     //  Partition Request Options
     // ------------------------------------------------------------------------

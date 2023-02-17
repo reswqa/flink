@@ -164,7 +164,12 @@ class ResultPartitionFactoryTest {
                         false,
                         0,
                         5,
-                        5L);
+                        5L,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0);
 
         final ResultPartitionDeploymentDescriptor descriptor =
                 new ResultPartitionDeploymentDescriptor(

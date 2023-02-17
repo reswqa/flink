@@ -83,6 +83,22 @@ public class ResultPartitionFactory {
 
     private final long noDataSleepTime;
 
+    // ----------------------------------------
+    //        Selective Spilling Strategy
+    // ----------------------------------------
+    private final float selectiveStrategySpillThreshold;
+
+    private final float selectiveStrategySpillBufferRatio;
+
+    // ----------------------------------------
+    //        Full Spilling Strategy
+    // ----------------------------------------
+    private final float fullStrategyNumBuffersTriggerSpillingRatio;
+
+    private final float fullStrategyReleaseThreshold;
+
+    private final float fullStrategyReleaseBufferRatio;
+
     public ResultPartitionFactory(
             ResultPartitionManager partitionManager,
             FileChannelManager channelManager,
@@ -101,7 +117,12 @@ public class ResultPartitionFactory {
             boolean sslEnabled,
             int maxOverdraftBuffersPerGate,
             int maxBuffersReadAhead,
-            long noDataSleepTime) {
+            long noDataSleepTime,
+            float selectiveStrategySpillThreshold,
+            float selectiveStrategySpillBufferRatio,
+            float fullStrategyNumBuffersTriggerSpillingRatio,
+            float fullStrategyReleaseThreshold,
+            float fullStrategyReleaseBufferRatio) {
 
         this.partitionManager = partitionManager;
         this.channelManager = channelManager;
@@ -121,6 +142,12 @@ public class ResultPartitionFactory {
         this.maxOverdraftBuffersPerGate = maxOverdraftBuffersPerGate;
         this.maxBuffersReadAhead = maxBuffersReadAhead;
         this.noDataSleepTime = noDataSleepTime;
+        this.selectiveStrategySpillThreshold = selectiveStrategySpillThreshold;
+        this.selectiveStrategySpillBufferRatio = selectiveStrategySpillBufferRatio;
+        this.fullStrategyNumBuffersTriggerSpillingRatio =
+                fullStrategyNumBuffersTriggerSpillingRatio;
+        this.fullStrategyReleaseThreshold = fullStrategyReleaseThreshold;
+        this.fullStrategyReleaseBufferRatio = fullStrategyReleaseBufferRatio;
     }
 
     public ResultPartition create(
@@ -250,6 +277,15 @@ public class ResultPartitionFactory {
                                                             .SpillingStrategyType.SELECTIVE)
                                     .setMaxBuffersReadAhead(maxBuffersReadAhead)
                                     .setNoDataSleepTime(noDataSleepTime)
+                                    .setSelectiveStrategySpillThreshold(
+                                            selectiveStrategySpillThreshold)
+                                    .setSelectiveStrategySpillBufferRatio(
+                                            selectiveStrategySpillBufferRatio)
+                                    .setFullStrategyNumBuffersTriggerSpillingRatio(
+                                            fullStrategyNumBuffersTriggerSpillingRatio)
+                                    .setFullStrategyReleaseThreshold(fullStrategyReleaseThreshold)
+                                    .setFullStrategyReleaseBufferRatio(
+                                            fullStrategyReleaseBufferRatio)
                                     .build(),
                             bufferCompressor,
                             isBroadcast,

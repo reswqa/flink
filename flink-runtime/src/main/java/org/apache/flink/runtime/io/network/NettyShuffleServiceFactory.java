@@ -212,7 +212,12 @@ public class NettyShuffleServiceFactory
                         config.isSSLEnabled(),
                         config.getMaxOverdraftBuffersPerGate(),
                         config.getMaxBuffersReadAhead(),
-                        config.getNoDataSleepTime());
+                        config.getNoDataSleepTime(),
+                        0,
+                        0,
+                        0,
+                        0,
+                        0);
 
         SingleInputGateFactory singleInputGateFactory =
                 new SingleInputGateFactory(
