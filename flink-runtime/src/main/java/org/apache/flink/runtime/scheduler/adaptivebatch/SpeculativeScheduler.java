@@ -44,14 +44,12 @@ import org.apache.flink.runtime.executiongraph.failover.flip1.FailureHandlingRes
 import org.apache.flink.runtime.executiongraph.failover.flip1.RestartBackoffTimeStrategy;
 import org.apache.flink.runtime.io.network.partition.PartitionException;
 import org.apache.flink.runtime.jobgraph.JobGraph;
-import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.JobManagerJobMetricGroup;
 import org.apache.flink.runtime.scheduler.ExecutionGraphFactory;
 import org.apache.flink.runtime.scheduler.ExecutionOperations;
 import org.apache.flink.runtime.scheduler.ExecutionSlotAllocatorFactory;
 import org.apache.flink.runtime.scheduler.ExecutionVertexVersioner;
-import org.apache.flink.runtime.scheduler.adaptivebatch.forwardgroup.ForwardGroup;
 import org.apache.flink.runtime.scheduler.slowtaskdetector.ExecutionTimeBasedSlowTaskDetector;
 import org.apache.flink.runtime.scheduler.slowtaskdetector.SlowTaskDetector;
 import org.apache.flink.runtime.scheduler.slowtaskdetector.SlowTaskDetectorListener;
@@ -126,8 +124,7 @@ public class SpeculativeScheduler extends AdaptiveBatchScheduler
             final VertexParallelismAndInputInfosDecider vertexParallelismAndInputInfosDecider,
             final int defaultMaxParallelism,
             final BlocklistOperations blocklistOperations,
-            final HybridPartitionDataConsumeConstraint hybridPartitionDataConsumeConstraint,
-            final Map<JobVertexID, ForwardGroup> forwardGroupsByJobVertexId)
+            final HybridPartitionDataConsumeConstraint hybridPartitionDataConsumeConstraint)
             throws Exception {
 
         super(
@@ -155,8 +152,7 @@ public class SpeculativeScheduler extends AdaptiveBatchScheduler
                 rpcTimeout,
                 vertexParallelismAndInputInfosDecider,
                 defaultMaxParallelism,
-                hybridPartitionDataConsumeConstraint,
-                forwardGroupsByJobVertexId);
+                hybridPartitionDataConsumeConstraint);
 
         this.maxConcurrentExecutions =
                 jobMasterConfiguration.getInteger(

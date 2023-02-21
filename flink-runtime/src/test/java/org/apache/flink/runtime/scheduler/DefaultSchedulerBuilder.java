@@ -41,14 +41,12 @@ import org.apache.flink.runtime.executiongraph.failover.flip1.RestartPipelinedRe
 import org.apache.flink.runtime.io.network.partition.JobMasterPartitionTracker;
 import org.apache.flink.runtime.io.network.partition.NoOpJobMasterPartitionTracker;
 import org.apache.flink.runtime.jobgraph.JobGraph;
-import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmaster.DefaultExecutionDeploymentTracker;
 import org.apache.flink.runtime.metrics.groups.JobManagerJobMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.scheduler.adaptivebatch.AdaptiveBatchScheduler;
 import org.apache.flink.runtime.scheduler.adaptivebatch.SpeculativeScheduler;
 import org.apache.flink.runtime.scheduler.adaptivebatch.VertexParallelismAndInputInfosDecider;
-import org.apache.flink.runtime.scheduler.adaptivebatch.forwardgroup.ForwardGroupComputeUtil;
 import org.apache.flink.runtime.scheduler.strategy.AllFinishedInputConsumableDecider;
 import org.apache.flink.runtime.scheduler.strategy.InputConsumableDecider;
 import org.apache.flink.runtime.scheduler.strategy.PipelinedRegionSchedulingStrategy;
@@ -65,7 +63,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Function;
 
 import static org.apache.flink.runtime.scheduler.SchedulerBase.computeVertexParallelismStore;
 
@@ -334,9 +331,7 @@ public class DefaultSchedulerBuilder {
                 rpcTimeout,
                 vertexParallelismAndInputInfosDecider,
                 defaultMaxParallelism,
-                hybridPartitionDataConsumeConstraint,
-                ForwardGroupComputeUtil.computeForwardGroupsAndSetVertexParallelismsIfNecessary(
-                        jobGraph.getVerticesSortedTopologicallyFromSources()));
+                hybridPartitionDataConsumeConstraint);
     }
 
     public SpeculativeScheduler buildSpeculativeScheduler() throws Exception {
@@ -366,9 +361,7 @@ public class DefaultSchedulerBuilder {
                 vertexParallelismAndInputInfosDecider,
                 defaultMaxParallelism,
                 blocklistOperations,
-                HybridPartitionDataConsumeConstraint.ALL_PRODUCERS_FINISHED,
-                ForwardGroupComputeUtil.computeForwardGroupsAndSetVertexParallelismsIfNecessary(
-                        jobGraph.getVerticesSortedTopologicallyFromSources()));
+                HybridPartitionDataConsumeConstraint.ALL_PRODUCERS_FINISHED);
     }
 
     private ExecutionGraphFactory createExecutionGraphFactory(boolean isDynamicGraph) {
@@ -397,16 +390,8 @@ public class DefaultSchedulerBuilder {
 
     public static VertexParallelismAndInputInfosDecider createCustomParallelismDecider(
             int expectParallelism) {
-        return createCustomParallelismDecider(ignore -> expectParallelism);
-    }
-
-    public static VertexParallelismAndInputInfosDecider createCustomParallelismDecider(
-            Function<JobVertexID, Integer> parallelismFunction) {
-        return (jobVertexId, consumedResults, vertexInitialParallelism, ignored) -> {
-            int parallelism =
-                    vertexInitialParallelism > 0
-                            ? vertexInitialParallelism
-                            : parallelismFunction.apply(jobVertexId);
+        return (jobVertexId, consumedResults, initialParallelism, maxParallelism) -> {
+            int parallelism = initialParallelism > 0 ? initialParallelism : expectParallelism;
             return new ParallelismAndInputInfos(
                     parallelism,
                     consumedResults.isEmpty()

@@ -43,7 +43,6 @@ import org.apache.flink.runtime.jobgraph.IntermediateDataSet;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmaster.ExecutionDeploymentTracker;
 import org.apache.flink.runtime.jobmaster.slotpool.PhysicalSlotProvider;
 import org.apache.flink.runtime.jobmaster.slotpool.PhysicalSlotProviderImpl;
@@ -60,8 +59,6 @@ import org.apache.flink.runtime.scheduler.ExecutionVertexVersioner;
 import org.apache.flink.runtime.scheduler.SchedulerNG;
 import org.apache.flink.runtime.scheduler.SchedulerNGFactory;
 import org.apache.flink.runtime.scheduler.SimpleExecutionSlotAllocator;
-import org.apache.flink.runtime.scheduler.adaptivebatch.forwardgroup.ForwardGroup;
-import org.apache.flink.runtime.scheduler.adaptivebatch.forwardgroup.ForwardGroupComputeUtil;
 import org.apache.flink.runtime.scheduler.strategy.AllFinishedInputConsumableDecider;
 import org.apache.flink.runtime.scheduler.strategy.DefaultInputConsumableDecider;
 import org.apache.flink.runtime.scheduler.strategy.InputConsumableDecider;
@@ -78,7 +75,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -180,10 +176,6 @@ public class AdaptiveBatchSchedulerFactory implements SchedulerNGFactory {
         int defaultMaxParallelism =
                 getDefaultMaxParallelism(jobMasterConfiguration, executionConfig);
 
-        final Map<JobVertexID, ForwardGroup> forwardGroupsByJobVertexId =
-                ForwardGroupComputeUtil.computeForwardGroupsAndSetVertexParallelismsIfNecessary(
-                        jobGraph.getVerticesSortedTopologicallyFromSources());
-
         if (enableSpeculativeExecution) {
             return new SpeculativeScheduler(
                     log,
@@ -213,8 +205,7 @@ public class AdaptiveBatchSchedulerFactory implements SchedulerNGFactory {
                             defaultMaxParallelism, jobMasterConfiguration),
                     defaultMaxParallelism,
                     blocklistOperations,
-                    hybridPartitionDataConsumeConstraint,
-                    forwardGroupsByJobVertexId);
+                    hybridPartitionDataConsumeConstraint);
         } else {
             return new AdaptiveBatchScheduler(
                     log,
@@ -243,8 +234,7 @@ public class AdaptiveBatchSchedulerFactory implements SchedulerNGFactory {
                     DefaultVertexParallelismAndInputInfosDecider.from(
                             defaultMaxParallelism, jobMasterConfiguration),
                     defaultMaxParallelism,
-                    hybridPartitionDataConsumeConstraint,
-                    forwardGroupsByJobVertexId);
+                    hybridPartitionDataConsumeConstraint);
         }
     }
 

@@ -20,7 +20,7 @@
 package org.apache.flink.runtime.scheduler.adaptivebatch.forwardgroup;
 
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 
 import java.util.HashSet;
@@ -40,17 +40,17 @@ public class ForwardGroup {
 
     private final Set<JobVertexID> jobVertexIds = new HashSet<>();
 
-    public ForwardGroup(final Set<JobVertex> jobVertices) {
+    public ForwardGroup(final Set<ExecutionJobVertex> jobVertices) {
         checkNotNull(jobVertices);
 
         Set<Integer> decidedParallelisms =
                 jobVertices.stream()
                         .filter(
                                 jobVertex -> {
-                                    jobVertexIds.add(jobVertex.getID());
-                                    return jobVertex.getParallelism() > 0;
+                                    jobVertexIds.add(jobVertex.getJobVertexId());
+                                    return jobVertex.isParallelismDecided();
                                 })
-                        .map(JobVertex::getParallelism)
+                        .map(ExecutionJobVertex::getParallelism)
                         .collect(Collectors.toSet());
 
         checkState(decidedParallelisms.size() <= 1);
