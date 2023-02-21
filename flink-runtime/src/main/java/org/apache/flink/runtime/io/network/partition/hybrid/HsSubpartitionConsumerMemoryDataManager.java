@@ -28,6 +28,7 @@ import javax.annotation.concurrent.GuardedBy;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -91,7 +92,7 @@ public class HsSubpartitionConsumerMemoryDataManager implements HsDataView {
     // Note that: callWithLock ensure that code block guarded by resultPartitionReadLock and
     // subpartitionLock.
     @Override
-    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int toConsumeIndex) {
+    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int toConsumeIndex, Queue<Buffer> errorBuffers) {
         Optional<Tuple2<HsBufferContext, Buffer.DataType>> bufferAndNextDataType =
                 callWithLock(
                         () -> {
@@ -132,7 +133,7 @@ public class HsSubpartitionConsumerMemoryDataManager implements HsDataView {
     // Note that: callWithLock ensure that code block guarded by resultPartitionReadLock and
     // consumerLock.
     @Override
-    public Buffer.DataType peekNextToConsumeDataType(int nextToConsumeIndex) {
+    public Buffer.DataType peekNextToConsumeDataType(int nextToConsumeIndex, Queue<Buffer> errorBuffer) {
         return callWithLock(() -> peekNextToConsumeDataTypeInternal(nextToConsumeIndex));
     }
 
