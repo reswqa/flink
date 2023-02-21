@@ -198,7 +198,7 @@ public class HsFileDataIndexImpl implements HsFileDataIndex {
             this.released = released;
         }
 
-        boolean containBuffer(int bufferIndex) {
+        private boolean containBuffer(int bufferIndex) {
             return bufferIndex >= firstBufferIndex && bufferIndex < firstBufferIndex + numBuffers;
         }
 
