@@ -210,9 +210,9 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
     }
 
     @Override
-    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int nextBufferToConsume)
-            throws Throwable {
-        if (!checkAndGetFirstBufferIndexOrError(nextBufferToConsume).isPresent()) {
+    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(
+            int nextBufferToConsume, Queue<Buffer> errorBuffers) throws Throwable {
+        if (!checkAndGetFirstBufferIndexOrError(nextBufferToConsume, errorBuffers).isPresent()) {
             return Optional.empty();
         }
 
@@ -236,11 +236,12 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
     }
 
     @Override
-    public Buffer.DataType peekNextToConsumeDataType(int nextBufferToConsume) {
+    public Buffer.DataType peekNextToConsumeDataType(
+            int nextBufferToConsume, Queue<Buffer> errorBuffers) {
         Buffer.DataType dataType = Buffer.DataType.NONE;
         try {
             dataType =
-                    checkAndGetFirstBufferIndexOrError(nextBufferToConsume)
+                    checkAndGetFirstBufferIndexOrError(nextBufferToConsume, errorBuffers)
                             .map(BufferIndexOrError::getDataType)
                             .orElse(Buffer.DataType.NONE);
         } catch (Throwable throwable) {
@@ -263,8 +264,8 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
     //  Internal Methods
     // ------------------------------------------------------------------------
 
-    private Optional<BufferIndexOrError> checkAndGetFirstBufferIndexOrError(int expectedBufferIndex)
-            throws Throwable {
+    private Optional<BufferIndexOrError> checkAndGetFirstBufferIndexOrError(
+            int expectedBufferIndex, Queue<Buffer> errorBuffers) throws Throwable {
         BufferIndexOrError peek = loadedBuffers.peek();
         while (peek != null) {
             if (peek.getThrowable().isPresent()) {
@@ -277,7 +278,7 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
                 // Because the update of consumption progress may be delayed, there is a
                 // very small probability to load the buffer that has been consumed from memory.
                 // Skip these buffers directly to avoid repeated consumption.
-                loadedBuffers.poll();
+                errorBuffers.add(loadedBuffers.poll().buffer);
                 peek = loadedBuffers.peek();
             }
         }
