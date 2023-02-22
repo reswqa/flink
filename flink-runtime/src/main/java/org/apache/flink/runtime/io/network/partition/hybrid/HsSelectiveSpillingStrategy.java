@@ -22,12 +22,10 @@ import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingInfoProvid
 import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingInfoProvider.ConsumeStatusWithId;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingInfoProvider.SpillStatus;
 
+import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
-
-import static org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingStrategyUtils.getBuffersByConsumptionPriorityInOrder;
 
 /**
  * A special implementation of {@link HsSpillingStrategy} that reduce disk writes as much as
@@ -81,31 +79,38 @@ public class HsSelectiveSpillingStrategy implements HsSpillingStrategy {
 
         int spillNum = (int) (spillingInfoProvider.getPoolSize() * spillBufferRatio);
 
-        TreeMap<Integer, Deque<BufferIndexAndChannel>> subpartitionToBuffers = new TreeMap<>();
-        for (int channel = 0; channel < spillingInfoProvider.getNumSubpartitions(); channel++) {
-            subpartitionToBuffers.put(
-                    channel,
+        int numSubpartitions = spillingInfoProvider.getNumSubpartitions();
+        int expectedSubpartitionReleaseNum = spillNum / numSubpartitions;
+        TreeMap<Integer, Deque<BufferIndexAndChannel>> bufferToSpill = new TreeMap<>();
+
+        for (int subpartitionId = 0; subpartitionId < numSubpartitions; subpartitionId++) {
+            Deque<BufferIndexAndChannel> buffersInOrder =
                     spillingInfoProvider.getBuffersInOrder(
-                            channel,
+                            subpartitionId,
                             SpillStatus.NOT_SPILL,
                             // selective spilling strategy does not support multiple consumer.
                             ConsumeStatusWithId.fromStatusAndConsumerId(
-                                    ConsumeStatus.NOT_CONSUMED, HsConsumerId.DEFAULT)));
+                                    ConsumeStatus.NOT_CONSUMED, HsConsumerId.DEFAULT));
+            // if the number of subpartition spilling buffers less than expected spill number,
+            // spill all of them.
+            int subpartitionSpillNum =
+                    Math.min(buffersInOrder.size(), expectedSubpartitionReleaseNum);
+            int subpartitionSurvivedNum = buffersInOrder.size() - subpartitionSpillNum;
+            while (subpartitionSurvivedNum-- != 0) {
+                buffersInOrder.pollLast();
+            }
+            bufferToSpill.put(subpartitionId, buffersInOrder);
         }
 
-        TreeMap<Integer, List<BufferIndexAndChannel>> subpartitionToHighPriorityBuffers =
-                getBuffersByConsumptionPriorityInOrder(
-                        // selective spilling strategy does not support multiple consumer.
-                        spillingInfoProvider.getNextBufferIndexToConsume(HsConsumerId.DEFAULT),
-                        subpartitionToBuffers,
-                        spillNum);
-
         Decision.Builder builder = Decision.builder();
-        subpartitionToHighPriorityBuffers.forEach(
-                (subpartitionId, buffers) -> {
-                    builder.addBufferToSpill(subpartitionId, buffers);
-                    builder.addBufferToRelease(subpartitionId, buffers);
-                });
+        // collect results in order
+        for (int i = 0; i < numSubpartitions; i++) {
+            Deque<BufferIndexAndChannel> bufferIndexAndChannels = bufferToSpill.get(i);
+            if (bufferIndexAndChannels != null && !bufferIndexAndChannels.isEmpty()) {
+                builder.addBufferToSpill(i, bufferToSpill.getOrDefault(i, new ArrayDeque<>()));
+                builder.addBufferToRelease(i, bufferToSpill.getOrDefault(i, new ArrayDeque<>()));
+            }
+        }
         return builder.build();
     }
 
