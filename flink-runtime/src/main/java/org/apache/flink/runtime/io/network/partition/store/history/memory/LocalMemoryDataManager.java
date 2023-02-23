@@ -267,7 +267,7 @@ public class LocalMemoryDataManager
             boolean isBroadcast,
             boolean isLastRecordInSegment,
             boolean isEndOfPartition,
-            int segmentIndex)
+            long segmentIndex)
             throws IOException {
 
         if (isBroadcastOnly) {
@@ -294,7 +294,7 @@ public class LocalMemoryDataManager
     private void emitSingleSubpartition(
             ByteBuffer record,
             int targetSubpartition,
-            int segmentIndex,
+            long segmentIndex,
             Buffer.DataType dataType,
             boolean isLastRecordInSegment,
             boolean isEndOfPartition)
@@ -712,7 +712,7 @@ public class LocalMemoryDataManager
     }
 
     @Override
-    public boolean hasCurrentSegment(int subpartitionId, int segmentIndex) {
+    public boolean hasCurrentSegment(int subpartitionId, long segmentIndex) {
         return segmentIndexTracker.hasCurrentSegment(subpartitionId, segmentIndex);
     }
 

@@ -63,7 +63,7 @@ public class DfsFileWriter implements SingleTierWriter {
             boolean isBroadcast,
             boolean isLastRecordInSegment,
             boolean isEndOfPartition,
-            int segmentIndex)
+            long segmentIndex)
             throws IOException {
         if (segmentIndexTracker.addSubpartitionSegmentIndex(
                 targetSubpartition, segmentIndex)) {

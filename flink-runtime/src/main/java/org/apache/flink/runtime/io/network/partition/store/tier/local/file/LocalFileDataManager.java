@@ -166,7 +166,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
             boolean isBroadcast,
             boolean isLastRecordInSegment,
             boolean isEndOfPartition,
-            int segmentIndex)
+            long segmentIndex)
             throws IOException {
         segmentIndexTracker.addSubpartitionSegmentIndex(targetSubpartition, segmentIndex);
         if (isLastRecordInSegment) {
@@ -174,7 +174,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
             // Send the EndOfSegmentEvent
             ByteBuffer endOfSegment =
                     EndOfSegmentEventBuilder.buildEndOfSegmentEvent(
-                            segmentIndex + 1, isBroadcastOnly);
+                            segmentIndex + 1L, isBroadcastOnly);
             emit(endOfSegment, targetSubpartition, SEGMENT_EVENT, true);
         }else {
             emit(record, targetSubpartition, dataType, isLastRecordInSegment);
@@ -243,7 +243,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
     }
 
     @Override
-    public boolean hasCurrentSegment(int subpartitionId, int segmentIndex) {
+    public boolean hasCurrentSegment(int subpartitionId, long segmentIndex) {
         return segmentIndexTracker.hasCurrentSegment(subpartitionId, segmentIndex);
     }
 

@@ -63,7 +63,7 @@ public class RemoteDataManager implements SingleTierDataGate {
     public void setNumBytesInASegment(int numBytesInASegment) {}
 
     @Override
-    public boolean hasCurrentSegment(int subpartitionId, int segmentIndex) {
+    public boolean hasCurrentSegment(int subpartitionId, long segmentIndex) {
         return false;
     }
 

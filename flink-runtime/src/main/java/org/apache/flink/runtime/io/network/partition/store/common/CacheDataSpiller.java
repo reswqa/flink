@@ -28,12 +28,12 @@ import java.util.concurrent.CompletableFuture;
 /** Spilling the caching data in a cached data manager. */
 public interface CacheDataSpiller {
 
-    void startSegment(int segmentIndex) throws IOException;
+    void startSegment(long segmentIndex) throws IOException;
 
     CompletableFuture<List<RegionBufferIndexTracker.SpilledBuffer>> spillAsync(
             List<BufferWithIdentity> bufferToSpill);
 
-    void finishSegment(int segmentIndex);
+    void finishSegment(long segmentIndex);
 
     void release();
 

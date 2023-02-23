@@ -56,7 +56,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
     private final SingleTierWriter[] singleTierWriters;
 
     // Record the newest segment index belonged to each sub partition.
-    private final int[] subpartitionSegmentIndexes;
+    private final long[] subpartitionSegmentIndexes;
 
     // Record the byte number currently written to each sub partition.
     private final int[] numSubpartitionEmitBytes;
@@ -72,7 +72,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
             SingleTierDataGate[] tierDataGates, int numSubpartitions, boolean isBroadcastOnly)
             throws IOException {
         this.tierDataGates = tierDataGates;
-        this.subpartitionSegmentIndexes = new int[numSubpartitions];
+        this.subpartitionSegmentIndexes = new long[numSubpartitions];
         this.numSubpartitionEmitBytes = new int[numSubpartitions];
         this.subpartitionWriterIndex = new int[numSubpartitions];
         this.singleTierWriters = new SingleTierWriter[tierDataGates.length];
@@ -107,7 +107,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
                 selectTieredWriterAndGetRegionIndexes(
                         record.remaining(), targetSubpartition, isBroadcast);
         for (WriterAndSegmentIndex writerAndSegmentIndex : writerAndSegmentIndexes) {
-            int segmentIndex = writerAndSegmentIndex.getSegmentIndex();
+            long segmentIndex = writerAndSegmentIndex.getSegmentIndex();
             boolean isLastRecord = writerAndSegmentIndex.isLastRecordInSegment();
             int subpartitionId = writerAndSegmentIndex.getSubpartitionId();
             int writerIndex = writerAndSegmentIndex.getWriterIndex();
@@ -143,7 +143,7 @@ public class TieredStoreProducerImpl implements TieredStoreProducer {
         // Each record needs to get the following information
         int writerIndex;
         boolean isLastRecordInSegment;
-        int segmentIndex;
+        long segmentIndex;
 
         // For the record that haven't selected a gate to emit
         if (subpartitionWriterIndex[targetSubpartition] == -1) {

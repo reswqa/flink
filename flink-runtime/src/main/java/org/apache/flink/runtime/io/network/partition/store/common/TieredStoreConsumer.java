@@ -52,4 +52,6 @@ public interface TieredStoreConsumer {
     int unsynchronizedGetNumberOfQueuedBuffers();
 
     int getNumberOfQueuedBuffers();
+
+    int containSegment(long segmentId);
 }

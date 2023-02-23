@@ -82,7 +82,7 @@ public class CacheDataLocalFileSpiller implements CacheDataSpiller {
     }
 
     @Override
-    public void startSegment(int segmentIndex) {}
+    public void startSegment(long segmentIndex) {}
 
     /**
      * Spilling buffers to disk asynchronously.
@@ -100,7 +100,7 @@ public class CacheDataLocalFileSpiller implements CacheDataSpiller {
     }
 
     @Override
-    public void finishSegment(int segmentIndex) {}
+    public void finishSegment(long segmentIndex) {}
 
     /** Called in single-threaded ioExecutor. Order is guaranteed. */
     private void spill(

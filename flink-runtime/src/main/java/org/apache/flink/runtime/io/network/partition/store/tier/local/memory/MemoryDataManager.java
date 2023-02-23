@@ -165,7 +165,7 @@ public class MemoryDataManager implements SingleTierDataGate {
     }
 
     @Override
-    public boolean hasCurrentSegment(int subpartitionId, int segmentIndex) {
+    public boolean hasCurrentSegment(int subpartitionId, long segmentIndex) {
         return segmentIndexTracker.hasCurrentSegment(subpartitionId, segmentIndex);
     }
 

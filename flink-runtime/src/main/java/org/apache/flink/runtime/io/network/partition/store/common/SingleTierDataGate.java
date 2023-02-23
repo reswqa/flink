@@ -48,7 +48,7 @@ public interface SingleTierDataGate extends ChannelStateHolder, CheckpointedResu
 
     void setNumBytesInASegment(int numBytesInASegment);
 
-    boolean hasCurrentSegment(int subpartitionId, int segmentIndex);
+    boolean hasCurrentSegment(int subpartitionId, long segmentIndex);
 
     void setOutputMetrics(OutputMetrics tieredStoreOutputMetrics);
 

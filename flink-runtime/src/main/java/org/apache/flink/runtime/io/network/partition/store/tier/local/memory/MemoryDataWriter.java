@@ -103,7 +103,7 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
             boolean isBroadcast,
             boolean isLastRecordInSegment,
             boolean isEndOfPartition,
-            int segmentIndex)
+            long segmentIndex)
             throws IOException {
         subpartitionSegmentIndexTracker.addSubpartitionSegmentIndex(
                 targetSubpartition, segmentIndex);
@@ -112,7 +112,7 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
             // Send the EndOfSegmentEvent
             ByteBuffer endOfSegment =
                     EndOfSegmentEventBuilder.buildEndOfSegmentEvent(
-                            segmentIndex + 1, isBroadcastOnly);
+                            segmentIndex + 1L, isBroadcastOnly);
             append(endOfSegment, targetSubpartition, SEGMENT_EVENT, true);
         }else {
             append(record, targetSubpartition, dataType, isLastRecordInSegment);

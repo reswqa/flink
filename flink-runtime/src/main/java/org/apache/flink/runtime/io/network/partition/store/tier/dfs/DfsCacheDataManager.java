@@ -148,11 +148,11 @@ public class DfsCacheDataManager implements DfsCacheDataManagerOperation {
         }
     }
 
-    public void startSegment(int targetSubpartition, int segmentIndex) throws IOException {
+    public void startSegment(int targetSubpartition, long segmentIndex) throws IOException {
         getSubpartitionCacheDataManager(targetSubpartition).startSegment(segmentIndex);
     }
 
-    public void finishSegment(int targetSubpartition, int segmentIndex) {
+    public void finishSegment(int targetSubpartition, long segmentIndex) {
         getSubpartitionCacheDataManager(targetSubpartition).finishSegment(segmentIndex);
     }
 

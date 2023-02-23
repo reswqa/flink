@@ -37,7 +37,7 @@ public interface SingleTierWriter {
             boolean isBroadcast,
             boolean isLastRecordInSegment,
             boolean isEndOfPartition,
-            int segmentIndex)
+            long segmentIndex)
             throws IOException;
 
     void release();

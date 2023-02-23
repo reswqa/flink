@@ -170,6 +170,17 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
         return singleTierReaders[viewIndexContainsCurrentSegment].getNumberOfQueuedBuffers();
     }
 
+    @Override
+    public int containSegment(long segmentId) {
+        for (int i = 0; i < tierDataGates.length; i++) {
+            SingleTierDataGate tieredDataGate = tierDataGates[i];
+            if (tieredDataGate.hasCurrentSegment(subpartitionId, segmentId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     // -------------------------------
     //       Internal Methods
     // -------------------------------

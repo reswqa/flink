@@ -77,7 +77,7 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
 
     private boolean isSegmentStarted;
 
-    private int currentSegmentIndex = -1;
+    private long currentSegmentIndex = -1;
 
     public CacheDataDfsFileSpiller(
             JobID jobID,
@@ -93,7 +93,7 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
     }
 
     @Override
-    public void startSegment(int segmentIndex) throws IOException {
+    public void startSegment(long segmentIndex) throws IOException {
         if (segmentIndex <= currentSegmentIndex) {
             System.out.println();
         }
@@ -115,7 +115,7 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
     }
 
     @Override
-    public void finishSegment(int segmentIndex) {
+    public void finishSegment(long segmentIndex) {
         checkState(currentSegmentIndex == segmentIndex);
         checkState(isSegmentStarted);
 
