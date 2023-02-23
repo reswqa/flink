@@ -5,7 +5,6 @@ import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel.BufferAndAvailability;
-import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.io.network.partition.consumer.tier.common.SingleChannelDataClient;
 import org.apache.flink.runtime.io.network.partition.consumer.tier.common.SingleChannelDataClientFactory;
 import org.apache.flink.runtime.io.network.partition.consumer.tier.common.SingleChannelDataFetcher;
@@ -30,7 +29,7 @@ public class SingleChannelDataFetcherImpl implements SingleChannelDataFetcher {
     }
 
     @Override
-    public Optional<InputGate.InputWithData<InputChannel, InputChannel.BufferAndAvailability>>
+    public Optional<InputChannel.BufferAndAvailability>
             getNextBuffer(InputChannel inputChannel) throws IOException, InterruptedException {
         Optional<BufferAndAvailability> bufferAndAvailability;
         if(localClient.hasSegmentId(inputChannel, currentSegmentId)){
@@ -57,12 +56,7 @@ public class SingleChannelDataFetcherImpl implements SingleChannelDataFetcher {
             bufferData.buffer().recycleBuffer();
             return getNextBuffer(inputChannel);
         }
-        return Optional.of(
-                new InputGate.InputWithData<>(
-                        inputChannel,
-                        bufferAndAvailability.get(),
-                        true,
-                        false));
+        return Optional.of(bufferData);
     }
 
     @Override

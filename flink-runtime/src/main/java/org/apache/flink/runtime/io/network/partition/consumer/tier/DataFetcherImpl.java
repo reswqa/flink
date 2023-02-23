@@ -1,7 +1,6 @@
 package org.apache.flink.runtime.io.network.partition.consumer.tier;
 
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
-import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.io.network.partition.consumer.tier.common.DataFetcher;
 import org.apache.flink.runtime.io.network.partition.consumer.tier.common.SingleChannelDataClientFactory;
 import org.apache.flink.runtime.io.network.partition.consumer.tier.common.SingleChannelDataFetcher;
@@ -32,7 +31,7 @@ public class DataFetcherImpl implements DataFetcher {
     }
 
     @Override
-    public Optional<InputGate.InputWithData<InputChannel, InputChannel.BufferAndAvailability>>
+    public Optional<InputChannel.BufferAndAvailability>
             getNextBuffer(InputChannel inputChannel) throws IOException, InterruptedException {
         return singleChannelDataFetchers[inputChannel.getChannelIndex()].getNextBuffer(
                 inputChannel);

@@ -104,8 +104,8 @@ public class TieredStoreSingleInputGate extends SingleInputGate {
     }
 
     @Override
-    public Optional<InputWithData<InputChannel, InputChannel.BufferAndAvailability>>
-            waitAndGetNextData(boolean blocking) throws IOException, InterruptedException {
+    public Optional<InputWithData<InputChannel, InputChannel.BufferAndAvailability>> waitAndGetNextData(
+            boolean blocking) throws IOException, InterruptedException {
         InputChannel inputChannel;
         synchronized (inputChannelsWithData) {
             inputChannel = getChannel(false).orElse(null);
@@ -115,18 +115,35 @@ public class TieredStoreSingleInputGate extends SingleInputGate {
             }
         }
         inputChannel.checkError();
-        Optional<InputWithData<InputChannel, InputChannel.BufferAndAvailability>> nextBuffer =
-                dataFetcher.getNextBuffer(inputChannel);
-        enqueueChannelWhenSatisfyCondition(inputChannel, nextBuffer.isPresent());
-        return nextBuffer;
+        Optional<InputChannel.BufferAndAvailability> nextBuffer = dataFetcher.getNextBuffer(
+                inputChannel);
+        boolean isBufferPresent = nextBuffer.isPresent();
+        enqueueChannelWhenSatisfyCondition(isBufferPresent, inputChannel);
+        if (isBufferPresent) {
+            final boolean morePriorityEvents =
+                    inputChannelsWithData.getNumPriorityElements() > 0;
+            if (nextBuffer.get().hasPriority()) {
+                lastPrioritySequenceNumber[inputChannel.getChannelIndex()] = nextBuffer
+                        .get()
+                        .getSequenceNumber();
+                if (!morePriorityEvents) {
+                    priorityAvailabilityHelper.resetUnavailable();
+                }
+            }
+            return Optional.of(new InputWithData<>(
+                    inputChannel,
+                    nextBuffer.get(),
+                    true,
+                    false));
+        }
+        return Optional.empty();
     }
 
     /** Enqueue input channel when satisfy the condition. */
     private void enqueueChannelWhenSatisfyCondition(
-            InputChannel inputChannel, boolean hasNextBuffer) {
-        if (hasNextBuffer
-                || (clientFactory.hasDfsClient()
-                                && (inputChannel.getClass() == LocalInputChannel.class
+            boolean isBufferPresent, InputChannel inputChannel) {
+        if (isBufferPresent || (clientFactory.hasDfsClient() && (
+                inputChannel.getClass() == LocalInputChannel.class
                         || inputChannel.getClass() == RemoteInputChannel.class))) {
             synchronized (inputChannelsWithData) {
                 queueChannelUnsafe(inputChannel, false);
@@ -140,7 +157,7 @@ public class TieredStoreSingleInputGate extends SingleInputGate {
             try {
                 inputChannel.requestSubpartition();
                 // enqueue all channels
-                synchronized (inputChannelsWithData){
+                synchronized (inputChannelsWithData) {
                     inputChannelsWithData.add(inputChannel);
                 }
             } catch (Throwable t) {
