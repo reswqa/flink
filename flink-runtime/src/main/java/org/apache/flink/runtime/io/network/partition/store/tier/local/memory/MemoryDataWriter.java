@@ -25,6 +25,7 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreMode;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
+import org.apache.flink.runtime.io.network.partition.store.common.EndOfSegmentEventBuilder;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierWriter;
 import org.apache.flink.runtime.io.network.partition.store.common.SubpartitionSegmentIndexTracker;
 import org.apache.flink.runtime.io.network.partition.store.tier.local.file.OutputMetrics;
@@ -40,6 +41,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static org.apache.flink.runtime.io.network.buffer.Buffer.DataType.SEGMENT_EVENT;
 
 /** This class is responsible for managing cached buffers data before flush to local files. */
 public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOperation {
@@ -90,8 +93,7 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
     }
 
     @Override
-    public void setup() throws IOException {
-    }
+    public void setup() throws IOException {}
 
     @Override
     public void emit(
@@ -105,7 +107,16 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
             throws IOException {
         subpartitionSegmentIndexTracker.addSubpartitionSegmentIndex(
                 targetSubpartition, segmentIndex);
-        append(record, targetSubpartition, dataType, isLastRecordInSegment);
+        if (isLastRecordInSegment) {
+            append(record, targetSubpartition, dataType, false);
+            // Send the EndOfSegmentEvent
+            ByteBuffer endOfSegment =
+                    EndOfSegmentEventBuilder.buildEndOfSegmentEvent(
+                            segmentIndex + 1, isBroadcastOnly);
+            append(endOfSegment, targetSubpartition, SEGMENT_EVENT, true);
+        }else {
+            append(record, targetSubpartition, dataType, isLastRecordInSegment);
+        }
     }
 
     private void append(
@@ -141,8 +152,7 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
 
     /** Close this {@link MemoryDataWriter}, it means no data will be appended to memory. */
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     /**
      * Release this {@link MemoryDataWriter}, it means all memory taken by this class will recycle.
@@ -178,9 +188,7 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
     public MemorySegment requestBufferFromPool(int subpartitionId) throws InterruptedException {
         MemorySegment segment =
                 bufferPoolHelper.requestMemorySegmentBlocking(
-                        subpartitionId,
-                        TieredStoreMode.TieredType.IN_MEM,
-                        true);
+                        subpartitionId, TieredStoreMode.TieredType.IN_MEM, true);
         return segment;
     }
 

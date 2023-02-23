@@ -31,6 +31,7 @@ import org.apache.flink.runtime.io.network.partition.store.TieredStoreConfigurat
 import org.apache.flink.runtime.io.network.partition.store.common.BufferConsumeView;
 import org.apache.flink.runtime.io.network.partition.store.common.BufferPoolHelper;
 import org.apache.flink.runtime.io.network.partition.store.common.ConsumerId;
+import org.apache.flink.runtime.io.network.partition.store.common.EndOfSegmentEventBuilder;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierDataGate;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierWriter;
@@ -52,6 +53,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static org.apache.flink.runtime.io.network.buffer.Buffer.DataType.SEGMENT_EVENT;
 import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.SpillingType.SELECTIVE;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -167,7 +169,16 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
             int segmentIndex)
             throws IOException {
         segmentIndexTracker.addSubpartitionSegmentIndex(targetSubpartition, segmentIndex);
-        emit(record, targetSubpartition, dataType, isLastRecordInSegment);
+        if (isLastRecordInSegment) {
+            emit(record, targetSubpartition, dataType, false);
+            // Send the EndOfSegmentEvent
+            ByteBuffer endOfSegment =
+                    EndOfSegmentEventBuilder.buildEndOfSegmentEvent(
+                            segmentIndex + 1, isBroadcastOnly);
+            emit(endOfSegment, targetSubpartition, SEGMENT_EVENT, true);
+        }else {
+            emit(record, targetSubpartition, dataType, isLastRecordInSegment);
+        }
     }
 
     private void emit(

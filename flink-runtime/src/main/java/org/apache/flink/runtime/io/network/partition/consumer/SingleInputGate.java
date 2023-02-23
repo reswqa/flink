@@ -764,7 +764,7 @@ public class SingleInputGate extends IndexedInputGate {
         return Optional.of(bufferOrEvent);
     }
 
-    protected Optional<InputWithData<InputChannel, BufferAndAvailability>> waitAndGetNextData(
+    public Optional<InputWithData<InputChannel, BufferAndAvailability>> waitAndGetNextData(
             boolean blocking) throws IOException, InterruptedException {
         while (true) {
             synchronized (inputChannelsWithData) {
@@ -810,7 +810,7 @@ public class SingleInputGate extends IndexedInputGate {
         }
     }
 
-    protected void checkUnavailability() {
+    public void checkUnavailability() {
         assert Thread.holdsLock(inputChannelsWithData);
 
         if (inputChannelsWithData.isEmpty()) {
@@ -1040,7 +1040,7 @@ public class SingleInputGate extends IndexedInputGate {
      * @return true iff it has been enqueued/prioritized = some change to {@link
      *     #inputChannelsWithData} happened
      */
-    protected boolean queueChannelUnsafe(InputChannel channel, boolean priority) {
+    public boolean queueChannelUnsafe(InputChannel channel, boolean priority) {
         assert Thread.holdsLock(inputChannelsWithData);
         if (channelsWithEndOfPartitionEvents.get(channel.getChannelIndex())) {
             return false;
@@ -1061,7 +1061,7 @@ public class SingleInputGate extends IndexedInputGate {
         return true;
     }
 
-    protected Optional<InputChannel> getChannel(boolean blocking) throws InterruptedException {
+    public Optional<InputChannel> getChannel(boolean blocking) throws InterruptedException {
         assert Thread.holdsLock(inputChannelsWithData);
 
         while (inputChannelsWithData.isEmpty()) {

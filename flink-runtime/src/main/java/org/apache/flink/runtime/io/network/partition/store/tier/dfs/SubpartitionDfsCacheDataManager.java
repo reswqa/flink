@@ -75,7 +75,8 @@ import static org.apache.flink.util.Preconditions.checkState;
  */
 public class SubpartitionDfsCacheDataManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SubpartitionDfsCacheDataManager.class);
+    private static final Logger LOG =
+            LoggerFactory.getLogger(SubpartitionDfsCacheDataManager.class);
 
     private final int targetChannel;
 
@@ -197,8 +198,7 @@ public class SubpartitionDfsCacheDataManager {
                     cacheDataSpiller.finishSegment(segmentIndex);
                     LOG.debug("%%% Dfs generate2");
                     BufferContext segmentInfoBufferContext =
-                            buildSegmentInfoBuffer(
-                                    segmentIndex, finishedSegmentInfoIndex, targetChannel);
+                            new BufferContext(null, -1, targetChannel, true, true);
                     allSegmentInfos.add(segmentInfoBufferContext);
                     ++finishedSegmentInfoIndex;
                     checkState(allBuffers.isEmpty(), "Leaking finished buffers.");
@@ -214,30 +214,10 @@ public class SubpartitionDfsCacheDataManager {
         cacheDataManagerOperation.onDataAvailable(targetChannel, needNotify);
     }
 
-    private BufferContext buildSegmentInfoBuffer(
-            int segmentIndex, int finishedSegmentInfoIndex, int targetChannel) {
-        ByteBuffer headerBuffer = ByteBuffer.wrap(new byte[12]);
-        headerBuffer.clear();
-        headerBuffer.putInt(isBroadcastOnly ? 1 : 0);
-        headerBuffer.putInt(segmentIndex);
-        headerBuffer.putInt(finishedSegmentInfoIndex);
-        headerBuffer.flip();
-        MemorySegment data = MemorySegmentFactory.wrap(headerBuffer.array());
-        Buffer buffer =
-                new NetworkBuffer(
-                        data,
-                        FreeingBufferRecycler.INSTANCE,
-                        Buffer.DataType.SEGMENT_INFO_BUFFER,
-                        data.size());
-        return new BufferContext(buffer, finishedSegmentInfoIndex, targetChannel, true);
-    }
-
-    /**
-     * Release all buffers.
-     */
+    /** Release all buffers. */
     public void release() {
-        if(!isReleased){
-            for(BufferContext bufferContext : allBuffers){
+        if (!isReleased) {
+            for (BufferContext bufferContext : allBuffers) {
                 bufferContext.release();
             }
             allBuffers.clear();
@@ -395,7 +375,8 @@ public class SubpartitionDfsCacheDataManager {
     }
 
     private void recycleBuffer(MemorySegment buffer) {
-        bufferPoolHelper.recycleBuffer(targetChannel, buffer, TieredStoreMode.TieredType.IN_DFS, false);
+        bufferPoolHelper.recycleBuffer(
+                targetChannel, buffer, TieredStoreMode.TieredType.IN_DFS, false);
     }
 
     @SuppressWarnings("FieldAccessNotGuarded")

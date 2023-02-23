@@ -243,7 +243,7 @@ public class DfsDataFetcherTest {
         return new NetworkBuffer(
                 MemorySegmentFactory.wrap(headerBuffer.array()),
                 BufferRecycler.DummyBufferRecycler.INSTANCE,
-                Buffer.DataType.SEGMENT_INFO_BUFFER);
+                Buffer.DataType.SEGMENT_EVENT);
     }
 
     public static void createTempSegmentFile(Path path) throws Exception {
