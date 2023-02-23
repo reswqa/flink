@@ -22,7 +22,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.messages.TaskThreadInfoResponse;
 import org.apache.flink.runtime.messages.ThreadInfoSample;
-import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
+import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.stats.TaskStatsRequestCoordinator;
 import org.apache.flink.util.concurrent.FutureUtils;
 
@@ -61,7 +61,8 @@ public class ThreadInfoRequestCoordinator
      * from given subtasks. A thread info response of a subtask in turn consists of {@code
      * numSamples}, collected with {@code delayBetweenSamples} milliseconds delay between them.
      *
-     * @param executionsWithGateways Execution attempts together with TaskExecutors running them.
+     * @param executionsWithGatewayAddresses Execution attempts together with address of
+     *     TaskExecutors running them.
      * @param numSamples Number of thread info samples to collect from each subtask.
      * @param delayBetweenSamples Delay between consecutive samples (ms).
      * @param maxStackTraceDepth Maximum depth of the stack traces collected within thread info
@@ -69,20 +70,21 @@ public class ThreadInfoRequestCoordinator
      * @return A future of the completed thread info stats.
      */
     public CompletableFuture<VertexThreadInfoStats> triggerThreadInfoRequest(
-            Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<TaskExecutorThreadInfoGateway>>
-                    executionsWithGateways,
+            Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>
+                    executionsWithGatewayAddresses,
+            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
             int numSamples,
             Duration delayBetweenSamples,
             int maxStackTraceDepth) {
 
-        checkNotNull(executionsWithGateways, "Tasks to sample");
-        checkArgument(executionsWithGateways.size() > 0, "No tasks to sample");
+        checkNotNull(executionsWithGatewayAddresses, "Tasks to sample");
+        checkArgument(executionsWithGatewayAddresses.size() > 0, "No tasks to sample");
         checkArgument(numSamples >= 1, "No number of samples");
         checkArgument(maxStackTraceDepth >= 0, "Negative maximum stack trace depth");
 
         // Execution IDs of running tasks grouped by the task manager
         Collection<ImmutableSet<ExecutionAttemptID>> runningSubtasksIds =
-                executionsWithGateways.keySet();
+                executionsWithGatewayAddresses.keySet();
 
         synchronized (lock) {
             if (isShutDown) {
@@ -111,7 +113,11 @@ public class ThreadInfoRequestCoordinator
                     new ThreadInfoSamplesRequest(
                             requestId, numSamples, delayBetweenSamples, maxStackTraceDepth);
 
-            requestThreadInfo(executionsWithGateways, requestParams, timeout);
+            requestThreadInfo(
+                    executionsWithGatewayAddresses,
+                    taskExecutorThreadInfoGatewayRetriever,
+                    requestParams,
+                    timeout);
 
             return pending.getStatsFuture();
         }
@@ -122,25 +128,30 @@ public class ThreadInfoRequestCoordinator
      * return within timeout.
      */
     private void requestThreadInfo(
-            Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<TaskExecutorThreadInfoGateway>>
-                    executionWithGateways,
+            Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>
+                    executionWithGatewayAddresses,
+            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
             ThreadInfoSamplesRequest requestParams,
             Time timeout) {
 
         // Trigger samples collection from all subtasks
-        for (Map.Entry<
-                        ImmutableSet<ExecutionAttemptID>,
-                        CompletableFuture<TaskExecutorThreadInfoGateway>>
-                executionWithGateway : executionWithGateways.entrySet()) {
+        for (Map.Entry<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>
+                executionWithGateway : executionWithGatewayAddresses.entrySet()) {
 
-            CompletableFuture<TaskExecutorThreadInfoGateway> executorGatewayFuture =
+            CompletableFuture<String> executorGatewayAddressFuture =
                     executionWithGateway.getValue();
 
             CompletableFuture<TaskThreadInfoResponse> threadInfo =
-                    executorGatewayFuture.thenCompose(
-                            executorGateway ->
-                                    executorGateway.requestThreadInfoSamples(
-                                            executionWithGateway.getKey(), requestParams, timeout));
+                    executorGatewayAddressFuture.thenCompose(
+                            executorGatewayAddress ->
+                                    taskExecutorThreadInfoGatewayRetriever
+                                            .retrieveService(executorGatewayAddress)
+                                            .thenCompose(
+                                                    (gateway ->
+                                                            gateway.requestThreadInfoSamples(
+                                                                    executionWithGateway.getKey(),
+                                                                    requestParams,
+                                                                    timeout))));
 
             threadInfo.whenCompleteAsync(
                     (TaskThreadInfoResponse threadInfoSamplesResponse, Throwable throwable) -> {

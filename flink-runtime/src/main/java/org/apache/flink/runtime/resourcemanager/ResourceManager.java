@@ -78,7 +78,6 @@ import org.apache.flink.runtime.taskexecutor.TaskExecutorGateway;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorHeartbeatPayload;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorRegistrationRejection;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorRegistrationSuccess;
-import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
 import org.apache.flink.runtime.taskexecutor.partition.ClusterPartitionReport;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
@@ -889,7 +888,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
 
     @Override
     @Local // Bug; see FLINK-27954
-    public CompletableFuture<TaskExecutorThreadInfoGateway> requestTaskExecutorThreadInfoGateway(
+    public CompletableFuture<String> requestTaskExecutorThreadInfoGatewayAddress(
             ResourceID taskManagerId, Time timeout) {
 
         final WorkerRegistration<WorkerType> taskExecutor = taskExecutors.get(taskManagerId);
@@ -898,7 +897,7 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
             return FutureUtils.completedExceptionally(
                     new UnknownTaskExecutorException(taskManagerId));
         } else {
-            return CompletableFuture.completedFuture(taskExecutor.getTaskExecutorGateway());
+            return CompletableFuture.completedFuture(taskExecutor.getTaskExecutorAddress());
         }
     }
 
@@ -1028,7 +1027,8 @@ public abstract class ResourceManager<WorkerType extends ResourceIDRetrievable>
                             taskExecutorRegistration.getMemoryConfiguration(),
                             taskExecutorRegistration.getTotalResourceProfile(),
                             taskExecutorRegistration.getDefaultSlotResourceProfile(),
-                            taskExecutorRegistration.getNodeId());
+                            taskExecutorRegistration.getNodeId(),
+                            taskExecutorRegistration.getTaskExecutorAddress());
 
             log.info(
                     "Registering TaskManager with ResourceID {} ({}) at ResourceManager",

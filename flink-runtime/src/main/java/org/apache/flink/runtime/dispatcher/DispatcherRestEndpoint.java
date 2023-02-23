@@ -34,6 +34,7 @@ import org.apache.flink.runtime.webmonitor.WebMonitorEndpoint;
 import org.apache.flink.runtime.webmonitor.WebMonitorExtension;
 import org.apache.flink.runtime.webmonitor.WebMonitorUtils;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.util.ConfigurationException;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
@@ -57,6 +58,7 @@ public class DispatcherRestEndpoint extends WebMonitorEndpoint<DispatcherGateway
             Configuration clusterConfiguration,
             RestHandlerConfiguration restConfiguration,
             GatewayRetriever<ResourceManagerGateway> resourceManagerRetriever,
+            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
             TransientBlobService transientBlobService,
             ScheduledExecutorService executor,
             MetricFetcher metricFetcher,
@@ -70,6 +72,7 @@ public class DispatcherRestEndpoint extends WebMonitorEndpoint<DispatcherGateway
                 clusterConfiguration,
                 restConfiguration,
                 resourceManagerRetriever,
+                taskExecutorThreadInfoGatewayRetriever,
                 transientBlobService,
                 executor,
                 metricFetcher,

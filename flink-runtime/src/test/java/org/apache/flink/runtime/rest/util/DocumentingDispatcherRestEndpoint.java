@@ -33,6 +33,7 @@ import org.apache.flink.runtime.rest.handler.RestHandlerSpecification;
 import org.apache.flink.runtime.rest.handler.legacy.metrics.VoidMetricFetcher;
 import org.apache.flink.runtime.rest.messages.RuntimeMessageHeaders;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.util.ConfigurationException;
 
 import org.apache.flink.shaded.netty4.io.netty.channel.ChannelInboundHandler;
@@ -57,6 +58,9 @@ public class DocumentingDispatcherRestEndpoint extends DispatcherRestEndpoint
     private static final GatewayRetriever<DispatcherGateway> dispatcherGatewayRetriever;
     private static final GatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever;
 
+    private static final TaskExecutorThreadInfoGatewayRetriever
+            taskExecutorThreadInfoGatewayRetriever;
+
     static {
         config = new Configuration();
         config.setString(RestOptions.ADDRESS, "localhost");
@@ -66,6 +70,7 @@ public class DocumentingDispatcherRestEndpoint extends DispatcherRestEndpoint
 
         dispatcherGatewayRetriever = () -> null;
         resourceManagerGatewayRetriever = () -> null;
+        taskExecutorThreadInfoGatewayRetriever = (ignore) -> null;
     }
 
     public DocumentingDispatcherRestEndpoint() throws IOException, ConfigurationException {
@@ -74,6 +79,7 @@ public class DocumentingDispatcherRestEndpoint extends DispatcherRestEndpoint
                 config,
                 handlerConfig,
                 resourceManagerGatewayRetriever,
+                taskExecutorThreadInfoGatewayRetriever,
                 NoOpTransientBlobService.INSTANCE,
                 Executors.newScheduledThreadPool(1),
                 VoidMetricFetcher.INSTANCE,

@@ -150,6 +150,7 @@ import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
 import org.apache.flink.runtime.webmonitor.history.ArchivedJson;
 import org.apache.flink.runtime.webmonitor.history.JsonArchivist;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.threadinfo.JobVertexThreadInfoTracker;
 import org.apache.flink.runtime.webmonitor.threadinfo.JobVertexThreadInfoTrackerBuilder;
 import org.apache.flink.runtime.webmonitor.threadinfo.ThreadInfoRequestCoordinator;
@@ -194,6 +195,8 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
     protected final Configuration clusterConfiguration;
     protected final RestHandlerConfiguration restConfiguration;
     private final GatewayRetriever<ResourceManagerGateway> resourceManagerRetriever;
+
+    private final TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever;
     private final TransientBlobService transientBlobService;
     protected final ScheduledExecutorService executor;
 
@@ -217,6 +220,7 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
             Configuration clusterConfiguration,
             RestHandlerConfiguration restConfiguration,
             GatewayRetriever<ResourceManagerGateway> resourceManagerRetriever,
+            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
             TransientBlobService transientBlobService,
             ScheduledExecutorService executor,
             MetricFetcher metricFetcher,
@@ -229,6 +233,8 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
         this.clusterConfiguration = Preconditions.checkNotNull(clusterConfiguration);
         this.restConfiguration = Preconditions.checkNotNull(restConfiguration);
         this.resourceManagerRetriever = Preconditions.checkNotNull(resourceManagerRetriever);
+        this.taskExecutorThreadInfoGatewayRetriever =
+                Preconditions.checkNotNull(taskExecutorThreadInfoGatewayRetriever);
         this.transientBlobService = Preconditions.checkNotNull(transientBlobService);
         this.executor = Preconditions.checkNotNull(executor);
 
@@ -254,6 +260,7 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
 
         return JobVertexThreadInfoTrackerBuilder.newBuilder(
                         resourceManagerRetriever,
+                        taskExecutorThreadInfoGatewayRetriever,
                         Function.identity(),
                         executor,
                         restConfiguration.getTimeout())

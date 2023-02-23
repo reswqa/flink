@@ -58,7 +58,9 @@ import org.apache.flink.runtime.security.token.DelegationTokenManager;
 import org.apache.flink.runtime.webmonitor.WebMonitorEndpoint;
 import org.apache.flink.runtime.webmonitor.retriever.LeaderGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.MetricQueryServiceRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.impl.RpcGatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.impl.RpcTaskExecutorThreadInfoGatewayRetrieverImpl;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.concurrent.ExponentialBackoffRetryStrategy;
@@ -145,6 +147,9 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             new ExponentialBackoffRetryStrategy(
                                     12, Duration.ofMillis(10), Duration.ofMillis(50)));
 
+            final TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever =
+                    new RpcTaskExecutorThreadInfoGatewayRetrieverImpl(rpcService);
+
             final ScheduledExecutorService executor =
                     WebMonitorEndpoint.createExecutorService(
                             configuration.getInteger(RestOptions.SERVER_NUM_THREADS),
@@ -167,6 +172,7 @@ public class DefaultDispatcherResourceManagerComponentFactory
                             configuration,
                             dispatcherGatewayRetriever,
                             resourceManagerGatewayRetriever,
+                            taskExecutorThreadInfoGatewayRetriever,
                             blobServer,
                             executor,
                             metricFetcher,
