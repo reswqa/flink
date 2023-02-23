@@ -170,7 +170,7 @@ public class SingleInputGate extends IndexedInputGate {
     private final BitSet channelsWithEndOfUserRecords;
 
     @GuardedBy("inputChannelsWithData")
-    protected int[] lastPrioritySequenceNumber;
+    public int[] lastPrioritySequenceNumber;
 
     /** The partition producer state listener. */
     private final PartitionProducerStateProvider partitionProducerStateProvider;
