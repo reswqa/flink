@@ -27,6 +27,7 @@ import org.apache.flink.runtime.io.network.netty.NettyMessage.CloseRequest;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.NewBufferSize;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.PartitionRequest;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.ResumeConsumption;
+import org.apache.flink.runtime.io.network.netty.NettyMessage.SegmentIdMessage;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.TaskEventRequest;
 import org.apache.flink.runtime.io.network.partition.PartitionNotFoundException;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionProvider;
@@ -132,6 +133,11 @@ class PartitionRequestServerHandler extends SimpleChannelInboundHandler<NettyMes
                 NewBufferSize request = (NewBufferSize) msg;
 
                 outboundQueue.notifyNewBufferSize(request.receiverId, request.bufferSize);
+            } else if (msgClazz == SegmentIdMessage.class) {
+                SegmentIdMessage segmentIdMessage = (SegmentIdMessage) msg;
+                outboundQueue.containSegment(
+                        segmentIdMessage.receiverId,
+                        reader -> reader.notifyRequiredSegmentId(segmentIdMessage.segmentId));
             } else {
                 LOG.warn("Received unexpected client request: {}", msg);
             }

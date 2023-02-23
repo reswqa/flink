@@ -115,6 +115,8 @@ public class RemoteInputChannel extends InputChannel {
 
     private long totalQueueSizeInBytes;
 
+    private final boolean isUpstreamBroadcast;
+
     public RemoteInputChannel(
             SingleInputGate inputGate,
             int channelIndex,
@@ -127,7 +129,8 @@ public class RemoteInputChannel extends InputChannel {
             int networkBuffersPerChannel,
             Counter numBytesIn,
             Counter numBuffersIn,
-            ChannelStateWriter stateWriter) {
+            ChannelStateWriter stateWriter,
+            boolean isUpstreamBroadcast) {
 
         super(
                 inputGate,
@@ -145,6 +148,7 @@ public class RemoteInputChannel extends InputChannel {
         this.connectionManager = checkNotNull(connectionManager);
         this.bufferManager = new BufferManager(inputGate.getMemorySegmentProvider(), this, 0);
         this.channelStatePersister = new ChannelStatePersister(stateWriter, getChannelInfo());
+        this.isUpstreamBroadcast = isUpstreamBroadcast;
     }
 
     @VisibleForTesting
@@ -811,6 +815,27 @@ public class RemoteInputChannel extends InputChannel {
         checkState(
                 partitionRequestClient != null,
                 "Bug: partitionRequestClient is not initialized before processing data and no error is detected.");
+    }
+
+    // ------------------------------------------------------------------------
+    // For Tiered Store
+    // ------------------------------------------------------------------------
+
+    @Override
+    public boolean containSegment(long segmentId) {
+        synchronized (receivedBuffers) {
+            return receivedBuffers.size() > 0;
+        }
+    }
+
+    @Override
+    public boolean isUpstreamBroadcastOnly() {
+        return isUpstreamBroadcast;
+    }
+
+    @Override
+    public void notifyRequiredSegmentId(long segmentId) {
+        partitionRequestClient.notifyRequiredSegmentId(segmentId, this);
     }
 
     private static class BufferReorderingException extends IOException {

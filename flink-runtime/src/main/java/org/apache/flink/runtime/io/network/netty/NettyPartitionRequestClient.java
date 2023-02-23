@@ -279,6 +279,12 @@ public class NettyPartitionRequestClient implements PartitionRequestClient {
         }
     }
 
+    @Override
+    public void notifyRequiredSegmentId(long segmentId, RemoteInputChannel inputChannel) {
+        LOG.info("%%% send requiredSegmentId {}", segmentId);
+        sendToChannel(new SegmentIdMessage(segmentId, inputChannel));
+    }
+
     private static class AddCreditMessage extends ClientOutboundMessage {
 
         private AddCreditMessage(RemoteInputChannel inputChannel) {
@@ -291,6 +297,21 @@ public class NettyPartitionRequestClient implements PartitionRequestClient {
             return credits > 0
                     ? new NettyMessage.AddCredit(credits, inputChannel.getInputChannelId())
                     : null;
+        }
+    }
+
+    private static class SegmentIdMessage extends ClientOutboundMessage {
+
+        private final long segmentId;
+
+        private SegmentIdMessage(long segmentId, RemoteInputChannel inputChannel) {
+            super(checkNotNull(inputChannel));
+            this.segmentId = segmentId;
+        }
+
+        @Override
+        Object buildMessage() {
+            return new NettyMessage.SegmentIdMessage(segmentId, inputChannel.getInputChannelId());
         }
     }
 

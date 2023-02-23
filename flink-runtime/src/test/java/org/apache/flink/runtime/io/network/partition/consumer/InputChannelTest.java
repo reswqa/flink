@@ -140,7 +140,7 @@ public class InputChannelTest {
         public void acknowledgeAllRecordsProcessed() throws IOException {}
 
         @Override
-        void requestSubpartition() throws IOException, InterruptedException {}
+        public void requestSubpartition() throws IOException, InterruptedException {}
 
         @Override
         public Optional<BufferAndAvailability> getNextBuffer() throws IOException, InterruptedException {

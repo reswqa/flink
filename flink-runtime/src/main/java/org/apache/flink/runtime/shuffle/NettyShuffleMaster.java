@@ -85,7 +85,8 @@ public class NettyShuffleMaster implements ShuffleMaster<NettyShuffleDescriptor>
                         producerDescriptor.getProducerLocation(),
                         createConnectionInfo(
                                 producerDescriptor, partitionDescriptor.getConnectionIndex()),
-                        resultPartitionID);
+                        resultPartitionID,
+                        partitionDescriptor.isBroadcast());
 
         return CompletableFuture.completedFuture(shuffleDeploymentDescriptor);
     }

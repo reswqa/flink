@@ -147,7 +147,6 @@ public class EventSerializer {
             ByteBuffer buf = ByteBuffer.allocate(16);
             buf.putInt(END_OF_SEGMENT);
             buf.putLong(endOfSegmentEvent.getSegmentId());
-            buf.putInt(endOfSegmentEvent.isBroadcastOnly());
             return buf;
         } else {
             try {
@@ -342,8 +341,7 @@ public class EventSerializer {
 
     private static EndOfSegmentEvent deserializeEndOfSegment(ByteBuffer buffer) {
         final long segmentId = buffer.getLong();
-        final int isBroadCastOnly = buffer.getInt();
-        return new EndOfSegmentEvent(segmentId, isBroadCastOnly);
+        return new EndOfSegmentEvent(segmentId);
     }
 
     private static SavepointType decodeSavepointType(byte checkpointTypeCode, ByteBuffer buffer)

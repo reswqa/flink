@@ -80,7 +80,7 @@ public abstract class InputGate
 
     protected final AvailabilityHelper availabilityHelper = new AvailabilityHelper();
 
-    protected final AvailabilityHelper priorityAvailabilityHelper = new AvailabilityHelper();
+    public final AvailabilityHelper priorityAvailabilityHelper = new AvailabilityHelper();
 
     @Override
     public void setChannelStateWriter(ChannelStateWriter channelStateWriter) {

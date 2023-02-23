@@ -38,13 +38,17 @@ public class NettyShuffleDescriptor implements ShuffleDescriptor {
 
     private final ResultPartitionID resultPartitionID;
 
+    private final boolean isUpstreamBroadcastOnly;
+
     public NettyShuffleDescriptor(
             ResourceID producerLocation,
             PartitionConnectionInfo partitionConnectionInfo,
-            ResultPartitionID resultPartitionID) {
+            ResultPartitionID resultPartitionID,
+            boolean isUpstreamBroadcastOnly) {
         this.producerLocation = producerLocation;
         this.partitionConnectionInfo = partitionConnectionInfo;
         this.resultPartitionID = resultPartitionID;
+        this.isUpstreamBroadcastOnly = isUpstreamBroadcastOnly;
     }
 
     public ConnectionID getConnectionId() {
@@ -54,6 +58,10 @@ public class NettyShuffleDescriptor implements ShuffleDescriptor {
     @Override
     public ResultPartitionID getResultPartitionID() {
         return resultPartitionID;
+    }
+
+    public boolean isUpstreamBroadcastOnly() {
+        return isUpstreamBroadcastOnly;
     }
 
     @Override

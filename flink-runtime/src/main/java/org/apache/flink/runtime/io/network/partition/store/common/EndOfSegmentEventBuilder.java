@@ -13,7 +13,7 @@ public class EndOfSegmentEventBuilder {
         try {
             serializedEvent =
                     EventSerializer.toSerializedEvent(
-                            new EndOfSegmentEvent(segmentIndex, isBroadcastOnly ? 1 : 0));
+                            new EndOfSegmentEvent(segmentIndex));
         } catch (IOException e) {
             throw new RuntimeException("Failed to build EndOfSegment.");
         }

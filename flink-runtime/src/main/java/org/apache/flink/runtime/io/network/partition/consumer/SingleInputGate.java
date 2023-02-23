@@ -117,7 +117,7 @@ public class SingleInputGate extends IndexedInputGate {
     private static final Logger LOG = LoggerFactory.getLogger(SingleInputGate.class);
 
     /** Lock object to guard partition requests and runtime channel updates. */
-    private final Object requestLock = new Object();
+    protected final Object requestLock = new Object();
 
     /** The name of the owning task, for logging purposes. */
     private final String owningTaskName;
@@ -142,16 +142,16 @@ public class SingleInputGate extends IndexedInputGate {
     private final SubpartitionIndexRange subpartitionIndexRange;
 
     /** The number of input channels (equivalent to the number of consumed partitions). */
-    private final int numberOfInputChannels;
+    protected final int numberOfInputChannels;
 
     /**
      * Input channels. There is one input channel for each consumed subpartition. We store this in a
      * map for runtime updates of single channels.
      */
-    private final Map<SubpartitionInfo, InputChannel> inputChannels;
+    protected final Map<SubpartitionInfo, InputChannel> inputChannels;
 
     @GuardedBy("requestLock")
-    private final InputChannel[] channels;
+    protected final InputChannel[] channels;
 
     /** Channels, which notified this input gate about available data. */
     protected final PrioritizedDeque<InputChannel> inputChannelsWithData = new PrioritizedDeque<>();
@@ -161,16 +161,16 @@ public class SingleInputGate extends IndexedInputGate {
      * unified onto one.
      */
     @GuardedBy("inputChannelsWithData")
-    private final BitSet enqueuedInputChannelsWithData;
+    protected final BitSet enqueuedInputChannelsWithData;
 
     @GuardedBy("inputChannelsWithData")
-    private final BitSet channelsWithEndOfPartitionEvents;
+    protected final BitSet channelsWithEndOfPartitionEvents;
 
     @GuardedBy("inputChannelsWithData")
     private final BitSet channelsWithEndOfUserRecords;
 
     @GuardedBy("inputChannelsWithData")
-    protected int[] lastPrioritySequenceNumber;
+    public int[] lastPrioritySequenceNumber;
 
     /** The partition producer state listener. */
     private final PartitionProducerStateProvider partitionProducerStateProvider;
@@ -181,12 +181,12 @@ public class SingleInputGate extends IndexedInputGate {
      */
     private BufferPool bufferPool;
 
-    private boolean hasReceivedAllEndOfPartitionEvents;
+    protected boolean hasReceivedAllEndOfPartitionEvents;
 
     private boolean hasReceivedEndOfData;
 
     /** Flag indicating whether partitions have been requested. */
-    private boolean requestedPartitionsFlag;
+    protected boolean requestedPartitionsFlag;
 
     private final List<TaskEvent> pendingEvents = new ArrayList<>();
 
@@ -336,7 +336,7 @@ public class SingleInputGate extends IndexedInputGate {
         }
     }
 
-    private void internalRequestPartitions() {
+    protected void internalRequestPartitions() {
         for (InputChannel inputChannel : inputChannels.values()) {
             try {
                 inputChannel.requestSubpartition();
@@ -493,6 +493,10 @@ public class SingleInputGate extends IndexedInputGate {
         return channels[channelIndex];
     }
 
+    public InputChannel[] getChannels() {
+        return channels;
+    }
+
     // ------------------------------------------------------------------------
     // Setup/Life-cycle
     // ------------------------------------------------------------------------
@@ -576,11 +580,12 @@ public class SingleInputGate extends IndexedInputGate {
                     boolean isLocal = shuffleDescriptor.isLocalTo(localLocation);
                     InputChannel newChannel;
                     if (isLocal) {
-                        newChannel = unknownChannel.toLocalInputChannel();
+                        newChannel = unknownChannel.toLocalInputChannel(shuffleDescriptor.isUpstreamBroadcastOnly());
                     } else {
                         RemoteInputChannel remoteInputChannel =
                                 unknownChannel.toRemoteInputChannel(
-                                        shuffleDescriptor.getConnectionId());
+                                        shuffleDescriptor.getConnectionId(),
+                                        shuffleDescriptor.isUpstreamBroadcastOnly());
                         remoteInputChannel.setup();
                         newChannel = remoteInputChannel;
                     }
@@ -910,7 +915,7 @@ public class SingleInputGate extends IndexedInputGate {
         return buffer;
     }
 
-    private void markAvailable() {
+    protected void markAvailable() {
         CompletableFuture<?> toNotify;
         synchronized (inputChannelsWithData) {
             toNotify = availabilityHelper.getUnavailableToResetAvailable();
