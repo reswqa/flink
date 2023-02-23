@@ -51,13 +51,5 @@ public interface MemoryDataWriterOperation {
      */
     void onConsumerReleased(int subpartitionId, ConsumerId consumerId);
 
-    /**
-     * This method is called when consumer is get next buffer.
-     *
-     * @param subpartitionId the subpartition's identifier that this consumer belongs to.
-     * @param bufferIndex the index the consumer needs.
-     */
-    boolean isLastBufferInSegment(int subpartitionId, int bufferIndex);
-
     boolean isConsumerRegistered(int subpartitionId);
 }

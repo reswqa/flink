@@ -118,9 +118,7 @@ public class SubpartitionConsumerMemoryDataManager implements BufferConsumeView 
                                 getBacklog(),
                                 tuple.f1,
                                 toConsumeIndex,
-                                memoryDataWriterOperation.isLastBufferInSegment(
-                                        tuple.f0.getBufferIndexAndChannel().getChannel(),
-                                        tuple.f0.getBufferIndexAndChannel().getBufferIndex())));
+                                tuple.f0.isLastBufferInSegment()));
     }
 
     /**
