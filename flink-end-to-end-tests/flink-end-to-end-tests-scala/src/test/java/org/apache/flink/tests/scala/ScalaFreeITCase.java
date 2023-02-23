@@ -17,6 +17,9 @@
 
 package org.apache.flink.tests.scala;
 
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.MemorySize;
+import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.test.resources.ResourceTestUtils;
 import org.apache.flink.test.util.JobSubmission;
 import org.apache.flink.tests.util.flink.ClusterController;
@@ -70,8 +73,11 @@ public class ScalaFreeITCase extends TestLogger {
     }
 
     public ScalaFreeITCase(TestParams testParams) {
+        Configuration conf = new Configuration();
+        conf.set(TaskManagerOptions.TOTAL_FLINK_MEMORY, MemorySize.ofMebiBytes(512));
         final FlinkResourceSetup.FlinkResourceSetupBuilder builder =
                 FlinkResourceSetup.builder()
+                        .addConfiguration(conf)
                         .moveJar("flink-scala", JarLocation.LIB, JarLocation.OPT);
         testParams.builderSetup.accept(builder);
         flink = FlinkResource.get(builder.build());
