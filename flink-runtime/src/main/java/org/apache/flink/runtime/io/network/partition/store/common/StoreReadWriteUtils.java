@@ -74,22 +74,32 @@ public class StoreReadWriteUtils {
             String baseDfsPath,
             boolean isBroadcastOnly)
             throws IOException {
-        while (baseDfsPath.endsWith("/") && baseDfsPath.length() > 1) {
-            baseDfsPath = baseDfsPath.substring(0, baseDfsPath.length() - 1);
-        }
-        if(isBroadcastOnly){
-            subpartitionId = 0;
-        }
         String basePathStr =
-                String.format(
-                        "%s/%s/%s/%s/%s",
-                        baseDfsPath, TIER_STORE_DIR, jobID, resultPartitionID, subpartitionId);
+                getBaseSubpartitionPath(
+                        jobID, resultPartitionID, subpartitionId, baseDfsPath, isBroadcastOnly);
         Path basePath = new Path(basePathStr);
         FileSystem fs = basePath.getFileSystem();
         if (!fs.exists(basePath)) {
             fs.mkdirs(basePath);
         }
         return basePathStr;
+    }
+
+    public static String getBaseSubpartitionPath(
+            JobID jobID,
+            ResultPartitionID resultPartitionID,
+            int subpartitionId,
+            String baseDfsPath,
+            boolean isBroadcastOnly) {
+        while (baseDfsPath.endsWith("/") && baseDfsPath.length() > 1) {
+            baseDfsPath = baseDfsPath.substring(0, baseDfsPath.length() - 1);
+        }
+        if (isBroadcastOnly) {
+            subpartitionId = 0;
+        }
+        return String.format(
+                "%s/%s/%s/%s/%s",
+                baseDfsPath, TIER_STORE_DIR, jobID, resultPartitionID, subpartitionId);
     }
 
     public static String deleteJobBasePath(JobID jobID, String baseDfsPath) throws IOException {

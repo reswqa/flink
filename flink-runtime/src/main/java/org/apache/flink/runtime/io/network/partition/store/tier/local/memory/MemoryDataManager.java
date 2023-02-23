@@ -73,7 +73,7 @@ public class MemoryDataManager implements SingleTierDataGate {
 
     private final SubpartitionSegmentIndexTracker segmentIndexTracker;
 
-    private int numBytesInASegment = 10 * 32 * 1024;
+    private int numBytesInASegment = 1;
 
     private final int bufferNumberInSegment = numBytesInASegment / 32 / 1024;
 
@@ -148,8 +148,13 @@ public class MemoryDataManager implements SingleTierDataGate {
         return memoryReader;
     }
 
+    int flag = 0;
+
     @Override
     public boolean canStoreNextSegment(int subpartitionId) {
+        //flag++;
+        //return flag % 2 == 1;
+        //return true;
         return bufferPoolHelper.canStoreNextSegmentForMemoryTier(bufferNumberInSegment)
                 && memoryDataWriter.isConsumerRegistered(subpartitionId);
     }

@@ -158,7 +158,7 @@ class UnknownInputChannel extends InputChannel implements ChannelStateHolder {
     // Graduation to a local or remote input channel at runtime
     // ------------------------------------------------------------------------
 
-    public RemoteInputChannel toRemoteInputChannel(ConnectionID producerAddress) {
+    public RemoteInputChannel toRemoteInputChannel(ConnectionID producerAddress, boolean isUpstreamBroadcastOnly) {
         return new RemoteInputChannel(
                 inputGate,
                 getChannelIndex(),
@@ -171,10 +171,11 @@ class UnknownInputChannel extends InputChannel implements ChannelStateHolder {
                 networkBuffersPerChannel,
                 metrics.getNumBytesInRemoteCounter(),
                 metrics.getNumBuffersInRemoteCounter(),
-                channelStateWriter == null ? ChannelStateWriter.NO_OP : channelStateWriter);
+                channelStateWriter == null ? ChannelStateWriter.NO_OP : channelStateWriter,
+                isUpstreamBroadcastOnly);
     }
 
-    public LocalInputChannel toLocalInputChannel() {
+    public LocalInputChannel toLocalInputChannel(boolean isUpstreamBroadcastOnly) {
         return new LocalInputChannel(
                 inputGate,
                 getChannelIndex(),
@@ -186,7 +187,8 @@ class UnknownInputChannel extends InputChannel implements ChannelStateHolder {
                 maxBackoff,
                 metrics.getNumBytesInRemoteCounter(),
                 metrics.getNumBuffersInRemoteCounter(),
-                channelStateWriter == null ? ChannelStateWriter.NO_OP : channelStateWriter);
+                channelStateWriter == null ? ChannelStateWriter.NO_OP : channelStateWriter,
+                isUpstreamBroadcastOnly);
     }
 
     @Override

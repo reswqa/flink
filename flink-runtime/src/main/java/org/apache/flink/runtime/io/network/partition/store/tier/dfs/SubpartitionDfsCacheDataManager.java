@@ -198,7 +198,7 @@ public class SubpartitionDfsCacheDataManager {
                     cacheDataSpiller.finishSegment(segmentIndex);
                     LOG.debug("%%% Dfs generate2");
                     BufferContext segmentInfoBufferContext =
-                            new BufferContext(null, -1, targetChannel, true, true);
+                            new BufferContext(null, finishedSegmentInfoIndex, targetChannel, true, true);
                     allSegmentInfos.add(segmentInfoBufferContext);
                     ++finishedSegmentInfoIndex;
                     checkState(allBuffers.isEmpty(), "Leaking finished buffers.");
@@ -464,7 +464,7 @@ public class SubpartitionDfsCacheDataManager {
             flushCachedBuffers().get();
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Flush data to dfs failed when DfsFileWriter is trying to close.");
+                    "Flush data to dfs failed when DfsFileWriter is trying to close.", e);
         }
         while (!unfinishedBuffers.isEmpty()) {
             unfinishedBuffers.poll().close();

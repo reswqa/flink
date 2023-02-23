@@ -25,6 +25,7 @@ import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierDataGate;
 import org.apache.flink.runtime.io.network.partition.store.common.SingleTierReader;
 import org.apache.flink.runtime.io.network.partition.store.common.TieredStoreConsumer;
+import org.apache.flink.runtime.io.network.partition.store.tier.dfs.DfsDataManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,8 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
     private boolean isReleased = false;
 
     private int currentSegmentIndex = 0;
+
+    private long consumedSegmentIndex = 0L;
 
     private boolean hasSegmentFinished = true;
 
@@ -87,17 +90,43 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
     @Nullable
     @Override
     public BufferAndBacklog getNextBuffer() throws IOException {
+        synchronized (this) {
+            if (currentSegmentIndex <= consumedSegmentIndex) {
+                return getNextBufferInternal();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void updateConsumedSegmentIndex(long segmentId) {
+        synchronized (this) {
+            consumedSegmentIndex = segmentId;
+        }
+    }
+
+    @Override
+    public void forceNotifyAvailable() {
+        availabilityListener.notifyDataAvailable();
+    }
+
+    public BufferAndBacklog getNextBufferInternal() throws IOException {
+        LOG.debug("%%% getNextBuffer1");
         if (!findTierContainsNextSegment()) {
             return null;
         }
-
+        LOG.debug("%%% getNextBuffer2");
         BufferAndBacklog bufferAndBacklog =
                 singleTierReaders[viewIndexContainsCurrentSegment].getNextBuffer();
 
         if (bufferAndBacklog != null) {
+            LOG.debug("%%% getNextBuffer3 ");
             bufferAndBacklog.setNextDataType(Buffer.DataType.DATA_BUFFER);
             hasSegmentFinished = bufferAndBacklog.isLastBufferInSegment();
             if (hasSegmentFinished) {
+                if(bufferAndBacklog.buffer().getDataType() == Buffer.DataType.DATA_BUFFER){
+                    System.out.println();
+                }
                 currentSegmentIndex++;
             }
             if (bufferAndBacklog.isFromDfsTier()) {
@@ -171,14 +200,16 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
     }
 
     @Override
-    public int containSegment(long segmentId) {
-        for (int i = 0; i < tierDataGates.length; i++) {
-            SingleTierDataGate tieredDataGate = tierDataGates[i];
+    public boolean containSegment(long segmentId) {
+        for (SingleTierDataGate tieredDataGate : tierDataGates) {
+            if (tieredDataGate.getClass() == DfsDataManager.class) {
+                continue;
+            }
             if (tieredDataGate.hasCurrentSegment(subpartitionId, segmentId)) {
-                return i;
+                return true;
             }
         }
-        return -1;
+        return false;
     }
 
     // -------------------------------

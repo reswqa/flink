@@ -60,7 +60,7 @@ public class DfsDataManager implements SingleTierDataGate, DataManagerOperation 
     private final DfsCacheDataManager dfsCacheDataManager;
 
     // TODO, Make this configurable.
-    private int numBytesInASegment = 4 * 1024 * 1024; // 4 M
+    private int numBytesInASegment = 1; // 4 M
 
     public DfsDataManager(
             JobID jobID,

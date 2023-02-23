@@ -112,6 +112,11 @@ class CreditBasedSequenceNumberingViewReader
     }
 
     @Override
+    public void notifyRequiredSegmentId(long segmentId) {
+        subpartitionView.notifyRequiredSegmentId(segmentId);
+    }
+
+    @Override
     public void resumeConsumption() {
         if (initialCredit == 0) {
             // reset available credit if no exclusive buffer is available at the

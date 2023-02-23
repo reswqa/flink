@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.flink.runtime.io.network.partition.store.TieredStoreMode.TieredType.IN_MEM;
@@ -94,10 +95,9 @@ public class SubpartitionMemoryDataManager {
     private final BufferPoolHelper bufferPoolHelper;
 
     @GuardedBy("subpartitionLock")
-    private final Map<
-                    ConsumerId,
-            SubpartitionConsumerMemoryDataManager>
-            consumerMap;
+    private final Map<ConsumerId, SubpartitionConsumerMemoryDataManager> consumerMap;
+
+    private AtomicInteger consumerNum = new AtomicInteger(0);
 
     @Nullable private final BufferCompressor bufferCompressor;
 
@@ -162,6 +162,7 @@ public class SubpartitionMemoryDataManager {
                                     consumerId,
                                     memoryDataWriterOperation);
                     newConsumer.addInitialBuffers(allBuffers);
+                    consumerNum.getAndIncrement();
                     consumerMap.put(consumerId, newConsumer);
                     return newConsumer;
                 });
@@ -169,6 +170,7 @@ public class SubpartitionMemoryDataManager {
 
     @SuppressWarnings("FieldAccessNotGuarded")
     public void releaseConsumer(ConsumerId consumerId) {
+        consumerNum.set(-9999);
         runWithLock(() -> checkNotNull(consumerMap.remove(consumerId)));
     }
 

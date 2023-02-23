@@ -136,7 +136,7 @@ public abstract class ResultSubpartition {
                 Buffer.DataType nextDataType,
                 int sequenceNumber,
                 boolean isLastBufferInSegment) {
-            this.buffer = checkNotNull(buffer);
+            this.buffer = buffer;
             this.buffersInBacklog = buffersInBacklog;
             this.nextDataType = checkNotNull(nextDataType);
             this.sequenceNumber = sequenceNumber;

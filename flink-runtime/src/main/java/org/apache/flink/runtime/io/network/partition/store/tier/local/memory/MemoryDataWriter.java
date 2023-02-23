@@ -107,14 +107,13 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
             throws IOException {
         subpartitionSegmentIndexTracker.addSubpartitionSegmentIndex(
                 targetSubpartition, segmentIndex);
-        if (isLastRecordInSegment) {
+        if (isLastRecordInSegment && !isEndOfPartition) {
             append(record, targetSubpartition, dataType, false);
             // Send the EndOfSegmentEvent
             ByteBuffer endOfSegment =
-                    EndOfSegmentEventBuilder.buildEndOfSegmentEvent(
-                            segmentIndex + 1L, isBroadcastOnly);
+                    EndOfSegmentEventBuilder.buildEndOfSegmentEvent(segmentIndex + 1L);
             append(endOfSegment, targetSubpartition, SEGMENT_EVENT, true);
-        }else {
+        } else {
             append(record, targetSubpartition, dataType, isLastRecordInSegment);
         }
     }

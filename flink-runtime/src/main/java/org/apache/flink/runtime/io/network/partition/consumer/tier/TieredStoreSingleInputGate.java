@@ -27,9 +27,11 @@ import org.apache.flink.runtime.io.network.partition.PartitionProducerStateProvi
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
+import org.apache.flink.runtime.io.network.partition.consumer.LocalInputChannel;
+import org.apache.flink.runtime.io.network.partition.consumer.RemoteInputChannel;
 import org.apache.flink.runtime.io.network.partition.consumer.SingleInputGate;
-import org.apache.flink.runtime.io.network.partition.consumer.tier.fetcher.LocalDataFetcherClient;
-import org.apache.flink.runtime.io.network.partition.consumer.tier.fetcher.TieredStoreDataFetcherClient;
+import org.apache.flink.runtime.io.network.partition.consumer.tier.common.DataFetcher;
+import org.apache.flink.runtime.io.network.partition.consumer.tier.common.SingleChannelDataClientFactory;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.throughput.BufferDebloater;
 import org.apache.flink.runtime.throughput.ThroughputCalculator;
@@ -41,21 +43,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * An tiered store input gate consumes one or more partitions of a single produced intermediate
- * result. It can also consume data from DFS, or REMOTE.
- */
+/** The input gate for Tiered Store. */
 public class TieredStoreSingleInputGate extends SingleInputGate {
 
-    private final JobID jobID;
+    private final DataFetcher dataFetcher;
 
-    private final List<ResultPartitionID> resultPartitionIDs;
-
-    private final int subpartitionIndex;
-
-    private final String baseDfsPath;
-
-    private TieredStoreDataFetcherClient dataFetcherClient;
+    private final SingleChannelDataClientFactory clientFactory;
 
     public TieredStoreSingleInputGate(
             String owningTaskName,
@@ -89,27 +82,77 @@ public class TieredStoreSingleInputGate extends SingleInputGate {
                 segmentSize,
                 throughputCalculator,
                 bufferDebloater);
-        this.jobID = jobID;
-        this.resultPartitionIDs = resultPartitionIDs;
-        this.subpartitionIndex = subpartitionIndex;
-        this.baseDfsPath = baseDfsPath;
+
+        this.clientFactory =
+                new SingleChannelDataClientFactory(
+                        this,
+                        numberOfInputChannels,
+                        inputChannelsWithData,
+                        jobID,
+                        resultPartitionIDs,
+                        getMemorySegmentProvider(),
+                        subpartitionIndex,
+                        baseDfsPath);
+
+        this.dataFetcher = new DataFetcherImpl(numberOfInputChannels, clientFactory);
     }
 
     @Override
     public void setup() throws IOException {
         super.setup();
-        this.dataFetcherClient = new LocalDataFetcherClient(inputChannelsWithData, this);
+        this.dataFetcher.setup();
     }
 
     @Override
     public Optional<InputWithData<InputChannel, InputChannel.BufferAndAvailability>>
             waitAndGetNextData(boolean blocking) throws IOException, InterruptedException {
-        return dataFetcherClient.waitAndGetNextData(blocking);
+        InputChannel inputChannel;
+        synchronized (inputChannelsWithData) {
+            inputChannel = getChannel(false).orElse(null);
+            if (inputChannel == null) {
+                checkUnavailability();
+                return Optional.empty();
+            }
+        }
+        inputChannel.checkError();
+        Optional<InputWithData<InputChannel, InputChannel.BufferAndAvailability>> nextBuffer =
+                dataFetcher.getNextBuffer(inputChannel);
+        enqueueChannelWhenSatisfyCondition(inputChannel, nextBuffer.isPresent());
+        return nextBuffer;
+    }
+
+    /** Enqueue input channel when satisfy the condition. */
+    private void enqueueChannelWhenSatisfyCondition(
+            InputChannel inputChannel, boolean hasNextBuffer) {
+        if (hasNextBuffer
+                || (clientFactory.hasDfsClient()
+                                && (inputChannel.getClass() == LocalInputChannel.class
+                        || inputChannel.getClass() == RemoteInputChannel.class))) {
+            synchronized (inputChannelsWithData) {
+                queueChannelUnsafe(inputChannel, false);
+            }
+        }
+    }
+
+    @Override
+    protected void internalRequestPartitions() {
+        for (InputChannel inputChannel : inputChannels.values()) {
+            try {
+                inputChannel.requestSubpartition();
+                // enqueue all channels
+                synchronized (inputChannelsWithData){
+                    inputChannelsWithData.add(inputChannel);
+                }
+            } catch (Throwable t) {
+                inputChannel.setError(t);
+                return;
+            }
+        }
     }
 
     @Override
     public void close() throws IOException {
         super.close();
-        dataFetcherClient.close();
+        dataFetcher.close();
     }
 }

@@ -114,4 +114,15 @@ class TieredStoreSubpartitionViewDelegate implements ResultSubpartitionView {
     public String getTaskName() {
         return taskName;
     }
+
+    @Override
+    public boolean containSegment(long segmentId) {
+        return storeConsumer.containSegment(segmentId);
+    }
+
+    @Override
+    public void notifyRequiredSegmentId(long segmentId) {
+        storeConsumer.updateConsumedSegmentIndex(segmentId);
+        storeConsumer.forceNotifyAvailable();
+    }
 }

@@ -94,7 +94,8 @@ public class ResultPartitionDeploymentDescriptorTest extends TestLogger {
                 new NettyShuffleDescriptor(
                         producerLocation,
                         new NetworkPartitionConnectionInfo(connectionID),
-                        resultPartitionID);
+                        resultPartitionID,
+                        false);
 
         ResultPartitionDeploymentDescriptor copy =
                 createCopyAndVerifyResultPartitionDeploymentDescriptor(shuffleDescriptor);

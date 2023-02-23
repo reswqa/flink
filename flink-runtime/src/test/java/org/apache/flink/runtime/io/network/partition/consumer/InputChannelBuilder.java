@@ -153,7 +153,8 @@ public class InputChannelBuilder {
                 maxBackoff,
                 metrics.getNumBytesInLocalCounter(),
                 metrics.getNumBuffersInLocalCounter(),
-                stateWriter);
+                stateWriter,
+                false);
     }
 
     public RemoteInputChannel buildRemoteChannel(SingleInputGate inputGate) {
@@ -169,7 +170,8 @@ public class InputChannelBuilder {
                 networkBuffersPerChannel,
                 metrics.getNumBytesInRemoteCounter(),
                 metrics.getNumBuffersInRemoteCounter(),
-                stateWriter);
+                stateWriter,
+                false);
     }
 
     public LocalRecoveredInputChannel buildLocalRecoveredChannel(SingleInputGate inputGate) {
@@ -184,7 +186,8 @@ public class InputChannelBuilder {
                         initialBackoff,
                         maxBackoff,
                         networkBuffersPerChannel,
-                        metrics);
+                        metrics,
+                        false);
         channel.setChannelStateWriter(stateWriter);
         return channel;
     }
@@ -201,7 +204,8 @@ public class InputChannelBuilder {
                         initialBackoff,
                         maxBackoff,
                         networkBuffersPerChannel,
-                        metrics);
+                        metrics,
+                        false);
         channel.setChannelStateWriter(stateWriter);
         return channel;
     }

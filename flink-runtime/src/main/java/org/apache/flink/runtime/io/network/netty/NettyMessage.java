@@ -243,6 +243,9 @@ public abstract class NettyMessage {
                     case NewBufferSize.ID:
                         decodedMsg = NewBufferSize.readFrom(msg);
                         break;
+                    case SegmentIdMessage.ID:
+                        decodedMsg = SegmentIdMessage.readFrom(msg);
+                        break;
                     default:
                         throw new ProtocolException(
                                 "Received unknown message from producer: " + msg);
@@ -895,6 +898,52 @@ public abstract class NettyMessage {
         @Override
         public String toString() {
             return String.format("NewBufferSize(%s : %d)", receiverId, bufferSize);
+        }
+    }
+
+    /** Ask if the upstream contains the Segment. */
+    static class SegmentIdMessage extends NettyMessage {
+
+        private static final byte ID = 11;
+
+        final long segmentId;
+
+        final InputChannelID receiverId;
+
+        SegmentIdMessage(long segmentId, InputChannelID receiverId) {
+            checkArgument(segmentId > 0L, "The segmentId should be greater than 0");
+            this.segmentId = segmentId;
+            this.receiverId = receiverId;
+        }
+
+        @Override
+        void write(ChannelOutboundInvoker out, ChannelPromise promise, ByteBufAllocator allocator)
+                throws IOException {
+            ByteBuf result = null;
+
+            try {
+                result =
+                        allocateBuffer(
+                                allocator, ID, Long.BYTES + InputChannelID.getByteBufLength());
+                result.writeLong(segmentId);
+                receiverId.writeTo(result);
+
+                out.write(result, promise);
+            } catch (Throwable t) {
+                handleException(result, null, t);
+            }
+        }
+
+        static SegmentIdMessage readFrom(ByteBuf buffer) {
+            long segmentId = buffer.readLong();
+            InputChannelID receiverId = InputChannelID.fromByteBuf(buffer);
+
+            return new SegmentIdMessage(segmentId, receiverId);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("ContainSegment(%s : %d)", receiverId, segmentId);
         }
     }
 

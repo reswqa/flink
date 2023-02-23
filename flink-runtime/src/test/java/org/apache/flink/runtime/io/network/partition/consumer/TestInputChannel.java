@@ -18,25 +18,29 @@
 
 package org.apache.flink.runtime.io.network.partition.consumer;
 
+import org.apache.flink.core.memory.MemorySegmentFactory;
 import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.runtime.event.TaskEvent;
 import org.apache.flink.runtime.io.network.api.EndOfData;
 import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
+import org.apache.flink.runtime.io.network.api.EndOfSegmentEvent;
 import org.apache.flink.runtime.io.network.api.StopMode;
 import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
+import org.apache.flink.runtime.io.network.buffer.FreeingBufferRecycler;
+import org.apache.flink.runtime.io.network.buffer.NetworkBuffer;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static org.apache.flink.runtime.io.network.partition.store.dfs.DfsDataFetcherTest.createTempSegmentInfo;
 import static org.apache.flink.runtime.io.network.util.TestBufferFactory.createBuffer;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -109,8 +113,12 @@ public class TestInputChannel extends InputChannel {
         return read(createBuffer(1), nextType);
     }
 
-    TestInputChannel readSegmentInfo(int segmentId, int curSequenceNumber) throws IOException, InterruptedException {
-        return read(createTempSegmentInfo(segmentId, curSequenceNumber), Buffer.DataType.DATA_BUFFER);
+    TestInputChannel readSegmentInfo(int segmentId) throws IOException, InterruptedException {
+        ByteBuffer byteBuffer = EventSerializer.toSerializedEvent(new EndOfSegmentEvent(0));
+        NetworkBuffer segmentInfoBuffer = new NetworkBuffer(
+                MemorySegmentFactory.wrap(byteBuffer.array()),
+                FreeingBufferRecycler.INSTANCE);
+        return read(segmentInfoBuffer, Buffer.DataType.DATA_BUFFER);
     }
 
     TestInputChannel readEndOfData() throws IOException {
@@ -172,7 +180,7 @@ public class TestInputChannel extends InputChannel {
     }
 
     @Override
-    void requestSubpartition() throws IOException, InterruptedException {}
+    public void requestSubpartition() throws IOException, InterruptedException {}
 
     @Override
     public Optional<BufferAndAvailability> getNextBuffer() throws IOException, InterruptedException {

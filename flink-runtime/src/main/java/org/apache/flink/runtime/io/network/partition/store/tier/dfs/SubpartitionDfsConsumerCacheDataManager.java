@@ -105,9 +105,7 @@ public class SubpartitionDfsConsumerCacheDataManager implements BufferConsumeVie
 
                             BufferContext bufferContext =
                                     checkNotNull(unConsumedBuffers.pollFirst());
-                            bufferContext.consumed(consumerId);
-                            Buffer.DataType nextDataType =
-                                    peekNextToConsumeDataTypeInternal(toConsumeIndex + 1);
+                            Buffer.DataType nextDataType = Buffer.DataType.DATA_BUFFER;
                             return Optional.of(Tuple2.of(bufferContext, nextDataType));
                         });
         return bufferAndNextDataType.map(

@@ -95,9 +95,9 @@ public class CacheDataDfsFileSpiller implements CacheDataSpiller {
     @Override
     public void startSegment(long segmentIndex) throws IOException {
         if (segmentIndex <= currentSegmentIndex) {
-            System.out.println();
+            return;
         }
-        checkState(segmentIndex > currentSegmentIndex);
+
         checkState(!isSegmentStarted);
         isSegmentStarted = true;
         currentSegmentIndex = segmentIndex;

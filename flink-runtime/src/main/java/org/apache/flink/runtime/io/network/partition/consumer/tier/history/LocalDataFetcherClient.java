@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.io.network.partition.consumer.tier.fetcher;
+package org.apache.flink.runtime.io.network.partition.consumer.tier.history;
 
 import org.apache.flink.runtime.io.network.partition.PrioritizedDeque;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
@@ -11,7 +11,7 @@ import java.util.Optional;
 import static org.apache.flink.runtime.io.network.buffer.Buffer.DataType.SEGMENT_EVENT;
 
 /** The data fetcher client for Local Tier. */
-public class LocalDataFetcherClient implements TieredStoreDataFetcherClient {
+public class LocalDataFetcherClient implements DataFetcherClient {
 
     private final PrioritizedDeque<InputChannel> inputChannelsWithData;
 
@@ -50,6 +50,8 @@ public class LocalDataFetcherClient implements TieredStoreDataFetcherClient {
                         bufferAndAvailabilityOpt.get();
                 // Ignore the data type SEGMENT_EVENT
                 if (bufferAndAvailability.buffer().getDataType() == SEGMENT_EVENT) {
+                    singleInputGate.queueChannelUnsafe(
+                            inputChannel, bufferAndAvailability.morePriorityEvents());
                     continue;
                 }
                 if (bufferAndAvailability.moreAvailable()) {

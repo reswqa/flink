@@ -76,12 +76,12 @@ public class NettyShuffleDescriptorBuilder {
         ConnectionID connectionID =
                 new ConnectionID(new InetSocketAddress(address, dataPort), connectionIndex);
         return new NettyShuffleDescriptor(
-                producerLocation, new NetworkPartitionConnectionInfo(connectionID), id);
+                producerLocation, new NetworkPartitionConnectionInfo(connectionID), id, false);
     }
 
     public NettyShuffleDescriptor buildLocal() {
         return new NettyShuffleDescriptor(
-                producerLocation, LocalExecutionPartitionConnectionInfo.INSTANCE, id);
+                producerLocation, LocalExecutionPartitionConnectionInfo.INSTANCE, id, false);
     }
 
     public static NettyShuffleDescriptorBuilder newBuilder() {

@@ -73,6 +73,8 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
 
     private final ChannelStatePersister channelStatePersister;
 
+    private final boolean isUpstreamBroadcast;
+
     public LocalInputChannel(
             SingleInputGate inputGate,
             int channelIndex,
@@ -84,7 +86,8 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
             int maxBackoff,
             Counter numBytesIn,
             Counter numBuffersIn,
-            ChannelStateWriter stateWriter) {
+            ChannelStateWriter stateWriter,
+            boolean isUpstreamBroadcast) {
 
         super(
                 inputGate,
@@ -99,6 +102,7 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
         this.partitionManager = checkNotNull(partitionManager);
         this.taskEventPublisher = checkNotNull(taskEventPublisher);
         this.channelStatePersister = new ChannelStatePersister(stateWriter, getChannelInfo());
+        this.isUpstreamBroadcast = isUpstreamBroadcast;
     }
 
     // ------------------------------------------------------------------------
@@ -114,7 +118,7 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
     }
 
     @Override
-    protected void requestSubpartition() throws IOException {
+    public void requestSubpartition() throws IOException {
 
         boolean retriggerRequest = false;
         boolean notifyDataAvailable = false;
@@ -383,5 +387,27 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
     @VisibleForTesting
     ResultSubpartitionView getSubpartitionView() {
         return subpartitionView;
+    }
+
+    // ------------------------------------------------------------------------
+    // For Tiered Store
+    // ------------------------------------------------------------------------
+
+    @Override
+    public boolean containSegment(long segmentId) {
+        if(subpartitionView == null){
+            return false;
+        }
+        return checkNotNull(subpartitionView).containSegment(segmentId);
+    }
+
+    @Override
+    public boolean isUpstreamBroadcastOnly() {
+        return isUpstreamBroadcast;
+    }
+
+    @Override
+    public void notifyRequiredSegmentId(long segmentId) {
+        checkNotNull(subpartitionView).notifyRequiredSegmentId(segmentId);
     }
 }

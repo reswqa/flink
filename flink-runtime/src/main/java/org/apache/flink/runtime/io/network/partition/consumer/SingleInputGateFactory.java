@@ -315,7 +315,8 @@ public class SingleInputGateFactory {
                     partitionRequestInitialBackoff,
                     partitionRequestMaxBackoff,
                     networkBuffersPerChannel,
-                    metrics);
+                    metrics,
+                    inputChannelDescriptor.isUpstreamBroadcastOnly());
         } else {
             // Different instances => remote
             channelStatistics.numRemoteChannels++;
@@ -329,7 +330,8 @@ public class SingleInputGateFactory {
                     partitionRequestInitialBackoff,
                     partitionRequestMaxBackoff,
                     networkBuffersPerChannel,
-                    metrics);
+                    metrics,
+                    inputChannelDescriptor.isUpstreamBroadcastOnly());
         }
     }
 

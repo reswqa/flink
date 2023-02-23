@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.io.network.partition.store.common;
 
-import org.apache.flink.runtime.io.network.partition.ProducerFailedException;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView;
 
@@ -39,19 +38,15 @@ public interface TieredStoreConsumer {
 
     boolean isReleased();
 
-    /**
-     * {@link ResultSubpartitionView} can decide whether the failure cause should be reported to
-     * consumer as failure (primary failure) or {@link ProducerFailedException} (secondary failure).
-     * Secondary failure can be reported only if producer (upstream task) is guaranteed to failover.
-     *
-     * <p><strong>BEWARE:</strong> Incorrectly reporting failure cause as primary failure, can hide
-     * the root cause of the failure from the user.
-     */
     Throwable getFailureCause();
 
     int unsynchronizedGetNumberOfQueuedBuffers();
 
     int getNumberOfQueuedBuffers();
 
-    int containSegment(long segmentId);
+    boolean containSegment(long segmentId);
+
+    void forceNotifyAvailable();
+
+    void updateConsumedSegmentIndex(long segmentId);
 }

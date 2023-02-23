@@ -29,19 +29,12 @@ public class EndOfSegmentEvent extends RuntimeEvent {
 
     private final long segmentId;
 
-    private final int isBroadcastOnly;
-
-    public EndOfSegmentEvent(long segmentId, int isBroadcastOnly) {
+    public EndOfSegmentEvent(long segmentId) {
         this.segmentId = segmentId;
-        this.isBroadcastOnly = isBroadcastOnly;
     }
 
     public long getSegmentId() {
         return segmentId;
-    }
-
-    public int isBroadcastOnly() {
-        return isBroadcastOnly;
     }
 
     @Override

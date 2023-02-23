@@ -225,7 +225,7 @@ public abstract class RecoveredInputChannel extends InputChannel implements Chan
     }
 
     @Override
-    final void requestSubpartition() {
+    public final void requestSubpartition() {
         throw new UnsupportedOperationException(
                 "RecoveredInputChannel should never request partition.");
     }

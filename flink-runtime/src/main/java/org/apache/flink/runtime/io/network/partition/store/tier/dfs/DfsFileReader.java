@@ -191,14 +191,14 @@ public class DfsFileReader implements SingleTierReader, DfsFileReaderInternalOpe
     }
 
     private BufferAndBacklog handleBacklog(BufferAndBacklog bufferToConsume) {
-        return bufferToConsume.buffersInBacklog() == 0
-                ? new BufferAndBacklog(
-                        bufferToConsume.buffer(),
-                        getSubpartitionBacklog(),
-                        bufferToConsume.getNextDataType(),
-                        bufferToConsume.getSequenceNumber(),
-                        bufferToConsume.isLastBufferInSegment())
-                : bufferToConsume;
+        BufferAndBacklog bufferAndBacklog = new BufferAndBacklog(
+                bufferToConsume.buffer(),
+                getSubpartitionBacklog(),
+                bufferToConsume.getNextDataType(),
+                bufferToConsume.getSequenceNumber(),
+                bufferToConsume.isLastBufferInSegment());
+        bufferAndBacklog.setFromDfsTier(true);
+        return bufferAndBacklog;
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

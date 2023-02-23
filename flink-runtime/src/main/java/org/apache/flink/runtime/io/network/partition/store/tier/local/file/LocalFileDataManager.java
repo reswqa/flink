@@ -95,7 +95,7 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
     private final SubpartitionSegmentIndexTracker segmentIndexTracker;
 
     // TODO, Make this configurable.
-    private int numBytesInASegment = 4 * 1024 * 1024; // 4 M
+    private int numBytesInASegment = 4 * 1024; // 4 M
 
     private volatile boolean isReleased;
 
@@ -169,14 +169,13 @@ public class LocalFileDataManager implements SingleTierWriter, SingleTierDataGat
             long segmentIndex)
             throws IOException {
         segmentIndexTracker.addSubpartitionSegmentIndex(targetSubpartition, segmentIndex);
-        if (isLastRecordInSegment) {
+        if (isLastRecordInSegment && !isEndOfPartition) {
             emit(record, targetSubpartition, dataType, false);
             // Send the EndOfSegmentEvent
             ByteBuffer endOfSegment =
-                    EndOfSegmentEventBuilder.buildEndOfSegmentEvent(
-                            segmentIndex + 1L, isBroadcastOnly);
+                    EndOfSegmentEventBuilder.buildEndOfSegmentEvent(segmentIndex + 1L);
             emit(endOfSegment, targetSubpartition, SEGMENT_EVENT, true);
-        }else {
+        } else {
             emit(record, targetSubpartition, dataType, isLastRecordInSegment);
         }
     }

@@ -65,13 +65,14 @@ public class DfsFileWriter implements SingleTierWriter {
             boolean isEndOfPartition,
             long segmentIndex)
             throws IOException {
-        if (segmentIndexTracker.addSubpartitionSegmentIndex(
+        if (!segmentIndexTracker.hasCurrentSegment(
                 targetSubpartition, segmentIndex)) {
             cacheDataManager.startSegment(targetSubpartition, segmentIndex);
         }
         emit(record, targetSubpartition, dataType, isLastRecordInSegment);
         if (isLastRecordInSegment || isEndOfPartition) {
             cacheDataManager.finishSegment(targetSubpartition, segmentIndex);
+            segmentIndexTracker.addSubpartitionSegmentIndex(targetSubpartition, segmentIndex);
         }
     }
 

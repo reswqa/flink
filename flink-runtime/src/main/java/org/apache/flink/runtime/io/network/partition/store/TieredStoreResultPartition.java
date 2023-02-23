@@ -221,7 +221,7 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
                 this.tierDataGates = new SingleTierDataGate[2];
                 this.tierDataGates[0] = getLocalMemoryDataManager();
                 this.tierDataGates[1] = getLocalFileDataManager();
-                for(SingleTierDataGate tierDataGate : tierDataGates){
+                for (SingleTierDataGate tierDataGate : tierDataGates) {
                     tierDataGate.setup();
                 }
                 break;
@@ -234,7 +234,7 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
                 this.tierDataGates = new SingleTierDataGate[2];
                 this.tierDataGates[0] = getLocalMemoryDataManager();
                 this.tierDataGates[1] = getDfsDataManager();
-                for(SingleTierDataGate tierDataGate : tierDataGates){
+                for (SingleTierDataGate tierDataGate : tierDataGates) {
                     tierDataGate.setup();
                 }
                 break;
@@ -248,7 +248,7 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
                 this.tierDataGates[0] = getLocalMemoryDataManager();
                 this.tierDataGates[1] = getLocalFileDataManager();
                 this.tierDataGates[2] = getDfsDataManager();
-                for(SingleTierDataGate tierDataGate : tierDataGates){
+                for (SingleTierDataGate tierDataGate : tierDataGates) {
                     tierDataGate.setup();
                 }
                 break;
@@ -261,7 +261,7 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
                 this.tierDataGates = new SingleTierDataGate[2];
                 this.tierDataGates[0] = getLocalFileDataManager();
                 this.tierDataGates[1] = getDfsDataManager();
-                for(SingleTierDataGate tierDataGate : tierDataGates){
+                for (SingleTierDataGate tierDataGate : tierDataGates) {
                     tierDataGate.setup();
                 }
                 break;
@@ -357,10 +357,13 @@ public class TieredStoreResultPartition extends ResultPartition implements Chann
                 .emit(record, targetSubpartition, dataType, isBroadcast, isEndOfPartition);
     }
 
+    private int[] createdSubpartitions = new int[10];
+
     @Override
     public ResultSubpartitionView createSubpartitionView(
             int subpartitionId, BufferAvailabilityListener availabilityListener)
             throws IOException {
+        createdSubpartitions[subpartitionId] = 1;
         checkState(!isReleased(), "ResultPartition already released.");
         return new TieredStoreSubpartitionViewDelegate(
                 subpartitionId, availabilityListener, tierDataGates, getOwningTaskName());

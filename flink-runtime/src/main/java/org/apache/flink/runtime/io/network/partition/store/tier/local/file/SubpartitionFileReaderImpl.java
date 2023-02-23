@@ -250,13 +250,20 @@ public class SubpartitionFileReaderImpl implements SubpartitionFileReader {
                                 () ->
                                         new NullPointerException(
                                                 "Get a non-throwable and non-buffer bufferIndexOrError, which is not allowed"));
+
+        //Boolean apply = isLastRecordInSegmentDecider.apply(subpartitionId, nextBufferToConsume);
+        //if(buffer.getDataType() == Buffer.DataType.SEGMENT_EVENT){
+        //    System.out.println();
+        //}
+
         return Optional.of(
                 ResultSubpartition.BufferAndBacklog.fromBufferAndLookahead(
                         buffer,
                         nextDataType,
                         backlog,
                         bufferIndex,
-                        isLastRecordInSegmentDecider.apply(subpartitionId, nextBufferToConsume)));
+                        buffer.getDataType() == Buffer.DataType.SEGMENT_EVENT
+                        ));
     }
 
     @Override
