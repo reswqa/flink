@@ -94,7 +94,8 @@ public class SubpartitionDfsConsumerCacheDataManager implements BufferConsumeVie
     @SuppressWarnings("FieldAccessNotGuarded")
     // Note that: callWithLock ensure that code block guarded by resultPartitionReadLock and
     // subpartitionLock.
-    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(int toConsumeIndex, Queue<Buffer> errorBuffers) {
+    public Optional<ResultSubpartition.BufferAndBacklog> consumeBuffer(
+            int toConsumeIndex, Queue<Buffer> errorBuffers) {
         Optional<Tuple2<BufferContext, Buffer.DataType>> bufferAndNextDataType =
                 callWithLock(
                         () -> {
@@ -110,13 +111,13 @@ public class SubpartitionDfsConsumerCacheDataManager implements BufferConsumeVie
                             return Optional.of(Tuple2.of(bufferContext, nextDataType));
                         });
         return bufferAndNextDataType.map(
-                tuple ->
-                        new ResultSubpartition.BufferAndBacklog(
-                                tuple.f0.getBuffer().readOnlySlice(),
-                                getBacklog(),
-                                tuple.f1,
-                                toConsumeIndex,
-                                true));
+                tuple -> {
+                    ResultSubpartition.BufferAndBacklog bufferAndBacklog =
+                            new ResultSubpartition.BufferAndBacklog(
+                                    null, getBacklog(), tuple.f1, toConsumeIndex, true);
+                    bufferAndBacklog.setFromDfsTier(true);
+                    return bufferAndBacklog;
+                });
     }
 
     /**
@@ -131,7 +132,8 @@ public class SubpartitionDfsConsumerCacheDataManager implements BufferConsumeVie
     // Note that: callWithLock ensure that code block guarded by resultPartitionReadLock and
     // consumerLock.
     @Override
-    public Buffer.DataType peekNextToConsumeDataType(int nextToConsumeIndex, Queue<Buffer> errorBuffers) {
+    public Buffer.DataType peekNextToConsumeDataType(
+            int nextToConsumeIndex, Queue<Buffer> errorBuffers) {
         return callWithLock(() -> peekNextToConsumeDataTypeInternal(nextToConsumeIndex));
     }
 

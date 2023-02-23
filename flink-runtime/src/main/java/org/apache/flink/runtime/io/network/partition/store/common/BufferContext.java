@@ -62,6 +62,8 @@ public class BufferContext {
 
     private final boolean isLastBufferInSegment;
 
+    private boolean fromDfsTier;
+
     // --------------------------
     //      Buffer Status
     // --------------------------
@@ -80,6 +82,18 @@ public class BufferContext {
         this.isLastBufferInSegment = isLastBufferInSegment;
     }
 
+    public BufferContext(
+            Buffer buffer,
+            int bufferIndex,
+            int subpartitionId,
+            boolean isLastBufferInSegment,
+            boolean fromDfsTier) {
+        this.bufferIndexAndChannel = new BufferIndexAndChannel(bufferIndex, subpartitionId);
+        this.buffer = buffer;
+        this.isLastBufferInSegment = isLastBufferInSegment;
+        this.fromDfsTier = fromDfsTier;
+    }
+
     public Buffer getBuffer() {
         return buffer;
     }
@@ -90,6 +104,10 @@ public class BufferContext {
 
     public boolean isLastBufferInSegment() {
         return isLastBufferInSegment;
+    }
+
+    public boolean isFromDfsTier() {
+        return fromDfsTier;
     }
 
     public boolean isReleased() {

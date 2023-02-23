@@ -100,6 +100,9 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
             if (hasSegmentFinished) {
                 currentSegmentIndex++;
             }
+            if (bufferAndBacklog.isFromDfsTier()) {
+                return getNextBuffer();
+            }
             bufferAndBacklog.setSequenceNumber(currentSequenceNumber);
             currentSequenceNumber++;
         }
@@ -145,9 +148,9 @@ public class TieredStoreConsumerImpl implements TieredStoreConsumer {
 
     @Override
     public Throwable getFailureCause() {
-        for(SingleTierReader singleTierReader : singleTierReaders){
+        for (SingleTierReader singleTierReader : singleTierReaders) {
             Throwable failureCause = singleTierReader.getFailureCause();
-            if( failureCause != null){
+            if (failureCause != null) {
                 return failureCause;
             }
         }

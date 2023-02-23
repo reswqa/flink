@@ -555,7 +555,7 @@ class TieredStoreResultPartitionDfsTest {
                                 }
                                 Buffer buffer = bufferAndBacklog.buffer();
                                 assertThat(buffer.getDataType())
-                                        .isEqualTo(Buffer.DataType.SEGMENT_INFO_BUFFER);
+                                        .isEqualTo(Buffer.DataType.SEGMENT_EVENT);
                                 try {
                                     buffer.asByteBuf().getInt(0);
                                     buffer.asByteBuf().getInt(4);
