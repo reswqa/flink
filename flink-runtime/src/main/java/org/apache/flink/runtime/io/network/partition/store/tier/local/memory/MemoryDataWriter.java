@@ -204,13 +204,6 @@ public class MemoryDataWriter implements SingleTierWriter, MemoryDataWriterOpera
         getSubpartitionMemoryDataManager(subpartitionId).releaseConsumer(consumerId);
     }
 
-    @Override
-    public boolean isLastBufferInSegment(int subpartitionId, int bufferIndex) {
-        return getSubpartitionMemoryDataManager(subpartitionId)
-                .getLastBufferIndexOfSegments()
-                .contains(bufferIndex);
-    }
-
     // ------------------------------------
     //           Internal Method
     // ------------------------------------
