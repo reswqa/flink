@@ -33,9 +33,10 @@ import org.apache.flink.runtime.messages.ThreadInfoSample;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
 import org.apache.flink.runtime.resourcemanager.utils.TestingResourceManagerGateway;
 import org.apache.flink.runtime.scheduler.SchedulerBase;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
 import org.apache.flink.runtime.testutils.DirectScheduledExecutorService;
 import org.apache.flink.runtime.util.JvmUtils;
-import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.testutils.TestingUtils;
 import org.apache.flink.util.TestLogger;
 
@@ -385,7 +386,8 @@ public class JobVertexThreadInfoTrackerTest extends TestLogger {
         public CompletableFuture<VertexThreadInfoStats> triggerThreadInfoRequest(
                 Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>
                         executionsWithGateways,
-                TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
+                AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+                        taskExecutorThreadInfoGatewayRetriever,
                 int ignored2,
                 Duration ignored3,
                 int ignored4) {

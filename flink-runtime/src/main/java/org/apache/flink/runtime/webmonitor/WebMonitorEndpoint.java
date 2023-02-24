@@ -147,10 +147,11 @@ import org.apache.flink.runtime.rest.messages.taskmanager.TaskManagerThreadDumpH
 import org.apache.flink.runtime.rest.messages.taskmanager.TaskManagersHeaders;
 import org.apache.flink.runtime.rpc.FatalErrorHandler;
 import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
 import org.apache.flink.runtime.webmonitor.history.ArchivedJson;
 import org.apache.flink.runtime.webmonitor.history.JsonArchivist;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
-import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.threadinfo.JobVertexThreadInfoTracker;
 import org.apache.flink.runtime.webmonitor.threadinfo.JobVertexThreadInfoTrackerBuilder;
 import org.apache.flink.runtime.webmonitor.threadinfo.ThreadInfoRequestCoordinator;
@@ -196,8 +197,11 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
     protected final RestHandlerConfiguration restConfiguration;
     private final GatewayRetriever<ResourceManagerGateway> resourceManagerRetriever;
 
-    private final TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever;
+    private final AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+            taskExecutorThreadInfoGatewayRetriever;
+
     private final TransientBlobService transientBlobService;
+
     protected final ScheduledExecutorService executor;
 
     private final ExecutionGraphCache executionGraphCache;
@@ -220,7 +224,8 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
             Configuration clusterConfiguration,
             RestHandlerConfiguration restConfiguration,
             GatewayRetriever<ResourceManagerGateway> resourceManagerRetriever,
-            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
+            AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+                    taskExecutorThreadInfoGatewayRetriever,
             TransientBlobService transientBlobService,
             ScheduledExecutorService executor,
             MetricFetcher metricFetcher,

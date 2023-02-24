@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.webmonitor.threadinfo;
 
 import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.FutureUtils;
@@ -28,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 
 /** Mock {@link TaskExecutorThreadInfoGatewayRetriever} for testing. */
 public class TestingTaskExecutorThreadInfoGatewayRetriever
-        implements TaskExecutorThreadInfoGatewayRetriever {
+        implements AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway> {
     private final Map<String, TaskExecutorThreadInfoGateway> addressToGateway;
 
     public TestingTaskExecutorThreadInfoGatewayRetriever(
@@ -37,10 +38,8 @@ public class TestingTaskExecutorThreadInfoGatewayRetriever
     }
 
     @Override
-    public CompletableFuture<TaskExecutorThreadInfoGateway> retrieveService(
-            String rpcServiceAddress) {
-        TaskExecutorThreadInfoGateway taskExecutorThreadInfoGateway =
-                addressToGateway.get(rpcServiceAddress);
+    public CompletableFuture<TaskExecutorThreadInfoGateway> getFutureFromAddress(String address) {
+        TaskExecutorThreadInfoGateway taskExecutorThreadInfoGateway = addressToGateway.get(address);
         return taskExecutorThreadInfoGateway == null
                 ? FutureUtils.completedExceptionally(
                         new IllegalStateException("can not find target gateway."))

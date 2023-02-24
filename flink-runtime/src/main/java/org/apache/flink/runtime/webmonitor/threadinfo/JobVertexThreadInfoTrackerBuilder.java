@@ -20,8 +20,9 @@ package org.apache.flink.runtime.webmonitor.threadinfo;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.resourcemanager.ResourceManagerGateway;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
-import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.stats.Statistics;
 import org.apache.flink.runtime.webmonitor.threadinfo.JobVertexThreadInfoTracker.Key;
 
@@ -44,7 +45,8 @@ public class JobVertexThreadInfoTrackerBuilder<T extends Statistics> {
 
     private final GatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever;
 
-    private final TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever;
+    private final AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+            taskExecutorThreadInfoGatewayRetriever;
 
     private final Function<VertexThreadInfoStats, T> createStatsFn;
     private final ScheduledExecutorService executor;
@@ -60,7 +62,8 @@ public class JobVertexThreadInfoTrackerBuilder<T extends Statistics> {
 
     JobVertexThreadInfoTrackerBuilder(
             GatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever,
-            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
+            AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+                    taskExecutorThreadInfoGatewayRetriever,
             Function<VertexThreadInfoStats, T> createStatsFn,
             ScheduledExecutorService executor,
             Time restTimeout) {
@@ -195,7 +198,8 @@ public class JobVertexThreadInfoTrackerBuilder<T extends Statistics> {
      */
     public static <T extends Statistics> JobVertexThreadInfoTrackerBuilder<T> newBuilder(
             GatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever,
-            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
+            AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+                    taskExecutorThreadInfoGatewayRetriever,
             Function<VertexThreadInfoStats, T> createStatsFn,
             ScheduledExecutorService executor,
             Time restTimeout) {

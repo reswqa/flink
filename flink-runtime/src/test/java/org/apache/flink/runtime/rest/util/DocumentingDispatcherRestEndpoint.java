@@ -32,8 +32,9 @@ import org.apache.flink.runtime.rest.handler.RestHandlerConfiguration;
 import org.apache.flink.runtime.rest.handler.RestHandlerSpecification;
 import org.apache.flink.runtime.rest.handler.legacy.metrics.VoidMetricFetcher;
 import org.apache.flink.runtime.rest.messages.RuntimeMessageHeaders;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
-import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
 import org.apache.flink.util.ConfigurationException;
 
 import org.apache.flink.shaded.netty4.io.netty.channel.ChannelInboundHandler;
@@ -58,7 +59,7 @@ public class DocumentingDispatcherRestEndpoint extends DispatcherRestEndpoint
     private static final GatewayRetriever<DispatcherGateway> dispatcherGatewayRetriever;
     private static final GatewayRetriever<ResourceManagerGateway> resourceManagerGatewayRetriever;
 
-    private static final TaskExecutorThreadInfoGatewayRetriever
+    private static final AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
             taskExecutorThreadInfoGatewayRetriever;
 
     static {

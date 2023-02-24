@@ -26,7 +26,7 @@ import org.apache.flink.runtime.messages.ThreadInfoSample;
 import org.apache.flink.runtime.taskexecutor.IdleTestTask;
 import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
 import org.apache.flink.runtime.util.JvmUtils;
-import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.TestLogger;
 
@@ -105,7 +105,7 @@ public class ThreadInfoRequestCoordinatorTest extends TestLogger {
     public void testSuccessfulThreadInfoRequest() throws Exception {
         Tuple2<
                         Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>,
-                        TaskExecutorThreadInfoGatewayRetriever>
+                        AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>>
                 executionWithGatewaysAndRetriever =
                         createMockSubtaskWithGateways(
                                 CompletionType.SUCCESSFULLY, CompletionType.SUCCESSFULLY);
@@ -137,7 +137,7 @@ public class ThreadInfoRequestCoordinatorTest extends TestLogger {
     public void testThreadInfoRequestWithException() throws Exception {
         Tuple2<
                         Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>,
-                        TaskExecutorThreadInfoGatewayRetriever>
+                        AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>>
                 executionWithGatewaysAndRetriever =
                         createMockSubtaskWithGateways(
                                 CompletionType.SUCCESSFULLY, CompletionType.EXCEPTIONALLY);
@@ -163,7 +163,7 @@ public class ThreadInfoRequestCoordinatorTest extends TestLogger {
     public void testThreadInfoRequestTimeout() throws Exception {
         Tuple2<
                         Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>,
-                        TaskExecutorThreadInfoGatewayRetriever>
+                        AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>>
                 executionWithGatewaysAndRetriever =
                         createMockSubtaskWithGateways(
                                 CompletionType.SUCCESSFULLY, CompletionType.TIMEOUT);
@@ -194,7 +194,7 @@ public class ThreadInfoRequestCoordinatorTest extends TestLogger {
     public void testShutDown() throws Exception {
         Tuple2<
                         Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>,
-                        TaskExecutorThreadInfoGatewayRetriever>
+                        AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>>
                 executionWithGatewaysAndRetriever =
                         createMockSubtaskWithGateways(
                                 CompletionType.SUCCESSFULLY, CompletionType.TIMEOUT);
@@ -326,7 +326,7 @@ public class ThreadInfoRequestCoordinatorTest extends TestLogger {
 
     private static Tuple2<
                     Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>,
-                    TaskExecutorThreadInfoGatewayRetriever>
+                    AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>>
             createMockSubtaskWithGateways(CompletionType... completionTypes) throws Exception {
         final Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>> result =
                 new HashMap<>();

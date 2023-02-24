@@ -22,7 +22,8 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.messages.TaskThreadInfoResponse;
 import org.apache.flink.runtime.messages.ThreadInfoSample;
-import org.apache.flink.runtime.webmonitor.retriever.TaskExecutorThreadInfoGatewayRetriever;
+import org.apache.flink.runtime.taskexecutor.TaskExecutorThreadInfoGateway;
+import org.apache.flink.runtime.webmonitor.retriever.AddressBasedGatewayRetriever;
 import org.apache.flink.runtime.webmonitor.stats.TaskStatsRequestCoordinator;
 import org.apache.flink.util.concurrent.FutureUtils;
 
@@ -72,7 +73,8 @@ public class ThreadInfoRequestCoordinator
     public CompletableFuture<VertexThreadInfoStats> triggerThreadInfoRequest(
             Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>
                     executionsWithGatewayAddresses,
-            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
+            AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+                    taskExecutorThreadInfoGatewayRetriever,
             int numSamples,
             Duration delayBetweenSamples,
             int maxStackTraceDepth) {
@@ -130,7 +132,8 @@ public class ThreadInfoRequestCoordinator
     private void requestThreadInfo(
             Map<ImmutableSet<ExecutionAttemptID>, CompletableFuture<String>>
                     executionWithGatewayAddresses,
-            TaskExecutorThreadInfoGatewayRetriever taskExecutorThreadInfoGatewayRetriever,
+            AddressBasedGatewayRetriever<TaskExecutorThreadInfoGateway>
+                    taskExecutorThreadInfoGatewayRetriever,
             ThreadInfoSamplesRequest requestParams,
             Time timeout) {
 
@@ -145,7 +148,7 @@ public class ThreadInfoRequestCoordinator
                     executorGatewayAddressFuture.thenCompose(
                             executorGatewayAddress ->
                                     taskExecutorThreadInfoGatewayRetriever
-                                            .retrieveService(executorGatewayAddress)
+                                            .getFutureFromAddress(executorGatewayAddress)
                                             .thenCompose(
                                                     (gateway ->
                                                             gateway.requestThreadInfoSamples(
