@@ -22,7 +22,6 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.DelegatingConfiguration;
-import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.factories.FactoryUtil;
 import org.apache.flink.table.factories.FactoryUtil.FactoryHelper;
@@ -137,13 +136,18 @@ public class SqlGatewayEndpointFactoryUtils {
         }
 
         @Override
-        public ReadableConfig getFlinkConfiguration() {
+        public Configuration getFlinkConfiguration() {
             return flinkConfiguration;
         }
 
         @Override
         public Map<String, String> getEndpointOptions() {
             return endpointConfig;
+        }
+
+        @Override
+        public Map<String, String> getFlinkConfigurationMap() {
+            return flinkConfiguration.toMap();
         }
     }
 

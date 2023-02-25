@@ -163,6 +163,14 @@ class FlinkTestcontainersConfigurator {
         createTempDirAndMountToContainer(
                 "flink-checkpoint", flinkContainersSettings.getCheckpointPath(), jobManager);
 
+        File file =
+                new File(
+                        "/Users/weijieguo/code/java/flink/flink-end-to-end-tests/flink-sql-client-test/src/test/resources");
+        file.setReadable(true, false);
+        file.setWritable(true, false);
+        file.setExecutable(true, false);
+        jobManager.withFileSystemBind(file.toPath().toAbsolutePath().toString(), "/tmp/ssl");
+
         return new FlinkContainers(
                 jobManager, taskManagers, zookeeper, flinkContainersSettings.getFlinkConfig());
     }

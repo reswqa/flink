@@ -19,7 +19,7 @@
 package org.apache.flink.table.gateway.api.endpoint;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.table.factories.Factory;
 import org.apache.flink.table.gateway.api.SqlGatewayService;
 
@@ -48,7 +48,10 @@ public interface SqlGatewayEndpointFactory extends Factory {
         SqlGatewayService getSqlGatewayService();
 
         /** Gives read-only access to the configuration of the current session. */
-        ReadableConfig getFlinkConfiguration();
+        Configuration getFlinkConfiguration();
+
+        /** Gives read-only access to the configuration map of the current session. */
+        Map<String, String> getFlinkConfigurationMap();
 
         /**
          * Returns the options with which the endpoint is created. All options that are prefixed

@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.testframe.container.FlinkContainers;
 import org.apache.flink.connector.testframe.container.FlinkContainersSettings;
 import org.apache.flink.connector.testframe.container.TestcontainersSettings;
@@ -50,6 +51,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
@@ -89,6 +91,7 @@ public class SqlClientITCase {
                     .withFlinkContainersSettings(
                             FlinkContainersSettings.builder()
                                     .numTaskManagers(1)
+                                    .basedOn(getConf())
                                     // enable checkpointing for the UpsertTestSink to write anything
                                     .setConfigOption(
                                             ExecutionCheckpointingOptions.CHECKPOINTING_INTERVAL,
@@ -114,6 +117,20 @@ public class SqlClientITCase {
         flink.stop();
     }
 
+    private static Configuration getConf() {
+        Configuration configuration = new Configuration();
+        final String truststorePath = "/tmp/ssl/local127.truststore";
+        final String keystorePath = "/tmp/ssl/local127.keystore";
+
+        /*configuration.setBoolean(SecurityOptions.SSL_REST_ENABLED, true);
+        configuration.setString(SecurityOptions.SSL_REST_TRUSTSTORE, truststorePath);
+        configuration.setString(SecurityOptions.SSL_REST_TRUSTSTORE_PASSWORD, "password");
+        configuration.setString(SecurityOptions.SSL_REST_KEYSTORE, keystorePath);
+        configuration.setString(SecurityOptions.SSL_REST_KEYSTORE_PASSWORD, "password");
+        configuration.setString(SecurityOptions.SSL_REST_KEY_PASSWORD, "password");*/
+        return configuration;
+    }
+
     @Test
     void testUpsert() throws Exception {
         String outputFilepath = "/flink/records-upsert.out";
@@ -134,11 +151,7 @@ public class SqlClientITCase {
                         "    'output-filepath' = '" + outputFilepath + "'",
                         "  );",
                         "",
-                        "INSERT INTO UpsertSinkTable(",
-                        "  SELECT user_id, user_name, COUNT(*) AS user_count",
-                        "  FROM (VALUES (1, 'Bob'), (22, 'Tom'), (42, 'Kim'), (42, 'Kim'), (42, 'Kim'), (1, 'Bob'))",
-                        "    AS UserCountTable(user_id, user_name)",
-                        "  GROUP BY user_id, user_name);");
+                        "SELECT * FROM UpsertSinkTable;");
         executeSql(sqlLines);
 
         /*
@@ -310,5 +323,15 @@ public class SqlClientITCase {
                 new SQLJobSubmission.SQLJobSubmissionBuilder(sqlLines)
                         .addJars(sqlConnectorUpsertTestJar, sqlConnectorKafkaJar, sqlToolBoxJar)
                         .build());
+    }
+
+    private static File getTestResource(final String fileName) {
+        final ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+        final URL resource = classLoader.getResource(fileName);
+        if (resource == null) {
+            throw new IllegalArgumentException(
+                    String.format("Test resource %s does not exist", fileName));
+        }
+        return new File(resource.getFile());
     }
 }

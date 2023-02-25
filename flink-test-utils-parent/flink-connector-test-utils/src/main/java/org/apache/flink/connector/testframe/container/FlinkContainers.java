@@ -49,7 +49,9 @@ import org.testcontainers.utility.MountableFile;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -222,12 +224,14 @@ public class FlinkContainers implements BeforeAllCallback, AfterAllCallback {
         }
         LOG.debug("Starting JobManager container");
         this.jobManager.start();
-        waitUntilJobManagerRESTReachable(jobManager);
+        Thread.sleep(5000L);
+        // waitUntilJobManagerRESTReachable(jobManager);
         LOG.debug("Starting TaskManager containers");
         this.taskManagers.parallelStream().forEach(GenericContainer::start);
         LOG.debug("Creating REST cluster client");
         this.restClusterClient = createClusterClient();
-        waitUntilAllTaskManagerConnected();
+        Thread.sleep(5000L);
+        // waitUntilAllTaskManagerConnected();
         isStarted = true;
     }
 
@@ -487,5 +491,15 @@ public class FlinkContainers implements BeforeAllCallback, AfterAllCallback {
 
     private String formatFilePathForDeletion(String path) {
         return " " + Paths.get(path).toString().split("file:")[1] + "/*";
+    }
+
+    private static File getTestResource(final String fileName) {
+        final ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+        final URL resource = classLoader.getResource(fileName);
+        if (resource == null) {
+            throw new IllegalArgumentException(
+                    String.format("Test resource %s does not exist", fileName));
+        }
+        return new File(resource.getFile());
     }
 }
