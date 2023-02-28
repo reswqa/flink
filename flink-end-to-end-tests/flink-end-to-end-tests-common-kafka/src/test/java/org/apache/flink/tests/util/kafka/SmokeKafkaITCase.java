@@ -27,6 +27,7 @@ import org.apache.flink.connector.testframe.container.TestcontainersSettings;
 import org.apache.flink.streaming.api.environment.ExecutionCheckpointingOptions;
 import org.apache.flink.test.resources.ResourceTestUtils;
 import org.apache.flink.test.util.JobSubmission;
+import org.apache.flink.test.util.SQLJobSubmission;
 import org.apache.flink.util.TestLoggerExtension;
 
 import org.apache.flink.shaded.guava30.com.google.common.collect.Lists;
@@ -38,8 +39,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 import org.apache.kafka.common.serialization.VoidSerializer;
 import org.junit.jupiter.api.AfterAll;
@@ -54,8 +55,14 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +84,8 @@ class SmokeKafkaITCase {
     private static final Network NETWORK = Network.newNetwork();
     private static final String EXAMPLE_JAR_MATCHER = "flink-streaming-kafka-test.*";
 
+    private static final String KAFKA_SMOKE_SQL = "kafka_smoke.sql";
+
     @Container
     public static final KafkaContainer KAFKA_CONTAINER =
             createKafkaContainer(KAFKA, LOG)
@@ -95,8 +104,14 @@ class SmokeKafkaITCase {
                     .withTestcontainersSettings(TESTCONTAINERS_SETTINGS)
                     .build();
 
+    private static final Path SQL_AVRO_JAR = ResourceTestUtils.getResource(".*avro.jar");
+
+    private static final Path SQL_TOOL_BOX_JAR = ResourceTestUtils.getResource(".*SqlToolbox.jar");
+
+    private final Path SQL_CONNECTOR_KAFKA_JAR = ResourceTestUtils.getResource(".*kafka.jar");
+
     private static AdminClient admin;
-    private static KafkaProducer<Void, Integer> producer;
+    private static KafkaProducer<Void, String> producer;
 
     private static Configuration getConfiguration() {
         // modify configuration to have enough slots
@@ -117,7 +132,7 @@ class SmokeKafkaITCase {
         producerProperties.putAll(adminProperties);
         producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, VoidSerializer.class);
         producerProperties.put(
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class);
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         producer = new KafkaProducer<>(producerProperties);
     }
 
@@ -143,9 +158,9 @@ class SmokeKafkaITCase {
                 .all()
                 .get();
 
-        producer.send(new ProducerRecord<>(inputTopic, 1));
-        producer.send(new ProducerRecord<>(inputTopic, 2));
-        producer.send(new ProducerRecord<>(inputTopic, 3));
+        producer.send(new ProducerRecord<>(inputTopic, "{\"value\":1}"));
+        producer.send(new ProducerRecord<>(inputTopic, "{\"value\":2}"));
+        producer.send(new ProducerRecord<>(inputTopic, "{\"value\":3}"));
 
         // run the Flink job
         FLINK.submitJob(
@@ -179,11 +194,83 @@ class SmokeKafkaITCase {
         consumerProperties.put(
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, VoidDeserializer.class);
         consumerProperties.put(
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class);
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         List<Integer> records =
                 KafkaUtil.drainAllRecordsFromTopic(outputTopic, consumerProperties).stream()
                         .map(r -> ByteBuffer.wrap(r.value()).getInt())
                         .collect(Collectors.toList());
         assertThat(records).hasSize(3).containsExactly(1, 2, 3);
+    }
+
+    @Test
+    void testSql() throws Exception {
+        final String inputTopic = "test-input-" + "-" + UUID.randomUUID();
+        final String outputTopic = "test-output" + "-" + UUID.randomUUID();
+
+        // create the required topics
+        final short replicationFactor = 1;
+        admin.createTopics(
+                        Lists.newArrayList(
+                                new NewTopic(inputTopic, 1, replicationFactor),
+                                new NewTopic(outputTopic, 1, replicationFactor)))
+                .all()
+                .get();
+
+        producer.send(new ProducerRecord<>(inputTopic, "{\"value\":1}"));
+        producer.send(new ProducerRecord<>(inputTopic, "{\"value\":2}"));
+        producer.send(new ProducerRecord<>(inputTopic, "{\"value\":3}"));
+
+        // Initialize the SQL statements from "kafka_smoke.sql" file
+        Map<String, String> varsMap = new HashMap<>();
+        varsMap.put("$KAFKA_IDENTIFIER", "kafka");
+        varsMap.put("$TOPIC_INPUT_NAME", inputTopic);
+        varsMap.put("$TOPIC_OUTPUT_NAME", outputTopic);
+        varsMap.put("$KAFKA_BOOTSTRAP_SERVERS", INTER_CONTAINER_KAFKA_ALIAS + ":9092");
+        List<String> sqlLines = initializeSqlLines(varsMap);
+
+        // Execute SQL statements in "kafka_smoke.sql" file
+        executeSqlStatements(sqlLines);
+
+        final Properties consumerProperties = new Properties();
+        consumerProperties.put(
+                CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
+                KAFKA_CONTAINER.getBootstrapServers());
+        consumerProperties.put(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, VoidDeserializer.class);
+        consumerProperties.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        List<Integer> records =
+                KafkaUtil.drainAllRecordsFromTopic(outputTopic, consumerProperties).stream()
+                        .map(r -> ByteBuffer.wrap(r.value()).getInt())
+                        .collect(Collectors.toList());
+        assertThat(records).hasSize(3).containsExactly(1, 2, 3);
+    }
+
+    private void executeSqlStatements(List<String> sqlLines) throws Exception {
+        LOG.info("Executing Kafka end-to-end SQL statements.");
+        FLINK.submitSQLJob(
+                new SQLJobSubmission.SQLJobSubmissionBuilder(sqlLines)
+                        .addJar(SQL_AVRO_JAR)
+                        .addJar(SQL_CONNECTOR_KAFKA_JAR)
+                        .addJar(SQL_TOOL_BOX_JAR)
+                        .build());
+    }
+
+    private List<String> initializeSqlLines(Map<String, String> vars) throws IOException {
+        URL url = SQLClientKafkaITCase.class.getClassLoader().getResource(KAFKA_SMOKE_SQL);
+        if (url == null) {
+            throw new FileNotFoundException(KAFKA_SMOKE_SQL);
+        }
+
+        List<String> lines = Files.readAllLines(new File(url.getFile()).toPath());
+        List<String> result = new ArrayList<>();
+        for (String line : lines) {
+            for (Map.Entry<String, String> var : vars.entrySet()) {
+                line = line.replace(var.getKey(), var.getValue());
+            }
+            result.add(line);
+        }
+
+        return result;
     }
 }
