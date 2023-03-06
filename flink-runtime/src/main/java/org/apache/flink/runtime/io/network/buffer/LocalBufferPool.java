@@ -51,8 +51,8 @@ import static org.apache.flink.util.concurrent.FutureUtils.assertNoException;
  * will then lazily return the required number of buffers to the {@link NetworkBufferPool} to match
  * its new size.
  *
- * <p>Availability is defined as returning a segment on a subsequent {@link #requestBuffer()}/
- * {@link #requestBufferBuilder()} and heaving a non-blocking {@link
+ * <p>Availability is defined as returning a non-overdraft segment on a subsequent {@link
+ * #requestBuffer()}/ {@link #requestBufferBuilder()} and heaving a non-blocking {@link
  * #requestBufferBuilderBlocking(int)}. In particular,
  *
  * <ul>
@@ -392,14 +392,16 @@ class LocalBufferPool implements BufferPool {
 
     @Nullable
     private MemorySegment requestMemorySegment(int targetChannel) {
-        MemorySegment segment;
+        MemorySegment segment = null;
         synchronized (availableMemorySegments) {
             checkDestroyed();
 
-            if (availableMemorySegments.isEmpty()) {
-                segment = requestOverdraftMemorySegmentFromGlobal();
-            } else {
+            if (!availableMemorySegments.isEmpty()) {
                 segment = availableMemorySegments.poll();
+            } else if (isRequestedSizeReached()) {
+                // Only when the buffer request reaches the upper limit(i.e. current pool size),
+                // requests an overdraft buffer.
+                segment = requestOverdraftMemorySegmentFromGlobal();
             }
 
             if (segment == null) {
@@ -510,9 +512,7 @@ class LocalBufferPool implements BufferPool {
     private boolean shouldBeAvailable() {
         assert Thread.holdsLock(availableMemorySegments);
 
-        return !availableMemorySegments.isEmpty()
-                && unavailableSubpartitionsCount == 0
-                && numberOfRequestedOverdraftMemorySegments == 0;
+        return !availableMemorySegments.isEmpty() && unavailableSubpartitionsCount == 0;
     }
 
     @GuardedBy("availableMemorySegments")

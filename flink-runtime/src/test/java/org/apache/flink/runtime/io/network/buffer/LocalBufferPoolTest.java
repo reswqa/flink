@@ -38,8 +38,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -250,14 +252,120 @@ class LocalBufferPoolTest {
     }
 
     @Test
+    void testDecreasePoolSize() throws Exception {
+        LocalBufferPool bufferPool =
+                new LocalBufferPool(networkBufferPool, 4, 10, 0, Integer.MAX_VALUE, 2);
+        Queue<MemorySegment> buffers = new LinkedList<>();
+
+        // set pool size to 5.
+        bufferPool.setNumBuffers(5);
+        assertThat(bufferPool.getNumBuffers()).isEqualTo(5);
+
+        // request all buffer.
+        for (int i = 0; i < 5; i++) {
+            buffers.add(bufferPool.requestMemorySegmentBlocking());
+        }
+        assertThat(bufferPool.isAvailable()).isFalse();
+
+        // request 1 overdraft buffers.
+        buffers.add(bufferPool.requestMemorySegmentBlocking());
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isOne();
+        assertThat(bufferPool.isAvailable()).isFalse();
+
+        // set pool size to 4.
+        bufferPool.setNumBuffers(4);
+        assertThat(bufferPool.getNumBuffers()).isEqualTo(4);
+        assertThat(bufferPool.getNumberOfAvailableMemorySegments()).isZero();
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isOne();
+        assertThat(bufferPool.isAvailable()).isFalse();
+        buffers.add(bufferPool.requestMemorySegmentBlocking());
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isEqualTo(2);
+        assertThat(bufferPool.isAvailable()).isFalse();
+
+        // return all overdraft buffers.
+        bufferPool.recycle(buffers.poll());
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isOne();
+        assertThat(bufferPool.isAvailable()).isFalse();
+        bufferPool.recycle(buffers.poll());
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isZero();
+        assertThat(bufferPool.isAvailable()).isFalse();
+
+        // return the excess buffer.
+        bufferPool.recycle(buffers.poll());
+        assertThat(bufferPool.isAvailable()).isFalse();
+        // return non-excess buffers.
+        bufferPool.recycle(buffers.poll());
+        assertThat(bufferPool.getNumberOfAvailableMemorySegments()).isOne();
+        assertThat(bufferPool.isAvailable()).isTrue();
+
+        while (!buffers.isEmpty()) {
+            bufferPool.recycle(buffers.poll());
+        }
+        bufferPool.lazyDestroy();
+    }
+
+    @Test
+    void testIncreasePoolSize() throws Exception {
+        LocalBufferPool bufferPool =
+                new LocalBufferPool(networkBufferPool, 5, 100, 0, Integer.MAX_VALUE, 2);
+        List<MemorySegment> buffers = new ArrayList<>();
+
+        // set pool size to 5.
+        bufferPool.setNumBuffers(5);
+        assertThat(bufferPool.getNumBuffers()).isEqualTo(5);
+
+        // request all buffer.
+        for (int i = 0; i < 5; i++) {
+            buffers.add(bufferPool.requestMemorySegmentBlocking());
+        }
+        assertThat(bufferPool.isAvailable()).isFalse();
+
+        // request 2 overdraft buffers.
+        buffers.add(bufferPool.requestMemorySegmentBlocking());
+        buffers.add(bufferPool.requestMemorySegmentBlocking());
+        assertThat(bufferPool.requestMemorySegment()).isNull();
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isEqualTo(2);
+        assertThat(bufferPool.isAvailable()).isFalse();
+
+        // set pool size to 10.
+        bufferPool.setNumBuffers(10);
+        assertThat(bufferPool.getNumBuffers()).isEqualTo(10);
+        assertThat(bufferPool.getNumberOfAvailableMemorySegments()).isOne();
+        assertThat(bufferPool.getNumberOfRequestedOverdraftMemorySegments()).isEqualTo(2);
+        // available status will not be influenced by overdraft.
+        assertThat(bufferPool.isAvailable()).isTrue();
+        buffers.add(bufferPool.requestMemorySegmentBlocking());
+        assertThat(bufferPool.isAvailable()).isTrue();
+
+        for (MemorySegment buffer : buffers) {
+            bufferPool.recycle(buffer);
+        }
+        bufferPool.lazyDestroy();
+    }
+
+    @Test
     @Timeout(30)
-    void testRequestBuffersOnRecycle() throws Exception {
-        BufferPool bufferPool1 = networkBufferPool.createBufferPool(512, 2048);
+    void testRequestBufferOnRecycleWithOverdraft() throws Exception {
+        testRequestBuffersOnRecycle(true);
+    }
+
+    @Test
+    @Timeout(30)
+    void testRequestBufferOnRecycleWithoutOverdraft() throws Exception {
+        testRequestBuffersOnRecycle(false);
+    }
+
+    private void testRequestBuffersOnRecycle(boolean supportOverdraftBuffer) throws Exception {
+        BufferPool bufferPool1 =
+                networkBufferPool.createBufferPool(
+                        512, 2048, 0, Integer.MAX_VALUE, supportOverdraftBuffer ? 5 : 0);
         List<MemorySegment> segments = new ArrayList<>();
         for (int i = 0; i < 1023; i++) {
             segments.add(bufferPool1.requestMemorySegmentBlocking());
         }
-        BufferPool bufferPool2 = networkBufferPool.createBufferPool(512, 512);
+        BufferPool bufferPool2 =
+                networkBufferPool.createBufferPool(
+                        512, 512, 0, Integer.MAX_VALUE, supportOverdraftBuffer ? 5 : 0);
         List<MemorySegment> segments2 = new ArrayList<>();
         CheckedThread checkedThread =
                 new CheckedThread() {
