@@ -21,6 +21,7 @@ package org.apache.flink.runtime.io.network.partition.consumer;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.event.TaskEvent;
+import org.apache.flink.runtime.io.PartitionRequestable;
 import org.apache.flink.runtime.io.PullingAsyncDataInput;
 import org.apache.flink.runtime.io.network.partition.ChannelStateHolder;
 
@@ -76,7 +77,10 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * subpartition from each partition of the intermediate result.
  */
 public abstract class InputGate
-        implements PullingAsyncDataInput<BufferOrEvent>, AutoCloseable, ChannelStateHolder {
+        implements PullingAsyncDataInput<BufferOrEvent>,
+                AutoCloseable,
+                ChannelStateHolder,
+                PartitionRequestable {
 
     protected final AvailabilityHelper availabilityHelper = new AvailabilityHelper();
 
@@ -185,8 +189,6 @@ public abstract class InputGate
 
     /** Setup gate, potentially heavy-weight, blocking operation comparing to just creation. */
     public abstract void setup() throws IOException;
-
-    public abstract void requestPartitions() throws IOException;
 
     public abstract CompletableFuture<Void> getStateConsumedFuture();
 

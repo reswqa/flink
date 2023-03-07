@@ -28,11 +28,11 @@ import static org.junit.Assert.assertTrue;
 public class MultipleInputSelectionHandlerTest {
 
     @Test
-    public void testShouldSetAvailableForAnotherInput() {
+    public void testShouldSetAvailableForAnotherInput() throws Exception {
         InputSelection secondAndThird = new InputSelection.Builder().select(2).select(3).build();
 
         MultipleInputSelectionHandler selectionHandler =
-                new MultipleInputSelectionHandler(() -> secondAndThird, 3);
+                new MultipleInputSelectionHandler(() -> secondAndThird, 3, null);
         selectionHandler.nextSelection();
 
         assertFalse(selectionHandler.shouldSetAvailableForAnotherInput());
@@ -51,7 +51,7 @@ public class MultipleInputSelectionHandlerTest {
     }
 
     @Test
-    public void testLargeInputCount() {
+    public void testLargeInputCount() throws Exception {
         int inputCount = MultipleInputSelectionHandler.MAX_SUPPORTED_INPUT_COUNT;
 
         InputSelection.Builder builder = new InputSelection.Builder();
@@ -61,7 +61,7 @@ public class MultipleInputSelectionHandlerTest {
         InputSelection allSelected = builder.build();
 
         MultipleInputSelectionHandler selectionHandler =
-                new MultipleInputSelectionHandler(() -> allSelected, inputCount);
+                new MultipleInputSelectionHandler(() -> allSelected, inputCount, null);
         selectionHandler.nextSelection();
 
         for (int i = 0; i < inputCount - 1; i++) {

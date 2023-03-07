@@ -204,7 +204,7 @@ public class StreamTwoInputProcessorFactory {
                 new StreamOneInputProcessor<>(input2, output2, operatorChain);
 
         return new StreamMultipleInputProcessor(
-                new MultipleInputSelectionHandler(inputSelectable, 2),
+                new MultipleInputSelectionHandler(inputSelectable, 2, checkpointedInputGates),
                 new StreamOneInputProcessor[] {processor1, processor2});
     }
 

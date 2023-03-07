@@ -236,7 +236,9 @@ public class StreamMultipleInputProcessorFactory {
         }
 
         return new StreamMultipleInputProcessor(
-                new MultipleInputSelectionHandler(inputSelectable, inputsCount), inputProcessors);
+                new MultipleInputSelectionHandler(
+                        inputSelectable, inputsCount, checkpointedInputGates),
+                inputProcessors);
     }
 
     /**

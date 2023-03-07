@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.runtime.io.PartitionRequestable;
 import org.apache.flink.streaming.api.operators.InputSelectable;
 import org.apache.flink.streaming.api.operators.InputSelection;
 
@@ -51,6 +52,10 @@ public class MultipleInputSelectionHandler {
 
     private boolean drainOnEndOfData = true;
 
+    private final PartitionRequestable[] partitionRequestables;
+
+    private long requestedPartitionsMask = -1;
+
     private enum OperatingMode {
         NO_INPUT_SELECTABLE,
         INPUT_SELECTABLE_PRESENT_NO_DATA_INPUTS_FINISHED,
@@ -61,7 +66,9 @@ public class MultipleInputSelectionHandler {
     private OperatingMode operatingMode;
 
     public MultipleInputSelectionHandler(
-            @Nullable InputSelectable inputSelectable, int inputCount) {
+            @Nullable InputSelectable inputSelectable,
+            int inputCount,
+            PartitionRequestable[] partitionRequestables) {
         checkSupportedInputCount(inputCount);
         this.inputSelectable = inputSelectable;
         this.allSelectedMask = (1L << inputCount) - 1;
@@ -73,6 +80,7 @@ public class MultipleInputSelectionHandler {
         } else {
             this.operatingMode = OperatingMode.NO_INPUT_SELECTABLE;
         }
+        this.partitionRequestables = partitionRequestables;
     }
 
     public static void checkSupportedInputCount(int inputCount) {
@@ -146,7 +154,7 @@ public class MultipleInputSelectionHandler {
         }
     }
 
-    void nextSelection() {
+    void nextSelection() throws IOException {
         switch (operatingMode) {
             case NO_INPUT_SELECTABLE:
             case ALL_DATA_INPUTS_FINISHED:
@@ -160,8 +168,20 @@ public class MultipleInputSelectionHandler {
                         (inputSelectable.nextSelection().getInputMask()
                                         | dataFinishedButNotPartition)
                                 & allSelectedMask;
+                mayRequestedPartitions(selectedInputsMask);
                 break;
         }
+    }
+
+    private void mayRequestedPartitions(long selectedMarks) throws IOException {
+        for (int i = 0; i < MAX_SUPPORTED_INPUT_COUNT; i++) {
+            long requested = (requestedPartitionsMask >> i) & 1;
+            long selected = (selectedMarks >> i) & 1;
+            if (requested == 0 && selected != 0) {
+                partitionRequestables[i].requestPartitions();
+            }
+        }
+        requestedPartitionsMask &= selectedMarks;
     }
 
     int selectNextInputIndex(int lastReadInputIndex) {

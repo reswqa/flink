@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.event.AbstractEvent;
+import org.apache.flink.runtime.io.PartitionRequestable;
 import org.apache.flink.runtime.io.PullingAsyncDataInput;
 import org.apache.flink.runtime.io.network.api.CancelCheckpointMarker;
 import org.apache.flink.runtime.io.network.api.CheckpointBarrier;
@@ -52,7 +53,8 @@ import static org.apache.flink.util.concurrent.FutureUtils.assertNoException;
  * CheckpointBarrier} from the {@link InputGate}.
  */
 @Internal
-public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEvent>, Closeable {
+public class CheckpointedInputGate
+        implements PullingAsyncDataInput<BufferOrEvent>, Closeable, PartitionRequestable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckpointedInputGate.class);
 
     private final CheckpointBarrierHandler barrierHandler;
@@ -215,6 +217,11 @@ public class CheckpointedInputGate implements PullingAsyncDataInput<BufferOrEven
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public void requestPartitions() throws IOException {
+        inputGate.requestPartitions();
     }
 
     @Override

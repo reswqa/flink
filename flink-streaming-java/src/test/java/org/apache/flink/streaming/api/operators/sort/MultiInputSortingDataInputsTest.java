@@ -41,6 +41,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.flink.runtime.io.PartitionRequestableUtils.createPartitionRequestables;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -105,10 +106,11 @@ public class MultiInputSortingDataInputsTest {
                             (StreamTaskInput<Object>) preferredDataInputs[0];
                     StreamTaskInput<Object> sortedTaskInput =
                             (StreamTaskInput<Object>) sortingDataInputs[0]) {
-
                 MultipleInputSelectionHandler selectionHandler =
                         new MultipleInputSelectionHandler(
-                                selectableSortingInputs.getInputSelectable(), 2);
+                                selectableSortingInputs.getInputSelectable(),
+                                2,
+                                createPartitionRequestables(2));
 
                 @SuppressWarnings("rawtypes")
                 StreamOneInputProcessor[] inputProcessors = new StreamOneInputProcessor[2];
@@ -186,7 +188,9 @@ public class MultiInputSortingDataInputsTest {
 
                 MultipleInputSelectionHandler selectionHandler =
                         new MultipleInputSelectionHandler(
-                                selectableSortingInputs.getInputSelectable(), 2);
+                                selectableSortingInputs.getInputSelectable(),
+                                2,
+                                createPartitionRequestables(2));
                 StreamMultipleInputProcessor processor =
                         new StreamMultipleInputProcessor(
                                 selectionHandler,
@@ -267,7 +271,9 @@ public class MultiInputSortingDataInputsTest {
 
                 MultipleInputSelectionHandler selectionHandler =
                         new MultipleInputSelectionHandler(
-                                selectableSortingInputs.getInputSelectable(), 2);
+                                selectableSortingInputs.getInputSelectable(),
+                                2,
+                                createPartitionRequestables(2));
                 StreamMultipleInputProcessor processor =
                         new StreamMultipleInputProcessor(
                                 selectionHandler,

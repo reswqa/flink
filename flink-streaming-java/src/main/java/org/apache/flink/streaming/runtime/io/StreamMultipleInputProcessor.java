@@ -86,7 +86,7 @@ public final class StreamMultipleInputProcessor implements StreamInputProcessor 
         return inputSelectionHandler.updateStatusAndSelection(inputStatus, readingInputIndex);
     }
 
-    private int selectFirstReadingInputIndex() {
+    private int selectFirstReadingInputIndex() throws IOException {
         // Note: the first call to nextSelection () on the operator must be made after this operator
         // is opened to ensure that any changes about the input selection in its open()
         // method take effect.

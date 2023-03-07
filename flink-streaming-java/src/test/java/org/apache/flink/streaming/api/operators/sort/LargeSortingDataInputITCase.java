@@ -55,6 +55,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static org.apache.flink.runtime.io.PartitionRequestableUtils.createPartitionRequestables;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -161,7 +162,9 @@ public class LargeSortingDataInputITCase {
                 StreamMultipleInputProcessor multiSortedProcessor =
                         new StreamMultipleInputProcessor(
                                 new MultipleInputSelectionHandler(
-                                        selectableSortingInputs.getInputSelectable(), 2),
+                                        selectableSortingInputs.getInputSelectable(),
+                                        2,
+                                        createPartitionRequestables(2)),
                                 new StreamOneInputProcessor[] {
                                     new StreamOneInputProcessor(
                                             sortedInput1, output, new DummyOperatorChain()),
