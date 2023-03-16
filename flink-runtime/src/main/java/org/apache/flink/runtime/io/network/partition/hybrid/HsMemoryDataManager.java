@@ -348,6 +348,13 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
                     // decrease numUnSpillBuffers as this subpartition's buffer is spill.
                     numUnSpillBuffers.getAndAdd(-bufferIndexAndChannels.size());
                 });
+        // decrease ref count when buffer spilling is finished.
+        spillingCompleteFuture.thenRun(
+                () -> {
+                    for (BufferWithIdentity bufferWithIdentity : bufferWithIdentities) {
+                        bufferWithIdentity.getBuffer().recycleBuffer();
+                    }
+                });
         FutureUtils.assertNoException(
                 spiller.spillAsync(bufferWithIdentities)
                         .thenAccept(

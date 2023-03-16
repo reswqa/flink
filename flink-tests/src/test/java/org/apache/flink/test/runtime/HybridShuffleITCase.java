@@ -30,7 +30,7 @@ class HybridShuffleITCase extends BatchShuffleITCaseBase {
 
     @Test
     void testHybridFullExchanges() throws Exception {
-        final int numRecordsToSend = 10000;
+        final int numRecordsToSend = 100000;
         Configuration configuration = getConfiguration();
         configuration.set(
                 ExecutionOptions.BATCH_SHUFFLE_MODE, BatchShuffleMode.ALL_EXCHANGES_HYBRID_FULL);
@@ -40,7 +40,7 @@ class HybridShuffleITCase extends BatchShuffleITCaseBase {
 
     @Test
     void testHybridSelectiveExchanges() throws Exception {
-        final int numRecordsToSend = 10000;
+        final int numRecordsToSend = 100000;
         Configuration configuration = getConfiguration();
         configuration.set(
                 ExecutionOptions.BATCH_SHUFFLE_MODE,

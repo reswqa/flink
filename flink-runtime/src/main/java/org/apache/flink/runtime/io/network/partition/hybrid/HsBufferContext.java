@@ -125,8 +125,7 @@ public class HsBufferContext {
         this.spilledFuture = spilledFuture;
         // increase ref count when buffer is decided to spill.
         buffer.retainBuffer();
-        // decrease ref count when buffer spilling is finished.
-        spilledFuture.thenRun(buffer::recycleBuffer);
+        // spilledFuture.thenRun(buffer::recycleBuffer);
         return true;
     }
 
