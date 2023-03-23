@@ -30,8 +30,18 @@ public class WrappedMemorySegment extends MemorySegment {
 
     private String reason;
 
+    private String requestedBy = "none";
+
     public WrappedMemorySegment(@Nonnull ByteBuffer buffer, @Nullable Object owner) {
         super(buffer, owner);
+    }
+
+    public void requestedBy(String owner) {
+        this.requestedBy = owner;
+    }
+
+    public void reset() {
+        this.requestedBy = "none";
     }
 
     public WrappedMemorySegment setThreadDump(String reason) {

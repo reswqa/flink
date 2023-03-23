@@ -278,6 +278,9 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
         long timeoutTime = getBufferRequestTimeoutTime();
         do {
             List<MemorySegment> buffers = bufferPool.requestBuffers();
+            for (MemorySegment m : buffers) {
+                WrappedMemorySegment.toWrapped(m).requestedBy(taskName);
+            }
             if (!buffers.isEmpty()) {
                 return new ArrayDeque<>(buffers);
             }
@@ -474,6 +477,7 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
     @Override
     public void recycle(MemorySegment segment) {
         synchronized (lock) {
+            WrappedMemorySegment.toWrapped(segment).reset();
             bufferPool.recycle(segment);
             --numRequestedBuffers;
 
