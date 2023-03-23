@@ -282,7 +282,9 @@ public class BatchShuffleReadBufferPool {
     public void destroy() {
         synchronized (buffers) {
             destroyed = true;
-
+            if (initialized && buffers.size() != numTotalBuffers) {
+                System.out.println("aaa");
+            }
             buffers.clear();
             buffers.notifyAll();
         }

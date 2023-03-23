@@ -366,7 +366,8 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
             try {
                 for (MemorySegment m : buffers) {
                     WrappedMemorySegment.toWrapped(m)
-                            .setThreadDump("fileDataManager release buffers");
+                            .setThreadDump("fileDataManager release buffers")
+                            .reset();
                 }
                 bufferPool.recycle(buffers);
                 buffers.clear();
