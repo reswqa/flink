@@ -226,7 +226,7 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
                 return;
             }
             isReleased = true;
-
+            checkState(numRequestedBuffers == 0);
             List<HsSubpartitionFileReader> pendingReaders = new ArrayList<>(allReaders);
             mayNotifyReleased();
             failSubpartitionReaders(
