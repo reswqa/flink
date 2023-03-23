@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.io.network.netty;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.core.memory.WrappedMemorySegment;
 import org.apache.flink.runtime.io.network.NetworkSequenceViewReader;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.netty.NettyMessage.ErrorResponse;
@@ -298,7 +299,11 @@ class PartitionRequestQueue extends ChannelInboundHandlerAdapter {
                                     next.getSequenceNumber(),
                                     reader.getReceiverId(),
                                     next.buffersInBacklog());
-
+                    Buffer buffer = next.buffer();
+                    if (buffer.getMemorySegment() instanceof WrappedMemorySegment) {
+                        WrappedMemorySegment.toWrapped(buffer.getMemorySegment())
+                                .setThreadDump("netty send");
+                    }
                     // Write and flush and wait until this is done before
                     // trying to continue with the next buffer.
                     channel.writeAndFlush(msg).addListener(writeListener);

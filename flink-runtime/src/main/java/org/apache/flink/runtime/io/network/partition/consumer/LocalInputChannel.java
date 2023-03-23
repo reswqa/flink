@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.io.network.partition.consumer;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.core.memory.WrappedMemorySegment;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
@@ -222,6 +223,11 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
         BufferAndBacklog next = subpartitionView.getNextBuffer();
         // ignore the empty buffer directly
         while (next != null && next.buffer().readableBytes() == 0) {
+            Buffer buffer = next.buffer();
+            if (buffer.getMemorySegment() instanceof WrappedMemorySegment) {
+                WrappedMemorySegment.toWrapped(buffer.getMemorySegment())
+                        .setThreadDump("local getNextBuffer");
+            }
             next.buffer().recycleBuffer();
             next = subpartitionView.getNextBuffer();
             numBuffersIn.inc();
@@ -245,7 +251,9 @@ public class LocalInputChannel extends InputChannel implements BufferAvailabilit
         if (buffer instanceof CompositeBuffer) {
             buffer = ((CompositeBuffer) buffer).getFullBufferData(inputGate.getUnpooledSegment());
         }
-
+        if (buffer.getMemorySegment() instanceof WrappedMemorySegment) {
+            WrappedMemorySegment.toWrapped(buffer.getMemorySegment()).setThreadDump("local 254");
+        }
         numBytesIn.inc(buffer.readableBytes());
         numBuffersIn.inc();
         channelStatePersister.checkForBarrier(buffer);

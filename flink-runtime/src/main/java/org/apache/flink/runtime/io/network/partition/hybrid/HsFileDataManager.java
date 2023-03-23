@@ -20,6 +20,7 @@ package org.apache.flink.runtime.io.network.partition.hybrid;
 
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.core.memory.MemorySegment;
+import org.apache.flink.core.memory.WrappedMemorySegment;
 import org.apache.flink.runtime.io.disk.BatchShuffleReadBufferPool;
 import org.apache.flink.runtime.io.network.buffer.BufferRecycler;
 import org.apache.flink.runtime.io.network.partition.BufferReaderWriterUtil;
@@ -330,6 +331,8 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
                 } else if (numRequestedBuffers >= bufferPool.getAverageBuffersPerRequester()) {
                     stopReason = "condition3";
                 }
+                // allReaders: 52, numRequestedBuffers: 92, AverageBuffersPerRequester: 85,
+                // NumBuffersPerRequest: 128
                 System.out.printf(
                         "[%s] stop trigger reading isRunning: %s, allReaders: %s, numRequestedBuffers: %s, AverageBuffersPerRequester: %s, NumBuffersPerRequest: %s \n",
                         taskName,
@@ -358,6 +361,10 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
     private void releaseBuffers(Queue<MemorySegment> buffers) {
         if (!buffers.isEmpty()) {
             try {
+                for (MemorySegment m : buffers) {
+                    WrappedMemorySegment.toWrapped(m)
+                            .setThreadDump("fileDataManager release buffers");
+                }
                 bufferPool.recycle(buffers);
                 buffers.clear();
             } catch (Throwable throwable) {

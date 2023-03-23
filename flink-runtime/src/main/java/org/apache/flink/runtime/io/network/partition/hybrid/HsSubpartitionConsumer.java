@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.network.partition.hybrid;
 
+import org.apache.flink.core.memory.WrappedMemorySegment;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
@@ -88,7 +89,8 @@ public class HsSubpartitionConsumer
 
                 Optional<BufferAndBacklog> bufferToConsume = tryReadFromDisk(errorBuffers);
                 if (!bufferToConsume.isPresent()) {
-                    bufferToConsume = memoryDataView.consumeBuffer(lastConsumedBufferIndex + 1, null);
+                    bufferToConsume =
+                            memoryDataView.consumeBuffer(lastConsumedBufferIndex + 1, null);
                 }
                 updateConsumingStatus(bufferToConsume);
                 return bufferToConsume.map(this::handleBacklog).orElse(null);
@@ -98,8 +100,11 @@ public class HsSubpartitionConsumer
             releaseInternal(cause);
             return null;
         } finally {
-            while (!errorBuffers.isEmpty()){
-                errorBuffers.poll().recycleBuffer();
+            while (!errorBuffers.isEmpty()) {
+                Buffer poll = errorBuffers.poll();
+                WrappedMemorySegment.toWrapped(poll.getMemorySegment())
+                        .setThreadDump("recycle from get next buffer.");
+                poll.recycleBuffer();
             }
         }
     }
@@ -244,7 +249,8 @@ public class HsSubpartitionConsumer
     }
 
     @GuardedBy("lock")
-    private Optional<BufferAndBacklog> tryReadFromDisk(Queue<Buffer> errorBuffers) throws Throwable {
+    private Optional<BufferAndBacklog> tryReadFromDisk(Queue<Buffer> errorBuffers)
+            throws Throwable {
         final int nextBufferIndexToConsume = lastConsumedBufferIndex + 1;
         return checkNotNull(diskDataView)
                 .consumeBuffer(nextBufferIndexToConsume, errorBuffers)

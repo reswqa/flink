@@ -20,6 +20,7 @@ package org.apache.flink.runtime.io.network.partition.hybrid;
 
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.memory.MemorySegment;
+import org.apache.flink.core.memory.WrappedMemorySegment;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferRecycler;
 import org.apache.flink.runtime.io.network.partition.BufferReaderWriterUtil;
@@ -156,7 +157,10 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
                 buffers.add(segment);
                 throw throwable;
             }
-
+            if (buffer.getMemorySegment() instanceof WrappedMemorySegment) {
+                WrappedMemorySegment.toWrapped(buffer.getMemorySegment())
+                        .setThreadDump("read buffers");
+            }
             loadedBuffers.add(BufferIndexOrError.newBuffer(buffer, indexToLoad));
             bufferIndexManager.updateLastLoaded(indexToLoad);
             cachedRegionManager.advance(
@@ -179,7 +183,9 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
         // empty from tail, in-case subpartition view consumes concurrently and gets the wrong order
         while ((bufferIndexOrError = loadedBuffers.pollLast()) != null) {
             if (bufferIndexOrError.getBuffer().isPresent()) {
-                checkNotNull(bufferIndexOrError.buffer).recycleBuffer();
+                Buffer buffer = checkNotNull(bufferIndexOrError.buffer);
+                WrappedMemorySegment.toWrapped(buffer.getMemorySegment()).setThreadDump("fail");
+                buffer.recycleBuffer();
             }
         }
 
@@ -230,6 +236,7 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
                                 () ->
                                         new NullPointerException(
                                                 "Get a non-throwable and non-buffer bufferIndexOrError, which is not allowed"));
+        WrappedMemorySegment.toWrapped(buffer.getMemorySegment()).setThreadDump("consumeBuffer");
         return Optional.of(
                 ResultSubpartition.BufferAndBacklog.fromBufferAndLookahead(
                         buffer, nextDataType, backlog, bufferIndex));

@@ -67,7 +67,7 @@ import static org.apache.flink.core.memory.MemoryUtils.getByteBufferAddress;
  * implementations on invocations of abstract methods.
  */
 @Internal
-public final class MemorySegment {
+public class MemorySegment {
 
     /** System property for activating multiple free segment check, for testing purpose. */
     public static final String CHECK_MULTIPLE_FREE_PROPERTY =
@@ -173,7 +173,7 @@ public final class MemorySegment {
      * @param owner The owner references by this memory segment.
      * @throws IllegalArgumentException Thrown, if the given ByteBuffer is not direct.
      */
-    MemorySegment(@Nonnull ByteBuffer buffer, @Nullable Object owner) {
+    protected MemorySegment(@Nonnull ByteBuffer buffer, @Nullable Object owner) {
         this(buffer, owner, true, null);
     }
 

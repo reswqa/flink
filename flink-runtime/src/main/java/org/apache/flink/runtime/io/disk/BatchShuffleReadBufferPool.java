@@ -23,6 +23,7 @@ import org.apache.flink.api.common.time.Deadline;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.core.memory.MemorySegmentFactory;
+import org.apache.flink.core.memory.WrappedMemorySegment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +155,8 @@ public class BatchShuffleReadBufferPool {
 
             try {
                 for (int i = 0; i < numTotalBuffers; ++i) {
-                    buffers.add(MemorySegmentFactory.allocateUnpooledOffHeapMemory(bufferSize));
+                    buffers.add(
+                            MemorySegmentFactory.allocateUnpooledOffHeapWrappedMemory(bufferSize));
                 }
             } catch (OutOfMemoryError outOfMemoryError) {
                 int allocated = buffers.size();
@@ -222,7 +224,9 @@ public class BatchShuffleReadBufferPool {
             }
 
             while (allocated.size() < numBuffersPerRequest) {
-                allocated.add(buffers.poll());
+                MemorySegment poll = buffers.poll();
+                WrappedMemorySegment.toWrapped(poll).setThreadDump("requested from pool");
+                allocated.add(poll);
             }
             lastBufferOperationTimestamp = System.nanoTime();
         }

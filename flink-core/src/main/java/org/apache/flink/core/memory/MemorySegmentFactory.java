@@ -113,6 +113,10 @@ public final class MemorySegmentFactory {
         return allocateUnpooledOffHeapMemory(size, null);
     }
 
+    public static MemorySegment allocateUnpooledOffHeapWrappedMemory(int size) {
+        return allocateUnpooledOffHeapWrappedMemory(size, null);
+    }
+
     /**
      * Allocates some unpooled off-heap memory and creates a new memory segment that represents that
      * memory.
@@ -124,6 +128,11 @@ public final class MemorySegmentFactory {
     public static MemorySegment allocateUnpooledOffHeapMemory(int size, Object owner) {
         ByteBuffer memory = allocateDirectMemory(size);
         return new MemorySegment(memory, owner);
+    }
+
+    public static MemorySegment allocateUnpooledOffHeapWrappedMemory(int size, Object owner) {
+        ByteBuffer memory = allocateDirectMemory(size);
+        return new WrappedMemorySegment(memory, owner).setThreadDump("created");
     }
 
     @VisibleForTesting
