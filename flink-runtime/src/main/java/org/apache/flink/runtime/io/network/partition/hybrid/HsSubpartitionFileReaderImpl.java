@@ -383,7 +383,7 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
         private int lastConsumed = -1;
 
         BufferIndexManager(int maxBuffersReadAhead) {
-            this.maxBuffersReadAhead = Integer.MAX_VALUE;
+            this.maxBuffersReadAhead = maxBuffersReadAhead;
         }
 
         private void updateLastLoaded(int lastLoaded) {
@@ -397,8 +397,9 @@ public class HsSubpartitionFileReaderImpl implements HsSubpartitionFileReader {
 
         /** Returns a negative value if shouldn't load. */
         private int getNextToLoad() {
-            // int maxToLoad = lastConsumed + maxBuffersReadAhead;
-            return Math.max(lastLoaded, lastConsumed) + 1;
+            int nextToLoad = Math.max(lastLoaded, lastConsumed) + 1;
+            int maxToLoad = lastConsumed + maxBuffersReadAhead;
+            return nextToLoad <= maxToLoad ? nextToLoad : -1;
         }
     }
 

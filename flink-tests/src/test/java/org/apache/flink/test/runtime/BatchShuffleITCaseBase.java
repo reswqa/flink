@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BatchShuffleITCaseBase {
     private static final String RECORD = "batch shuffle test";
 
-    private static final int NUM_TASK_MANAGERS = 3;
+    private static final int NUM_TASK_MANAGERS = 2;
 
     private static final int NUM_SLOTS_PER_TASK_MANAGER = 10;
 
