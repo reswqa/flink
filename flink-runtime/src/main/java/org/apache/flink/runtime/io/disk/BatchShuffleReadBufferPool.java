@@ -283,7 +283,8 @@ public class BatchShuffleReadBufferPool {
         synchronized (buffers) {
             destroyed = true;
             if (initialized && buffers.size() != numTotalBuffers) {
-                System.out.println("aaa");
+                System.out.println(
+                        "buffer pool destroy but not all buffers recycled to this pool.");
             }
             buffers.clear();
             buffers.notifyAll();
