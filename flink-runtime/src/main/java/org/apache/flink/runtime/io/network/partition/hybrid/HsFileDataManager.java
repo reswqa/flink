@@ -120,30 +120,6 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
     @GuardedBy("lock")
     private FileChannel dataFileChannel;
 
-    private String taskName;
-
-    private String stopReason = "start";
-
-    public HsFileDataManager(
-            BatchShuffleReadBufferPool bufferPool,
-            ScheduledExecutorService ioExecutor,
-            HsFileDataIndex dataIndex,
-            Path dataFilePath,
-            HsSubpartitionFileReader.Factory fileReaderFactory,
-            HybridShuffleConfiguration hybridShuffleConfiguration,
-            String taskName) {
-        this.fileReaderFactory = fileReaderFactory;
-        this.hybridShuffleConfiguration = checkNotNull(hybridShuffleConfiguration);
-        this.dataIndex = checkNotNull(dataIndex);
-        this.dataFilePath = checkNotNull(dataFilePath);
-        this.bufferPool = checkNotNull(bufferPool);
-        this.ioExecutor = checkNotNull(ioExecutor);
-        this.maxRequestedBuffers = hybridShuffleConfiguration.getMaxRequestedBuffers();
-        this.bufferRequestTimeout =
-                checkNotNull(hybridShuffleConfiguration.getBufferRequestTimeout());
-        this.taskName = taskName;
-    }
-
     public HsFileDataManager(
             BatchShuffleReadBufferPool bufferPool,
             ScheduledExecutorService ioExecutor,
@@ -321,23 +297,6 @@ public class HsFileDataManager implements Runnable, BufferRecycler {
                                         Thread.currentThread(), throwable);
                             }
                         });
-            } else {
-                if (isRunning) {
-                    stopReason = "isRunning";
-                } else if (numRequestedBuffers + bufferPool.getNumBuffersPerRequest()
-                        > maxRequestedBuffers) {
-                    stopReason = "condition 2";
-                } else if (numRequestedBuffers >= bufferPool.getAverageBuffersPerRequester()) {
-                    stopReason = "condition3";
-                }
-                System.out.printf(
-                        "[%s] stop trigger reading isRunning: %s, allReaders: %s, numRequestedBuffers: %s, AverageBuffersPerRequester: %s, NumBuffersPerRequest: %s \n",
-                        taskName,
-                        isRunning,
-                        allReaders.size(),
-                        numRequestedBuffers,
-                        bufferPool.getAverageBuffersPerRequester(),
-                        bufferPool.getNumBuffersPerRequest());
             }
         }
     }

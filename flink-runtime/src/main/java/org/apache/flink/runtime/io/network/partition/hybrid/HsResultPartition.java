@@ -127,8 +127,7 @@ public class HsResultPartition extends ResultPartition {
                         dataIndex,
                         dataFilePath,
                         HsSubpartitionFileReaderImpl.Factory.INSTANCE,
-                        hybridShuffleConfiguration,
-                        getOwningTaskName());
+                        hybridShuffleConfiguration);
         this.lastConsumerIds = new HsConsumerId[numSubpartitions];
     }
 
