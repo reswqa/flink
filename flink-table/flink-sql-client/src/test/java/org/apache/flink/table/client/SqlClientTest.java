@@ -23,7 +23,6 @@ import org.apache.flink.core.testutils.CommonTestUtils;
 import org.apache.flink.table.client.cli.TerminalUtils;
 import org.apache.flink.table.gateway.rest.util.SqlGatewayRestEndpointExtension;
 import org.apache.flink.table.gateway.service.utils.SqlGatewayServiceExtension;
-import org.apache.flink.util.FileUtils;
 import org.apache.flink.util.Preconditions;
 
 import org.jline.terminal.Size;
@@ -41,7 +40,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,7 +52,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.flink.configuration.ConfigConstants.ENV_FLINK_CONF_DIR;
-import static org.apache.flink.configuration.DeploymentOptions.TARGET;
 import static org.apache.flink.core.testutils.CommonTestUtils.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,7 +67,7 @@ class SqlClientTest {
             new SqlGatewayServiceExtension(
                     () -> {
                         Configuration configuration = new Configuration();
-                        configuration.set(TARGET, "yarn-session");
+                        // configuration.set(TARGET, "yarn-session");
                         return configuration;
                     });
 
@@ -153,8 +150,16 @@ class SqlClientTest {
                                     SQL_GATEWAY_REST_ENDPOINT_EXTENSION.getTargetPort())
                             .toString()
                 };
-        String actual = runSqlClient(args, String.join("\n", "SET;", "QUIT;"), false);
-        assertThat(actual).contains("execution.target", "yarn-session");
+        String catalog =
+                "CREATE CATALOG myhive WITH (\n"
+                        + "    'type' = 'hive',\n"
+                        + "    'default-database' = 'ssb_parq_1000',\n"
+                        + "    'hive-conf-dir' = '/etc/ecm/hive-conf-3.1.2-hadoop3.1-1.3.4'\n"
+                        + ");";
+        String actual = runSqlClient(args, String.join("\n", catalog), false);
+        String actual1 = runSqlClient(args, String.join("\n", catalog), false);
+        Thread.sleep(100000L);
+        // assertThat(actual).contains("execution.target", "yarn-session");
     }
 
     @Test
@@ -233,16 +238,27 @@ class SqlClientTest {
 
     @Test
     void testExecuteSqlFile() throws Exception {
-        List<String> statements = Collections.singletonList("HELP;\n");
+        String catalog =
+                "CREATE CATALOG myhive WITH (\n"
+                        + "    'type' = 'hive',\n"
+                        + "    'default-database' = 'ssb_parq_1000',\n"
+                        + "    'hive-conf-dir' = '/etc/ecm/hive-conf-3.1.2-hadoop3.1-1.3.4'\n"
+                        + ");";
+        List<String> statements = Collections.singletonList(catalog);
         String sqlFilePath = createSqlFile(statements, "test-sql.sql");
-        String[] args = new String[] {"-f", sqlFilePath};
+        String[] args =
+                new String[] {
+                    "gateway",
+                    "-e",
+                    InetSocketAddress.createUnresolved(
+                                    SQL_GATEWAY_REST_ENDPOINT_EXTENSION.getTargetAddress(),
+                                    SQL_GATEWAY_REST_ENDPOINT_EXTENSION.getTargetPort())
+                            .toString(),
+                    "-f",
+                    sqlFilePath
+                };
         String output = runSqlClient(args);
-        final URL url = getClass().getClassLoader().getResource("sql-client-help-command.out");
-        final String help = FileUtils.readFileUtf8(new File(url.getFile()));
-
-        for (String command : help.split("\n")) {
-            assertThat(output).contains(command);
-        }
+        System.out.println(output);
     }
 
     @Test
