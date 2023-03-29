@@ -268,7 +268,6 @@ public class HiveCatalog extends AbstractCatalog {
                 // treat relative URI as local file to be compatible with previous behavior
                 hiveSite = new Path(new File(hiveSite.toString()).toURI());
             }
-            hadoopConf.setClassLoader(HiveConf.class.getClassLoader());
             try (InputStream inputStream = hiveSite.getFileSystem(hadoopConf).open(hiveSite)) {
                 hiveConf.addResource(inputStream, hiveSite.toString());
                 // trigger a read from the conf so that the input stream is read
