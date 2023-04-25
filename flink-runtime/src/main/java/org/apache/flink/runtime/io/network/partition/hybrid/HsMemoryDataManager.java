@@ -24,6 +24,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferBuilder;
 import org.apache.flink.runtime.io.network.buffer.BufferCompressor;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingStrategy.Decision;
+import org.apache.flink.runtime.metrics.TimerGauge;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.concurrent.ExecutorThreadFactory;
 import org.apache.flink.util.concurrent.FutureUtils;
@@ -31,6 +32,8 @@ import org.apache.flink.util.function.SupplierWithException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,6 +53,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** This class is responsible for managing data in memory. */
 public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryDataManagerOperation {
@@ -91,6 +96,9 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
                     new ExecutorThreadFactory("hybrid-shuffle-pool-size-checker-executor"));
 
     private final AtomicInteger poolSize;
+
+    /** If task thread blocked on request buffer from buffer pool, this metric should be updated. */
+    @Nullable private TimerGauge hardBackPressuredTimePerSecond;
 
     public HsMemoryDataManager(
             int numSubpartitions,
@@ -194,12 +202,14 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
         handleDecision(Optional.of(decision));
     }
 
-    public void setOutputMetrics(HsOutputMetrics metrics) {
+    public void setOutputMetrics(
+            HsOutputMetrics metrics, TimerGauge hardBackPressuredTimePerSecond) {
         // HsOutputMetrics is not thread-safe. It can be shared by all the subpartitions because it
         // is expected always updated from the producer task's mailbox thread.
         for (int i = 0; i < numSubpartitions; i++) {
             getSubpartitionMemoryDataManager(i).setOutputMetrics(metrics);
         }
+        this.hardBackPressuredTimePerSecond = hardBackPressuredTimePerSecond;
     }
 
     // ------------------------------------
@@ -263,7 +273,16 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
 
     @Override
     public BufferBuilder requestBufferFromPool() throws InterruptedException {
-        MemorySegment segment = bufferPool.requestMemorySegmentBlocking();
+        MemorySegment segment = bufferPool.requestMemorySegment();
+
+        if (segment == null) {
+            // only when the buffer is not acquired immediately, it is requested in blocking mode,
+            // which will make the calculation of backpressure more accurate.
+            checkNotNull(hardBackPressuredTimePerSecond).markStart();
+            segment = bufferPool.requestMemorySegmentBlocking();
+            checkNotNull(hardBackPressuredTimePerSecond).markEnd();
+        }
+
         Optional<Decision> decisionOpt =
                 spillStrategy.onMemoryUsageChanged(
                         numRequestedBuffers.incrementAndGet(), getPoolSize());

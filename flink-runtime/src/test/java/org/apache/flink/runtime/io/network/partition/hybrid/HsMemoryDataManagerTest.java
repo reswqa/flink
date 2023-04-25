@@ -19,11 +19,14 @@
 package org.apache.flink.runtime.io.network.partition.hybrid;
 
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.core.testutils.CheckedThread;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
+import org.apache.flink.runtime.io.network.buffer.BufferBuilder;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.NetworkBufferPool;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsFileDataIndex.SpilledBuffer;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingStrategy.Decision;
+import org.apache.flink.runtime.metrics.TimerGauge;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,9 +39,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.flink.core.testutils.FlinkAssertions.assertThatFuture;
+import static org.apache.flink.runtime.io.network.buffer.LocalBufferPoolDestroyTest.isInBlockingBufferRequest;
 import static org.apache.flink.runtime.io.network.partition.hybrid.HybridShuffleTestUtils.createTestingOutputMetrics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -243,6 +248,57 @@ class HsMemoryDataManagerTest {
         assertThatFuture(triggerGlobalDecision).eventuallySucceeds();
     }
 
+    @Test
+    void testIdleAndBackPressuredTime() throws Exception {
+        HsSpillingStrategy spillingStrategy = TestingSpillingStrategy.builder().build();
+        NetworkBufferPool networkBufferPool = new NetworkBufferPool(1, bufferSize);
+        BufferPool bufferPool = networkBufferPool.createBufferPool(1, 1);
+        TimerGauge backpressureGauge = new TimerGauge();
+        HsMemoryDataManager memoryDataManager =
+                createMemoryDataManager(
+                        bufferPool,
+                        spillingStrategy,
+                        new HsFileDataIndexImpl(
+                                NUM_SUBPARTITIONS, indexFilePath, 256, Long.MAX_VALUE),
+                        backpressureGauge);
+        BufferBuilder bufferBuilder = memoryDataManager.requestBufferFromPool();
+        assertThat(bufferBuilder).isNotNull();
+        // back-pressured time is zero when there is buffer available.
+        assertThat(backpressureGauge.getValue()).isZero();
+
+        CountDownLatch syncLock = new CountDownLatch(1);
+        CompletableFuture<BufferBuilder> secondBufferFuture = new CompletableFuture<>();
+        CheckedThread requestThread =
+                new CheckedThread() {
+                    @Override
+                    public void go() throws Exception {
+                        // notify that the request thread start to run.
+                        syncLock.countDown();
+                        // wait for buffer.
+                        secondBufferFuture.complete(memoryDataManager.requestBufferFromPool());
+                    }
+                };
+        requestThread.start();
+
+        // wait until request thread start to run.
+        syncLock.await();
+
+        // wait until request buffer blocking.
+        while (!isInBlockingBufferRequest(requestThread.getStackTrace())) {
+            Thread.sleep(50);
+        }
+        // there is an extreme case where the request thread recovers from blocking very
+        // quickly, resulting in a calculated back-pressure time is equal to 0. This is used to
+        // avoid this case.
+        Thread.sleep(5);
+        // recycle the buffer
+        bufferBuilder.close();
+        requestThread.join();
+
+        assertThat(backpressureGauge.getCount()).isGreaterThan(0L);
+        assertThatFuture(secondBufferFuture).eventuallySucceeds().isNotNull();
+    }
+
     private HsMemoryDataManager createMemoryDataManager(HsSpillingStrategy spillStrategy)
             throws Exception {
         return createMemoryDataManager(
@@ -268,6 +324,15 @@ class HsMemoryDataManagerTest {
     private HsMemoryDataManager createMemoryDataManager(
             BufferPool bufferPool, HsSpillingStrategy spillStrategy, HsFileDataIndex fileDataIndex)
             throws Exception {
+        return createMemoryDataManager(bufferPool, spillStrategy, fileDataIndex, new TimerGauge());
+    }
+
+    private HsMemoryDataManager createMemoryDataManager(
+            BufferPool bufferPool,
+            HsSpillingStrategy spillStrategy,
+            HsFileDataIndex fileDataIndex,
+            TimerGauge timerGauge)
+            throws Exception {
         HsMemoryDataManager memoryDataManager =
                 new HsMemoryDataManager(
                         NUM_SUBPARTITIONS,
@@ -278,7 +343,7 @@ class HsMemoryDataManagerTest {
                         dataFilePath,
                         null,
                         1000);
-        memoryDataManager.setOutputMetrics(createTestingOutputMetrics());
+        memoryDataManager.setOutputMetrics(createTestingOutputMetrics(), timerGauge);
         return memoryDataManager;
     }
 
