@@ -27,6 +27,7 @@ import org.apache.flink.runtime.io.network.partition.BufferAvailabilityListener;
 import org.apache.flink.runtime.io.network.partition.NoOpBufferAvailablityListener;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartition.BufferAndBacklog;
 import org.apache.flink.runtime.io.network.partition.ResultSubpartitionView.AvailabilityWithBacklog;
+import org.apache.flink.runtime.metrics.TimerGauge;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -118,7 +119,7 @@ class HsSubpartitionViewTest {
                         dataFilePath.resolve(".data"),
                         null,
                         0);
-        memoryDataManager.setOutputMetrics(createTestingOutputMetrics());
+        memoryDataManager.setOutputMetrics(createTestingOutputMetrics(), new TimerGauge());
         HsDataView hsDataView =
                 memoryDataManager.registerNewConsumer(0, HsConsumerId.DEFAULT, subpartitionView);
         subpartitionView.setMemoryDataView(hsDataView);
