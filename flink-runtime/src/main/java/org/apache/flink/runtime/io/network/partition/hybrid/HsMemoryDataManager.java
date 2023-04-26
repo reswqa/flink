@@ -33,8 +33,6 @@ import org.apache.flink.util.function.SupplierWithException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -53,8 +51,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** This class is responsible for managing data in memory. */
 public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryDataManagerOperation {
@@ -98,7 +94,7 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
     private final AtomicInteger poolSize;
 
     /** If task thread blocked on request buffer from buffer pool, this metric should be updated. */
-    @Nullable private TimerGauge hardBackPressuredTimePerSecond;
+    private TimerGauge hardBackPressuredTimePerSecond = new TimerGauge();
 
     public HsMemoryDataManager(
             int numSubpartitions,
@@ -278,9 +274,9 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
         if (segment == null) {
             // only when the buffer is not acquired immediately, it is requested in blocking mode,
             // which will make the calculation of backpressure more accurate.
-            checkNotNull(hardBackPressuredTimePerSecond).markStart();
+            hardBackPressuredTimePerSecond.markStart();
             segment = bufferPool.requestMemorySegmentBlocking();
-            checkNotNull(hardBackPressuredTimePerSecond).markEnd();
+            hardBackPressuredTimePerSecond.markEnd();
         }
 
         Optional<Decision> decisionOpt =
