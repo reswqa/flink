@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
@@ -27,8 +28,11 @@ import org.apache.flink.util.OutputTag;
  */
 final class CopyingBroadcastingOutputCollector<T> extends BroadcastingOutputCollector<T> {
 
-    public CopyingBroadcastingOutputCollector(Output<StreamRecord<T>>[] outputs) {
-        super(outputs);
+    public CopyingBroadcastingOutputCollector(
+            OutputWithRecordsCountCheck<StreamRecord<T>>[] outputWithRecordsCountChecks,
+            Output<StreamRecord<T>>[] outputs,
+            Counter numRecordsOutForTask) {
+        super(outputWithRecordsCountChecks, outputs, numRecordsOutForTask);
     }
 
     @Override

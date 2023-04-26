@@ -19,6 +19,7 @@ package org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.event.AbstractEvent;
@@ -46,7 +47,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 @Internal
 public class RecordWriterOutput<OUT>
         implements WatermarkGaugeExposingOutput<StreamRecord<OUT>>,
-                OutputWithRecordsCountCheck<OUT> {
+                OutputWithRecordsCountCheck<StreamRecord<OUT>> {
 
     private RecordWriter<SerializationDelegate<StreamElement>> recordWriter;
 
@@ -60,14 +61,15 @@ public class RecordWriterOutput<OUT>
 
     private WatermarkStatus announcedStatus = WatermarkStatus.ACTIVE;
 
-    // private final Counter numRecordsOut;
+    private final Counter numRecordsOut;
 
     @SuppressWarnings("unchecked")
     public RecordWriterOutput(
             RecordWriter<SerializationDelegate<StreamRecord<OUT>>> recordWriter,
             TypeSerializer<OUT> outSerializer,
             OutputTag outputTag,
-            boolean supportsUnalignedCheckpoints) {
+            boolean supportsUnalignedCheckpoints,
+            Counter numRecordsOut) {
 
         checkNotNull(recordWriter);
         this.outputTag = outputTag;
@@ -84,17 +86,22 @@ public class RecordWriterOutput<OUT>
         }
 
         this.supportsUnalignedCheckpoints = supportsUnalignedCheckpoints;
-        // this.numRecordsOut = numRecordsOut;
+
+        this.numRecordsOut = numRecordsOut;
     }
 
     @Override
     public void collect(StreamRecord<OUT> record) {
-        collectAndCheckIfCountNeeded(record);
+        if (collectAndCheckIfCountNeeded(record)) {
+            numRecordsOut.inc();
+        }
     }
 
     @Override
     public <X> void collect(OutputTag<X> outputTag, StreamRecord<X> record) {
-        collectAndCheckIfCountNeeded(outputTag, record);
+        if (collectAndCheckIfCountNeeded(outputTag, record)) {
+            numRecordsOut.inc();
+        }
     }
 
     @Override

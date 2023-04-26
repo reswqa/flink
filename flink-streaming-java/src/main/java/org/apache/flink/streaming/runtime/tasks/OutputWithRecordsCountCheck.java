@@ -30,7 +30,7 @@ public interface OutputWithRecordsCountCheck<OUT> {
      *
      * @param record The record to collect.
      */
-    boolean collectAndCheckIfCountNeeded(StreamRecord<OUT> record);
+    boolean collectAndCheckIfCountNeeded(OUT record);
 
     /**
      * Collect a record to the side output identified by the given {@link OutputTag} and check if it

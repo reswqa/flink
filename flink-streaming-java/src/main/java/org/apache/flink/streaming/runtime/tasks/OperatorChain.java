@@ -40,6 +40,7 @@ import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.InternalOperatorMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
+import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
 import org.apache.flink.runtime.operators.coordination.AcknowledgeCheckpointEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEventDispatcher;
@@ -553,12 +554,19 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                             taskEnvironment.getUserCodeClassLoader().asClassLoader());
         }
 
+        TaskMetricGroup taskMetricGroup = taskEnvironment.getMetricGroup();
+        InternalOperatorMetricGroup operatorMetricGroup =
+                taskMetricGroup.getOrAddOperator(
+                        upStreamConfig.getOperatorID(), upStreamConfig.getOperatorName());
+        operatorMetricGroup.getIOMetricGroup().reuseOutputMetricsForTask();
+
         return closer.register(
                 new RecordWriterOutput<OUT>(
                         recordWriter,
                         outSerializer,
                         sideOutputTag,
-                        streamOutput.supportsUnalignedCheckpoints()));
+                        streamOutput.supportsUnalignedCheckpoints(),
+                        operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter()));
     }
 
     @SuppressWarnings("rawtypes")
@@ -660,9 +668,6 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                         .getMetricGroup()
                         .getOrAddOperator(
                                 operatorConfig.getOperatorID(), operatorConfig.getOperatorName());
-        if (operatorConfig.isChainEnd()) {
-            operatorMetricGroup.getIOMetricGroup().reuseOutputMetricsForTask();
-        }
 
         return operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter();
     }
@@ -706,6 +711,7 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             MailboxExecutorFactory mailboxExecutorFactory,
             boolean shouldAddMetric) {
         List<WatermarkGaugeExposingOutput<StreamRecord<T>>> allOutputs = new ArrayList<>(4);
+        List<OutputWithRecordsCountCheck<StreamRecord<T>>> outputs = new ArrayList<>(4);
 
         // create collectors for the network outputs
         for (NonChainedOutput streamOutput :
@@ -735,6 +741,8 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                             mailboxExecutorFactory,
                             shouldAddMetric);
             allOutputs.add(output);
+            checkState(output instanceof OutputWithRecordsCountCheck);
+            outputs.add((OutputWithRecordsCountCheck) output);
             // If the operator has multiple downstream chained operators, only one of them should
             // increment the recordsOutCounter for this operator. Set shouldAddMetric to false
             // so that we would skip adding the counter to other downstream operators.
@@ -745,17 +753,22 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
 
         if (allOutputs.size() == 1) {
             result = allOutputs.get(0);
-            if (result instanceof RecordWriterOutput) {
-                return new RecordWriterCountingOutput<>(
-                        result, operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter());
+            // if it is the single record writer output at the end of chain, return it directly as
+            // the numRecordsOut is take care of by itself.
+            if (operatorConfig.isChainEnd()) {
+                return result;
             }
         } else {
             // send to N outputs. Note that this includes the special case
             // of sending to zero outputs
             @SuppressWarnings({"unchecked"})
             Output<StreamRecord<T>>[] asArray = new Output[allOutputs.size()];
+            @SuppressWarnings({"unchecked"})
+            OutputWithRecordsCountCheck<StreamRecord<T>>[] outputArray =
+                    new OutputWithRecordsCountCheck[outputs.size()];
             for (int i = 0; i < allOutputs.size(); i++) {
                 asArray[i] = allOutputs.get(i);
+                outputArray[i] = outputs.get(i);
             }
 
             // This is the inverse of creating the normal ChainingOutput.
@@ -766,11 +779,12 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                 result =
                         closer.register(
                                 new CopyingBroadcastingOutputCollector<>(
-                                        asArray, numRecordsOutForTask));
+                                        outputArray, asArray, numRecordsOutForTask));
             } else {
                 result =
                         closer.register(
-                                new BroadcastingOutputCollector<>(asArray, numRecordsOutForTask));
+                                new BroadcastingOutputCollector<>(
+                                        outputArray, asArray, numRecordsOutForTask));
             }
         }
 

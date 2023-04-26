@@ -37,7 +37,8 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 class ChainingOutput<T>
-        implements WatermarkGaugeExposingOutput<StreamRecord<T>>, OutputWithRecordsCountCheck<T> {
+        implements WatermarkGaugeExposingOutput<StreamRecord<T>>,
+                OutputWithRecordsCountCheck<StreamRecord<T>> {
     private static final Logger LOG = LoggerFactory.getLogger(ChainingOutput.class);
 
     protected final Input<T> input;

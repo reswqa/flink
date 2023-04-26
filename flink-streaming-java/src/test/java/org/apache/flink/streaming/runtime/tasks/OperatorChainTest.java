@@ -90,7 +90,8 @@ public class OperatorChainTest {
             // initial output goes to nowhere
             @SuppressWarnings({"unchecked", "rawtypes"})
             WatermarkGaugeExposingOutput<StreamRecord<T>> lastWriter =
-                    new BroadcastingOutputCollector<>(new Output[0], new SimpleCounter());
+                    new BroadcastingOutputCollector<>(
+                            new OutputWithRecordsCountCheck[0], new Output[0], new SimpleCounter());
 
             // build the reverse operators array
             for (int i = 0; i < operators.length; i++) {

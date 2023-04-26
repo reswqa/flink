@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.watermark.Watermark;
@@ -31,12 +32,21 @@ import java.util.Random;
 
 class BroadcastingOutputCollector<T> implements WatermarkGaugeExposingOutput<StreamRecord<T>> {
 
+    protected final OutputWithRecordsCountCheck<StreamRecord<T>>[] outputWithRecordsCountChecks;
+
     protected final Output<StreamRecord<T>>[] outputs;
     private final Random random = new XORShiftRandom();
     private final WatermarkGauge watermarkGauge = new WatermarkGauge();
 
-    public BroadcastingOutputCollector(Output<StreamRecord<T>>[] outputs) {
+    protected final Counter numRecordsOutForTask;
+
+    public BroadcastingOutputCollector(
+            OutputWithRecordsCountCheck<StreamRecord<T>>[] outputWithRecordsCountChecks,
+            Output<StreamRecord<T>>[] outputs,
+            Counter numRecordsOutForTask) {
         this.outputs = outputs;
+        this.outputWithRecordsCountChecks = outputWithRecordsCountChecks;
+        this.numRecordsOutForTask = numRecordsOutForTask;
     }
 
     @Override
@@ -73,15 +83,23 @@ class BroadcastingOutputCollector<T> implements WatermarkGaugeExposingOutput<Str
 
     @Override
     public void collect(StreamRecord<T> record) {
-        for (Output<StreamRecord<T>> output : outputs) {
-            output.collect(record);
+        boolean emitted = false;
+        for (OutputWithRecordsCountCheck<StreamRecord<T>> output : outputWithRecordsCountChecks) {
+            emitted |= output.collectAndCheckIfCountNeeded(record);
+        }
+        if (emitted) {
+            numRecordsOutForTask.inc();
         }
     }
 
     @Override
     public <X> void collect(OutputTag<X> outputTag, StreamRecord<X> record) {
-        for (Output<StreamRecord<T>> output : outputs) {
-            output.collect(outputTag, record);
+        boolean emitted = false;
+        for (OutputWithRecordsCountCheck<StreamRecord<T>> output : outputWithRecordsCountChecks) {
+            emitted |= output.collectAndCheckIfCountNeeded(outputTag, record);
+        }
+        if (emitted) {
+            numRecordsOutForTask.inc();
         }
     }
 

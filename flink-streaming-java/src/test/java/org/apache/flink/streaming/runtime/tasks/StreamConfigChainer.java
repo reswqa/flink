@@ -390,9 +390,6 @@ public class StreamConfigChainer<OWNER> {
                 parent.tailConfig.setVertexNonChainedOutputs(nonChainedOutputs);
                 parent.tailConfig.setOperatorNonChainedOutputs(nonChainedOutputs);
                 parent.chainedConfigs.values().forEach(StreamConfig::serializeAllConfigs);
-
-                // parent.headConfig.setVertexNonChainedOutputs(nonChainedOutputs);
-
                 parent.tailConfig.setNumberOfOutputs(nonChainedOutputs.size());
                 parent.outEdgesInOrder.add(nonChainedOutputs);
                 parent.setTailNonChainedOutputs = false;

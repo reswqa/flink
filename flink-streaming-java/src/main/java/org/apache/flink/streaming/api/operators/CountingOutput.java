@@ -31,7 +31,7 @@ import org.apache.flink.util.OutputTag;
 /** Wrapping {@link Output} that updates metrics on the number of emitted elements. */
 public class CountingOutput<OUT>
         implements WatermarkGaugeExposingOutput<StreamRecord<OUT>>,
-                OutputWithRecordsCountCheck<OUT> {
+                OutputWithRecordsCountCheck<StreamRecord<OUT>> {
     private final WatermarkGaugeExposingOutput<StreamRecord<OUT>> output;
     private final Counter numRecordsOut;
 
