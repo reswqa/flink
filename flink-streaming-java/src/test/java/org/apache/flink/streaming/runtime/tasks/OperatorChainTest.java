@@ -20,6 +20,7 @@ package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.operators.testutils.MockEnvironment;
 import org.apache.flink.streaming.api.graph.StreamConfig;
@@ -89,7 +90,8 @@ public class OperatorChainTest {
             // initial output goes to nowhere
             @SuppressWarnings({"unchecked", "rawtypes"})
             WatermarkGaugeExposingOutput<StreamRecord<T>> lastWriter =
-                    new BroadcastingOutputCollector<>(new Output[0]);
+                    new BroadcastingOutputCollector<>(
+                            new OutputWithRecordsCountCheck[0], new Output[0], new SimpleCounter());
 
             // build the reverse operators array
             for (int i = 0; i < operators.length; i++) {

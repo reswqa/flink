@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.metrics.Counter;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
@@ -27,37 +28,53 @@ import org.apache.flink.util.OutputTag;
  */
 final class CopyingBroadcastingOutputCollector<T> extends BroadcastingOutputCollector<T> {
 
-    public CopyingBroadcastingOutputCollector(Output<StreamRecord<T>>[] outputs) {
-        super(outputs);
+    public CopyingBroadcastingOutputCollector(
+            OutputWithRecordsCountCheck<StreamRecord<T>>[] outputWithRecordsCountChecks,
+            Output<StreamRecord<T>>[] outputs,
+            Counter numRecordsOutForTask) {
+        super(outputWithRecordsCountChecks, outputs, numRecordsOutForTask);
     }
 
     @Override
     public void collect(StreamRecord<T> record) {
+        boolean emitted = false;
+        int length = outputWithRecordsCountChecks.length;
 
-        for (int i = 0; i < outputs.length - 1; i++) {
-            Output<StreamRecord<T>> output = outputs[i];
+        for (int i = 0; i < length - 1; i++) {
+            OutputWithRecordsCountCheck<StreamRecord<T>> output = outputWithRecordsCountChecks[i];
             StreamRecord<T> shallowCopy = record.copy(record.getValue());
-            output.collect(shallowCopy);
+            emitted |= output.collectAndCheckIfCountNeeded(shallowCopy);
         }
 
-        if (outputs.length > 0) {
-            // don't copy for the last output
-            outputs[outputs.length - 1].collect(record);
+        if (length > 0) {
+            emitted |=
+                    outputWithRecordsCountChecks[length - 1].collectAndCheckIfCountNeeded(record);
+        }
+
+        if (emitted) {
+            numRecordsOutForTask.inc();
         }
     }
 
     @Override
     public <X> void collect(OutputTag<X> outputTag, StreamRecord<X> record) {
-        for (int i = 0; i < outputs.length - 1; i++) {
-            Output<StreamRecord<T>> output = outputs[i];
+        boolean emitted = false;
+        int length = outputWithRecordsCountChecks.length;
 
+        for (int i = 0; i < length - 1; i++) {
+            OutputWithRecordsCountCheck<StreamRecord<T>> output = outputWithRecordsCountChecks[i];
             StreamRecord<X> shallowCopy = record.copy(record.getValue());
-            output.collect(outputTag, shallowCopy);
+            emitted |= output.collectAndCheckIfCountNeeded(outputTag, shallowCopy);
         }
 
-        if (outputs.length > 0) {
-            // don't copy for the last output
-            outputs[outputs.length - 1].collect(outputTag, record);
+        if (length > 0) {
+            emitted |=
+                    outputWithRecordsCountChecks[length - 1].collectAndCheckIfCountNeeded(
+                            outputTag, record);
+        }
+
+        if (emitted) {
+            numRecordsOutForTask.inc();
         }
     }
 }

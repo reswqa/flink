@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
@@ -38,6 +39,7 @@ import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.InternalOperatorMetricGroup;
+import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.runtime.operators.coordination.AcknowledgeCheckpointEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEventDispatcher;
@@ -658,9 +660,6 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                         .getMetricGroup()
                         .getOrAddOperator(
                                 operatorConfig.getOperatorID(), operatorConfig.getOperatorName());
-        if (operatorConfig.isChainEnd()) {
-            operatorMetricGroup.getIOMetricGroup().reuseOutputMetricsForTask();
-        }
 
         return operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter();
     }
@@ -704,6 +703,8 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             MailboxExecutorFactory mailboxExecutorFactory,
             boolean shouldAddMetric) {
         List<WatermarkGaugeExposingOutput<StreamRecord<T>>> allOutputs = new ArrayList<>(4);
+        List<OutputWithRecordsCountCheck<StreamRecord<T>>> outputWithRecordsCountChecks =
+                new ArrayList<>(4);
 
         // create collectors for the network outputs
         for (NonChainedOutput streamOutput :
@@ -713,6 +714,7 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                     (RecordWriterOutput<T>) recordWriterOutputs.get(streamOutput.getDataSetId());
 
             allOutputs.add(recordWriterOutput);
+            outputWithRecordsCountChecks.add(recordWriterOutput);
         }
 
         // Create collectors for the chained outputs
@@ -733,6 +735,8 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                             mailboxExecutorFactory,
                             shouldAddMetric);
             allOutputs.add(output);
+            checkState(output instanceof OutputWithRecordsCountCheck);
+            outputWithRecordsCountChecks.add((OutputWithRecordsCountCheck) output);
             // If the operator has multiple downstream chained operators, only one of them should
             // increment the recordsOutCounter for this operator. Set shouldAddMetric to false
             // so that we would skip adding the counter to other downstream operators.
@@ -743,22 +747,45 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
 
         if (allOutputs.size() == 1) {
             result = allOutputs.get(0);
+            // only if this is a single RecordWriterOutput, reuse its numRecordOut for task.
+            if (result instanceof RecordWriterOutput) {
+                TaskIOMetricGroup taskIOMetricGroup =
+                        containingTask.getEnvironment().getMetricGroup().getIOMetricGroup();
+                Counter counter = new SimpleCounter();
+                ((RecordWriterOutput<T>) result).setNumRecordsOut(counter);
+                taskIOMetricGroup.reuseRecordsOutputCounter(counter);
+            }
         } else {
             // send to N outputs. Note that this includes the special case
             // of sending to zero outputs
             @SuppressWarnings({"unchecked"})
-            Output<StreamRecord<T>>[] asArray = new Output[allOutputs.size()];
+            Output<StreamRecord<T>>[] allOutputsArray = new Output[allOutputs.size()];
+            @SuppressWarnings({"unchecked"})
+            OutputWithRecordsCountCheck<StreamRecord<T>>[] outputWithRecordsCountChecksArray =
+                    new OutputWithRecordsCountCheck[outputWithRecordsCountChecks.size()];
             for (int i = 0; i < allOutputs.size(); i++) {
-                asArray[i] = allOutputs.get(i);
+                allOutputsArray[i] = allOutputs.get(i);
+                outputWithRecordsCountChecksArray[i] = outputWithRecordsCountChecks.get(i);
             }
 
             // This is the inverse of creating the normal ChainingOutput.
             // If the chaining output does not copy we need to copy in the broadcast output,
             // otherwise multi-chaining would not work correctly.
+            Counter numRecordsOutForTask = createStreamCounter(containingTask);
             if (containingTask.getExecutionConfig().isObjectReuseEnabled()) {
-                result = closer.register(new CopyingBroadcastingOutputCollector<>(asArray));
+                result =
+                        closer.register(
+                                new CopyingBroadcastingOutputCollector<>(
+                                        outputWithRecordsCountChecksArray,
+                                        allOutputsArray,
+                                        numRecordsOutForTask));
             } else {
-                result = closer.register(new BroadcastingOutputCollector<>(asArray));
+                result =
+                        closer.register(
+                                new BroadcastingOutputCollector<>(
+                                        outputWithRecordsCountChecksArray,
+                                        allOutputsArray,
+                                        numRecordsOutForTask));
             }
         }
 
@@ -772,6 +799,14 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             }
         }
         return result;
+    }
+
+    private static Counter createStreamCounter(StreamTask<?, ?> containingTask) {
+        TaskIOMetricGroup taskIOMetricGroup =
+                containingTask.getEnvironment().getMetricGroup().getIOMetricGroup();
+        Counter counter = new SimpleCounter();
+        taskIOMetricGroup.reuseRecordsOutputCounter(counter);
+        return counter;
     }
 
     /**
