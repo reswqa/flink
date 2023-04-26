@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.metrics.Counter;
+import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
@@ -38,6 +39,7 @@ import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.InternalOperatorMetricGroup;
+import org.apache.flink.runtime.metrics.groups.TaskIOMetricGroup;
 import org.apache.flink.runtime.operators.coordination.AcknowledgeCheckpointEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEvent;
 import org.apache.flink.runtime.operators.coordination.OperatorEventDispatcher;
@@ -743,6 +745,10 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
 
         if (allOutputs.size() == 1) {
             result = allOutputs.get(0);
+            if (result instanceof RecordWriterOutput) {
+                return new RecordWriterCountingOutput<>(
+                        result, operatorMetricGroup.getIOMetricGroup().getNumRecordsOutCounter());
+            }
         } else {
             // send to N outputs. Note that this includes the special case
             // of sending to zero outputs
@@ -755,10 +761,16 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             // This is the inverse of creating the normal ChainingOutput.
             // If the chaining output does not copy we need to copy in the broadcast output,
             // otherwise multi-chaining would not work correctly.
+            Counter numRecordsOutForTask = createStreamCounter(containingTask);
             if (containingTask.getExecutionConfig().isObjectReuseEnabled()) {
-                result = closer.register(new CopyingBroadcastingOutputCollector<>(asArray));
+                result =
+                        closer.register(
+                                new CopyingBroadcastingOutputCollector<>(
+                                        asArray, numRecordsOutForTask));
             } else {
-                result = closer.register(new BroadcastingOutputCollector<>(asArray));
+                result =
+                        closer.register(
+                                new BroadcastingOutputCollector<>(asArray, numRecordsOutForTask));
             }
         }
 
@@ -772,6 +784,14 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
             }
         }
         return result;
+    }
+
+    private Counter createStreamCounter(StreamTask<?, ?> containingTask) {
+        TaskIOMetricGroup taskIOMetricGroup =
+                containingTask.getEnvironment().getMetricGroup().getIOMetricGroup();
+        Counter counter = new SimpleCounter();
+        taskIOMetricGroup.reuseRecordsOutputCounter(counter);
+        return counter;
     }
 
     /**

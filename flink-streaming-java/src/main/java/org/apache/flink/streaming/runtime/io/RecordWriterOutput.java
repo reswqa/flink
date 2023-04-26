@@ -60,6 +60,8 @@ public class RecordWriterOutput<OUT>
 
     private WatermarkStatus announcedStatus = WatermarkStatus.ACTIVE;
 
+    // private final Counter numRecordsOut;
+
     @SuppressWarnings("unchecked")
     public RecordWriterOutput(
             RecordWriter<SerializationDelegate<StreamRecord<OUT>>> recordWriter,
@@ -82,6 +84,7 @@ public class RecordWriterOutput<OUT>
         }
 
         this.supportsUnalignedCheckpoints = supportsUnalignedCheckpoints;
+        // this.numRecordsOut = numRecordsOut;
     }
 
     @Override
