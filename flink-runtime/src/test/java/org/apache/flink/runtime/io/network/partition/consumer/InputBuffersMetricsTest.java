@@ -24,9 +24,9 @@ import org.apache.flink.runtime.io.network.NettyShuffleEnvironment;
 import org.apache.flink.runtime.io.network.NettyShuffleEnvironmentBuilder;
 import org.apache.flink.runtime.io.network.TestingConnectionManager;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
-import org.apache.flink.runtime.io.network.metrics.CreditBasedInputBuffersUsageGauge;
 import org.apache.flink.runtime.io.network.metrics.ExclusiveBuffersUsageGauge;
 import org.apache.flink.runtime.io.network.metrics.FloatingBuffersUsageGauge;
+import org.apache.flink.runtime.io.network.metrics.InputBuffersUsageGauge;
 import org.apache.flink.runtime.io.network.partition.PartitionTestUtils;
 import org.apache.flink.runtime.io.network.partition.ResultPartition;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
@@ -82,8 +82,8 @@ public class InputBuffersMetricsTest extends TestLogger {
                 new FloatingBuffersUsageGauge(inputGates);
         ExclusiveBuffersUsageGauge exclusiveBuffersUsageGauge =
                 new ExclusiveBuffersUsageGauge(inputGates);
-        CreditBasedInputBuffersUsageGauge inputBufferPoolUsageGauge =
-                new CreditBasedInputBuffersUsageGauge(
+        InputBuffersUsageGauge inputBufferPoolUsageGauge =
+                new InputBuffersUsageGauge(
                         floatingBuffersUsageGauge, exclusiveBuffersUsageGauge, inputGates);
 
         closeableRegistry.registerCloseable(network::close);
@@ -138,8 +138,8 @@ public class InputBuffersMetricsTest extends TestLogger {
                 new FloatingBuffersUsageGauge(inputGates);
         ExclusiveBuffersUsageGauge exclusiveBuffersUsageGauge =
                 new ExclusiveBuffersUsageGauge(inputGates);
-        CreditBasedInputBuffersUsageGauge inputBuffersUsageGauge =
-                new CreditBasedInputBuffersUsageGauge(
+        InputBuffersUsageGauge inputBuffersUsageGauge =
+                new InputBuffersUsageGauge(
                         floatingBuffersUsageGauge, exclusiveBuffersUsageGauge, inputGates);
 
         assertEquals(0.0, exclusiveBuffersUsageGauge.getValue(), 0.0);
@@ -201,8 +201,8 @@ public class InputBuffersMetricsTest extends TestLogger {
                 new FloatingBuffersUsageGauge(inputGates);
         ExclusiveBuffersUsageGauge exclusiveBuffersUsageGauge =
                 new ExclusiveBuffersUsageGauge(inputGates);
-        CreditBasedInputBuffersUsageGauge inputBuffersUsageGauge =
-                new CreditBasedInputBuffersUsageGauge(
+        InputBuffersUsageGauge inputBuffersUsageGauge =
+                new InputBuffersUsageGauge(
                         floatingBuffersUsageGauge, exclusiveBuffersUsageGauge, inputGates);
 
         assertEquals(0.0, floatingBuffersUsageGauge.getValue(), 0.0);
@@ -242,7 +242,7 @@ public class InputBuffersMetricsTest extends TestLogger {
             int totalBuffers,
             int totalExclusiveBuffers,
             ExclusiveBuffersUsageGauge exclusiveBuffersUsageGauge,
-            CreditBasedInputBuffersUsageGauge inputBuffersUsageGauge,
+            InputBuffersUsageGauge inputBuffersUsageGauge,
             SingleInputGate inputGate)
             throws IOException {
 

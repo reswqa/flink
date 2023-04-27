@@ -59,6 +59,9 @@ public class TaskIOMetricGroup extends ProxyMetricGroup<TaskMetricGroup> {
     private final Gauge<Long> backPressuredTimePerSecond;
     private final TimerGauge softBackPressuredTimePerSecond;
     private final TimerGauge hardBackPressuredTimePerSecond;
+
+    private final TimerGauge waitFloatingBufferTimePerSecond;
+
     private final Gauge<Long> maxSoftBackPressuredTime;
     private final Gauge<Long> maxHardBackPressuredTime;
     private final Gauge<Long> accumulatedBackPressuredTime;
@@ -101,6 +104,8 @@ public class TaskIOMetricGroup extends ProxyMetricGroup<TaskMetricGroup> {
                 gauge(MetricNames.TASK_HARD_BACK_PRESSURED_TIME, new TimerGauge());
         this.backPressuredTimePerSecond =
                 gauge(MetricNames.TASK_BACK_PRESSURED_TIME, this::getBackPressuredTimeMsPerSecond);
+        this.waitFloatingBufferTimePerSecond =
+                gauge(MetricNames.TASK_WAIT_FLOATING_TIME, new TimerGauge());
 
         this.maxSoftBackPressuredTime =
                 gauge(
@@ -185,6 +190,10 @@ public class TaskIOMetricGroup extends ProxyMetricGroup<TaskMetricGroup> {
     public long getBackPressuredTimeMsPerSecond() {
         return getSoftBackPressuredTimePerSecond().getValue()
                 + getHardBackPressuredTimePerSecond().getValue();
+    }
+
+    public TimerGauge getWaitFloatingBufferTimeMsPerSecond() {
+        return waitFloatingBufferTimePerSecond;
     }
 
     public long getAccumulatedBackPressuredTimeMs() {

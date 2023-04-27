@@ -27,6 +27,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferListener;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.BufferRecycler;
 import org.apache.flink.runtime.io.network.buffer.NetworkBuffer;
+import org.apache.flink.runtime.metrics.TimerGauge;
 import org.apache.flink.util.ExceptionUtils;
 
 import javax.annotation.Nullable;
@@ -69,6 +70,8 @@ public class BufferManager implements BufferListener, BufferRecycler {
     /** The total number of required buffers for the respective input channel. */
     @GuardedBy("bufferQueue")
     private int numRequiredBuffers;
+
+    private final TimerGauge gauge = new TimerGauge();
 
     public BufferManager(
             MemorySegmentProvider globalPool, InputChannel inputChannel, int numRequiredBuffers) {
@@ -192,6 +195,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
                 numRequestedBuffers++;
             } else if (bufferPool.addBufferListener(this)) {
                 isWaitingForFloatingBuffers = true;
+                gauge.markStart();
                 break;
             }
         }
@@ -307,6 +311,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
      */
     @Override
     public boolean notifyBufferAvailable(Buffer buffer) {
+        gauge.markEnd();
         // Assuming two remote channels with respective buffer managers as listeners inside
         // LocalBufferPool.
         // While canceler thread calling ch1#releaseAllResources, it might trigger

@@ -22,16 +22,13 @@ import org.apache.flink.runtime.io.network.partition.consumer.SingleInputGate;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
-/**
- * Gauge metric measuring the input buffers usage for {@link SingleInputGate}s under credit based
- * mode.
- */
-public class CreditBasedInputBuffersUsageGauge extends AbstractBuffersUsageGauge {
+/** Gauge metric measuring the input buffers usage for all {@link SingleInputGate}s. */
+public class InputBuffersUsageGauge extends AbstractBuffersUsageGauge {
 
     private final FloatingBuffersUsageGauge floatingBuffersUsageGauge;
     private final ExclusiveBuffersUsageGauge exclusiveBuffersUsageGauge;
 
-    public CreditBasedInputBuffersUsageGauge(
+    public InputBuffersUsageGauge(
             FloatingBuffersUsageGauge floatingBuffersUsageGauge,
             ExclusiveBuffersUsageGauge exclusiveBuffersUsageGauge,
             SingleInputGate[] inputGates) {
