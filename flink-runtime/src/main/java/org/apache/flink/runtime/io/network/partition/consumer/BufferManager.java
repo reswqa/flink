@@ -120,6 +120,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
         }
     }
 
+    @GuardedBy("bufferQueue")
     private boolean shouldContinueRequest(BufferPool bufferPool) {
         if (bufferPool.addBufferListener(this)) {
             isWaitingForFloatingBuffers = true;
@@ -177,6 +178,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
         return numRequestedBuffers;
     }
 
+    @GuardedBy("bufferQueue")
     private int tryRequestBuffers() {
         assert Thread.holdsLock(bufferQueue);
 
@@ -365,6 +367,8 @@ public class BufferManager implements BufferListener, BufferRecycler {
 
     @VisibleForTesting
     int unsynchronizedGetNumberOfRequiredBuffers() {
+        // Suppress FieldAccessNotGuarded as this is unsafe by design.
+        //noinspection FieldAccessNotGuarded
         return numRequiredBuffers;
     }
 
@@ -376,6 +380,8 @@ public class BufferManager implements BufferListener, BufferRecycler {
 
     @VisibleForTesting
     boolean unsynchronizedIsWaitingForFloatingBuffers() {
+        // Suppress FieldAccessNotGuarded as this is unsafe by design.
+        //noinspection FieldAccessNotGuarded
         return isWaitingForFloatingBuffers;
     }
 
@@ -398,7 +404,7 @@ public class BufferManager implements BufferListener, BufferRecycler {
      * Manages the exclusive and floating buffers of this channel, and handles the internal buffer
      * related logic.
      */
-    static final class AvailableBufferQueue {
+    private static final class AvailableBufferQueue {
 
         /** The current available floating buffers from the fixed buffer pool. */
         final ArrayDeque<Buffer> floatingBuffers;
