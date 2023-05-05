@@ -60,6 +60,7 @@ import org.apache.flink.runtime.rest.handler.job.JobVertexAccumulatorsHandler;
 import org.apache.flink.runtime.rest.handler.job.JobVertexBackPressureHandler;
 import org.apache.flink.runtime.rest.handler.job.JobVertexDetailsHandler;
 import org.apache.flink.runtime.rest.handler.job.JobVertexFlameGraphHandler;
+import org.apache.flink.runtime.rest.handler.job.JobVertexNetworkInfoHandler;
 import org.apache.flink.runtime.rest.handler.job.JobVertexTaskManagersHandler;
 import org.apache.flink.runtime.rest.handler.job.JobsOverviewHandler;
 import org.apache.flink.runtime.rest.handler.job.SubtaskCurrentAttemptDetailsHandler;
@@ -112,6 +113,7 @@ import org.apache.flink.runtime.rest.messages.JobPlanHeaders;
 import org.apache.flink.runtime.rest.messages.JobVertexAccumulatorsHeaders;
 import org.apache.flink.runtime.rest.messages.JobVertexBackPressureHeaders;
 import org.apache.flink.runtime.rest.messages.JobVertexDetailsHeaders;
+import org.apache.flink.runtime.rest.messages.JobVertexNetworkInfoHeaders;
 import org.apache.flink.runtime.rest.messages.JobVertexTaskManagersHeaders;
 import org.apache.flink.runtime.rest.messages.JobsOverviewHeaders;
 import org.apache.flink.runtime.rest.messages.SubtasksAllAccumulatorsHeaders;
@@ -606,6 +608,14 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
                         JobVertexBackPressureHeaders.getInstance(),
                         metricFetcher);
 
+        final JobVertexNetworkInfoHandler jobVertexNetworkInfoHandler =
+                new JobVertexNetworkInfoHandler(
+                        leaderRetriever,
+                        timeout,
+                        responseHeaders,
+                        JobVertexNetworkInfoHeaders.getInstance(),
+                        metricFetcher);
+
         final JobCancellationHandler jobCancelTerminationHandler =
                 new JobCancellationHandler(
                         leaderRetriever,
@@ -819,6 +829,10 @@ public class WebMonitorEndpoint<T extends RestfulGateway> extends RestServerEndp
                 Tuple2.of(
                         jobVertexBackPressureHandler.getMessageHeaders(),
                         jobVertexBackPressureHandler));
+        handlers.add(
+                Tuple2.of(
+                        jobVertexNetworkInfoHandler.getMessageHeaders(),
+                        jobVertexNetworkInfoHandler));
         handlers.add(
                 Tuple2.of(
                         jobManagerJobConfigurationHandler.getMessageHeaders(),

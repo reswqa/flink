@@ -60,15 +60,15 @@ public class NettyShuffleMetricFactory {
 
     // task level metric group structure: Shuffle.Netty.<Input|Output>.Buffers
 
-    private static final String METRIC_GROUP_SHUFFLE = "Shuffle";
-    private static final String METRIC_GROUP_NETTY = "Netty";
+    public static final String METRIC_GROUP_SHUFFLE = "Shuffle";
+    public static final String METRIC_GROUP_NETTY = "Netty";
     public static final String METRIC_GROUP_OUTPUT = "Output";
     public static final String METRIC_GROUP_INPUT = "Input";
-    private static final String METRIC_GROUP_BUFFERS = "Buffers";
+    public static final String METRIC_GROUP_BUFFERS = "Buffers";
 
     // task level output metrics: Shuffle.Netty.Output.*
 
-    private static final String METRIC_OUTPUT_QUEUE_LENGTH = "outputQueueLength";
+    public static final String METRIC_OUTPUT_QUEUE_LENGTH = "outputQueueLength";
     private static final String METRIC_OUTPUT_QUEUE_SIZE = "outputQueueSize";
     private static final String METRIC_OUTPUT_POOL_USAGE = "outPoolUsage";
 

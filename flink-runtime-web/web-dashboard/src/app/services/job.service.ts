@@ -44,6 +44,7 @@ import {
   VerticesLink,
   JobVertexSubTaskDetail
 } from '@flink-runtime-web/interfaces';
+import { JobNetwork } from '@flink-runtime-web/interfaces/job-network';
 import { JobResourceRequirements } from '@flink-runtime-web/interfaces/job-resource-requirements';
 
 import { ConfigService } from './config.service';
@@ -115,6 +116,10 @@ export class JobService {
     return this.httpClient.get<JobBackpressure>(
       `${this.configService.BASE_URL}/jobs/${jobId}/vertices/${vertexId}/backpressure`
     );
+  }
+
+  public loadOperatorNetwork(jobId: string, vertexId: string): Observable<JobNetwork> {
+    return this.httpClient.get<JobNetwork>(`${this.configService.BASE_URL}/jobs/${jobId}/vertices/${vertexId}/network`);
   }
 
   public loadOperatorFlameGraph(jobId: string, vertexId: string, type: string): Observable<JobFlameGraph> {

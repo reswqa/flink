@@ -97,6 +97,14 @@ export const JOB_OVERVIEW_ROUTES: Routes = [
             }
           },
           {
+            path: 'network',
+            loadComponent: () =>
+              import('./network/job-overview-drawer-network.component').then(m => m.JobOverviewDrawerNetworkComponent),
+            data: {
+              path: 'network'
+            }
+          },
+          {
             path: 'flamegraph',
             loadComponent: () =>
               import('./flamegraph/job-overview-drawer-flamegraph.component').then(

@@ -1,0 +1,91 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<nz-table
+  nzSize="small"
+  [nzLoading]="isLoading"
+  [nzData]="listOfSubTaskNetwork"
+  [nzScroll]="{ y: 'calc( 100% - 90px )' }"
+  [nzWidthConfig]="['16%', '16%', '16%', '16%', '16%', '20%']"
+  [nzFrontPagination]="false"
+  [nzShowPagination]="false"
+  [nzVirtualItemSize]="36"
+  [nzVirtualMinBufferPx]="300"
+  [nzVirtualMaxBufferPx]="300"
+  [nzVirtualForTrackBy]="trackBySubtask"
+>
+  <thead>
+    <tr>
+      <th colspan="6" class="title">
+        <span *ngIf="selectedVertex?.detail?.status === 'RUNNING'">
+          Measurement:
+          <span *ngIf="network['end-timestamp']">
+            {{ now - network['end-timestamp'] | humanizeDuration }} ago
+          </span>
+          <span *ngIf="network['status'] === 'deprecated'">Sampling in progress...</span>
+          <span *ngIf="!network['end-timestamp'] && network['status'] !== 'deprecated'">-</span>
+          <nz-divider [nzType]="'vertical'"></nz-divider>
+        </span>
+        <span *ngIf="selectedVertex?.detail?.status !== 'RUNNING'">
+          Operator is not running. Cannot sample back pressure.
+        </span>
+      </th>
+    </tr>
+    <tr>
+      <th>SubTask</th>
+      <th [nzSortFn]="sortByOutputQueueSize" [nzSortOrder]="'descend'">OutputQueueSize</th>
+    </tr>
+  </thead>
+  <tbody>
+    <ng-template nz-virtual-scroll let-data>
+      <ng-container *ngIf="narrowType(data) as subtask">
+        <tr>
+          <td
+            [nzShowExpand]="subtask['other-concurrent-attempts']?.length > 0"
+            [nzExpand]="expandSet.has(subtask['subtask'])"
+            (nzExpandChange)="onExpandChange(subtask, $event)"
+          >
+            {{ subtask['subtask'] }}
+            <span class="left-margin" *ngIf="subtask['attempt-number'] !== undefined">
+              [attempt-{{ subtask['attempt-number'] + 1 }}]
+            </span>
+          </td>
+          <td>{{ this.prettyPrint(subtask['outputQueueSize']) }}</td>
+        </tr>
+        <ng-container *ngIf="expandSet.has(subtask['subtask'])">
+          <ng-container
+            *ngFor="
+              let attempt of subtask['other-concurrent-attempts'];
+              trackBy: trackBySubtaskAttempt
+            "
+          >
+            <tr>
+              <td [nzIndentSize]="1">
+                {{ attempt['subtask'] }}
+                <ng-container *ngIf="attempt['attempt-number'] !== undefined">
+                  &nbsp;[attempt-{{ attempt['attempt-number'] + 1 }}]
+                </ng-container>
+              </td>
+              <td>{{ this.prettyPrint(attempt['outputQueueSize']) }}</td>
+            </tr>
+          </ng-container>
+        </ng-container>
+      </ng-container>
+    </ng-template>
+  </tbody>
+</nz-table>

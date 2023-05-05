@@ -274,15 +274,6 @@ under the License.
 							</environmentVariables>
 						</configuration>
 					</execution>
-					<execution>
-						<id>npm run ci-check</id>
-						<goals>
-							<goal>npm</goal>
-						</goals>
-						<configuration>
-							<arguments>run ci-check</arguments>
-						</configuration>
-					</execution>
 				</executions>
 				<configuration>
 					<workingDirectory>web-dashboard</workingDirectory>

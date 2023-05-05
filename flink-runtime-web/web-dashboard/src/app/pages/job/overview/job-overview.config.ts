@@ -48,7 +48,8 @@ export const JOB_OVERVIEW_MODULE_DEFAULT_CONFIG: Required<JobOverviewModuleConfi
     { title: 'Accumulators', path: 'accumulators' },
     { title: 'BackPressure', path: 'backpressure' },
     { title: 'Metrics', path: 'metrics' },
-    { title: 'FlameGraph', path: 'flamegraph' }
+    { title: 'FlameGraph', path: 'flamegraph' },
+    { title: 'Network', path: 'network' }
   ],
   customComponents: {
     taskManagerActionComponent: TaskmanagersTableActionComponent,
