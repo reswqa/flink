@@ -95,7 +95,19 @@ public class JobVertexNetworkInfo implements ResponseBody {
 
         public static final String FIELD_NAME_SUBTASK = "subtask";
         public static final String FIELD_NAME_ATTEMPT_NUMBER = "attempt-number";
-        public static final String FIELD_NAME_OUTPUT_QUEUE_SIZE = "output-queue-size";
+        // for output
+        public static final String FIELD_NAME_OUTPUT_QUEUE_SIZE = "outputQueueSize";
+        public static final String FIELD_NAME_OUTPUT_QUEUE_LENGTH = "outputQueueLength";
+        private static final String FIELD_NAME_OUTPUT_POOL_USAGE = "outPoolUsage";
+        // for input
+        public static final String FIELD_NAME_INPUT_QUEUE_SIZE = "inputQueueSize";
+        public static final String FIELD_NAME_INPUT_QUEUE_LENGTH = "inputQueueLength";
+        private static final String FIELD_NAME_INPUT_POOL_USAGE = "inPoolUsage";
+        private static final String FIELD_NAME_INPUT_FLOATING_BUFFERS_USAGE =
+                "inputFloatingBuffersUsage";
+        private static final String FIELD_NAME_INPUT_EXCLUSIVE_BUFFERS_USAGE =
+                "inputExclusiveBuffersUsage";
+
         public static final String FIELD_NAME_OTHER_CONCURRENT_ATTEMPTS =
                 "other-concurrent-attempts";
 
@@ -107,8 +119,31 @@ public class JobVertexNetworkInfo implements ResponseBody {
         @Nullable
         private final Integer attemptNumber;
 
+        // for output
         @JsonProperty(FIELD_NAME_OUTPUT_QUEUE_SIZE)
-        private final int outputQueueSize;
+        private final long outputQueueSize;
+
+        @JsonProperty(FIELD_NAME_OUTPUT_QUEUE_LENGTH)
+        private final int outputQueueLength;
+
+        @JsonProperty(FIELD_NAME_OUTPUT_POOL_USAGE)
+        private final float outPoolUsage;
+
+        // for input
+        @JsonProperty(FIELD_NAME_INPUT_QUEUE_SIZE)
+        private final long inputQueueSize;
+
+        @JsonProperty(FIELD_NAME_INPUT_QUEUE_LENGTH)
+        private final int inputQueueLength;
+
+        @JsonProperty(FIELD_NAME_INPUT_POOL_USAGE)
+        private final float inputPoolUsage;
+
+        @JsonProperty(FIELD_NAME_INPUT_FLOATING_BUFFERS_USAGE)
+        private final float inputFloatingBuffersUsage;
+
+        @JsonProperty(FIELD_NAME_INPUT_EXCLUSIVE_BUFFERS_USAGE)
+        private final float inputExclusiveBuffersUsage;
 
         @JsonProperty(FIELD_NAME_OTHER_CONCURRENT_ATTEMPTS)
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -120,13 +155,33 @@ public class JobVertexNetworkInfo implements ResponseBody {
         public SubtaskNetworkInfo(
                 @JsonProperty(FIELD_NAME_SUBTASK) int subtask,
                 @JsonProperty(FIELD_NAME_ATTEMPT_NUMBER) @Nullable Integer attemptNumber,
-                @JsonProperty(FIELD_NAME_OUTPUT_QUEUE_SIZE) int outputQueueSize,
+                @JsonProperty(FIELD_NAME_OUTPUT_QUEUE_SIZE) long outputQueueSize,
+                @JsonProperty(FIELD_NAME_OUTPUT_QUEUE_LENGTH) int outputQueueLength,
+                @JsonProperty(FIELD_NAME_OUTPUT_POOL_USAGE) float outPoolUsage,
+                @JsonProperty(FIELD_NAME_INPUT_QUEUE_SIZE) long inputQueueSize,
+                @JsonProperty(FIELD_NAME_INPUT_QUEUE_LENGTH) int inputQueueLength,
+                @JsonProperty(FIELD_NAME_INPUT_POOL_USAGE) float inputPoolUsage,
+                @JsonProperty(FIELD_NAME_INPUT_EXCLUSIVE_BUFFERS_USAGE)
+                        float inputExclusiveBuffersUsage,
+                @JsonProperty(FIELD_NAME_INPUT_FLOATING_BUFFERS_USAGE)
+                        float inputFloatingBuffersUsage,
                 @JsonProperty(FIELD_NAME_OTHER_CONCURRENT_ATTEMPTS) @Nullable
                         List<SubtaskNetworkInfo> otherConcurrentAttempts) {
             this.subtask = subtask;
             this.attemptNumber = attemptNumber;
-            this.outputQueueSize = outputQueueSize;
             this.otherConcurrentAttempts = otherConcurrentAttempts;
+
+            // for output.
+            this.outputQueueSize = outputQueueSize;
+            this.outputQueueLength = outputQueueLength;
+            this.outPoolUsage = outPoolUsage;
+
+            // for input
+            this.inputQueueSize = inputQueueSize;
+            this.inputQueueLength = inputQueueLength;
+            this.inputPoolUsage = inputPoolUsage;
+            this.inputExclusiveBuffersUsage = inputExclusiveBuffersUsage;
+            this.inputFloatingBuffersUsage = inputFloatingBuffersUsage;
         }
 
         @Override
@@ -141,6 +196,14 @@ public class JobVertexNetworkInfo implements ResponseBody {
             return subtask == that.subtask
                     && Objects.equals(attemptNumber, that.attemptNumber)
                     && outputQueueSize == that.outputQueueSize
+                    && outputQueueLength == that.outputQueueLength
+                    && Float.compare(that.outPoolUsage, outPoolUsage) == 0
+                    && inputQueueSize == that.inputQueueSize
+                    && inputQueueLength == that.inputQueueLength
+                    && Float.compare(that.inputPoolUsage, inputPoolUsage) == 0
+                    && Float.compare(that.inputFloatingBuffersUsage, inputFloatingBuffersUsage) == 0
+                    && Float.compare(that.inputExclusiveBuffersUsage, inputExclusiveBuffersUsage)
+                            == 0
                     && Objects.equals(otherConcurrentAttempts, that.otherConcurrentAttempts);
         }
 
@@ -150,7 +213,13 @@ public class JobVertexNetworkInfo implements ResponseBody {
                     subtask,
                     attemptNumber,
                     outputQueueSize,
-                    outputQueueSize,
+                    outputQueueLength,
+                    outPoolUsage,
+                    inputQueueSize,
+                    inputQueueLength,
+                    inputPoolUsage,
+                    inputFloatingBuffersUsage,
+                    inputExclusiveBuffersUsage,
                     otherConcurrentAttempts);
         }
 
@@ -158,8 +227,36 @@ public class JobVertexNetworkInfo implements ResponseBody {
             return subtask;
         }
 
-        public int getOutputQueueSize() {
+        public long getOutputQueueSize() {
             return outputQueueSize;
+        }
+
+        public int getOutputQueueLength() {
+            return outputQueueLength;
+        }
+
+        public float getOutPoolUsage() {
+            return outPoolUsage;
+        }
+
+        public long getInputQueueSize() {
+            return inputQueueSize;
+        }
+
+        public int getInputQueueLength() {
+            return inputQueueLength;
+        }
+
+        public float getInputPoolUsage() {
+            return inputPoolUsage;
+        }
+
+        public float getInputFloatingBuffersUsage() {
+            return inputFloatingBuffersUsage;
+        }
+
+        public float getInputExclusiveBuffersUsage() {
+            return inputExclusiveBuffersUsage;
         }
 
         @Nullable

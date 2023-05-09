@@ -44,12 +44,64 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_BUFFERS;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_INPUT;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_NETTY;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_OUTPUT;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_SHUFFLE;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_EXCLUSIVE_BUFFERS_USAGE;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_FLOATING_BUFFERS_USAGE;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_OUTPUT_POOL_USAGE;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_OUTPUT_QUEUE_LENGTH;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_OUTPUT_QUEUE_SIZE;
+
 public class JobVertexNetworkInfoHandler
         extends AbstractRestHandler<
                 RestfulGateway,
                 EmptyRequestBody,
                 JobVertexNetworkInfo,
                 JobVertexMessageParameters> {
+    private static final String SEPARATOR = ".";
+
+    private static final String NETTY_PREFIX =
+            METRIC_GROUP_SHUFFLE + SEPARATOR + METRIC_GROUP_NETTY + SEPARATOR;
+
+    private static final String OUTPUT_BUFFER_PREFIX =
+            NETTY_PREFIX
+                    + SEPARATOR
+                    + METRIC_GROUP_OUTPUT
+                    + SEPARATOR
+                    + METRIC_GROUP_BUFFERS
+                    + SEPARATOR;
+
+    private static final String INPUT_BUFFER_PREFIX =
+            NETTY_PREFIX
+                    + SEPARATOR
+                    + METRIC_GROUP_INPUT
+                    + SEPARATOR
+                    + METRIC_GROUP_BUFFERS
+                    + SEPARATOR;
+
+    private static final String OUTPUT_QUEUE_SIZE = OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_SIZE;
+
+    private static final String OUTPUT_QUEUE_LENGTH =
+            OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_LENGTH;
+
+    private static final String OUTPUT_POOL_USAGE = OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_POOL_USAGE;
+
+    private static final String INPUT_QUEUE_SIZE = INPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_SIZE;
+
+    private static final String INPUT_QUEUE_LENGTH =
+            INPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_LENGTH;
+
+    private static final String INPUT_POOL_USAGE = INPUT_BUFFER_PREFIX + METRIC_OUTPUT_POOL_USAGE;
+
+    private static final String INPUT_EXCLUSIVE_BUFFERS_USAGE =
+            INPUT_BUFFER_PREFIX + METRIC_INPUT_EXCLUSIVE_BUFFERS_USAGE;
+
+    private static final String INPUT_FLOATING_BUFFERS_USAGE =
+            INPUT_BUFFER_PREFIX + METRIC_INPUT_FLOATING_BUFFERS_USAGE;
+
     private final MetricFetcher metricFetcher;
 
     public JobVertexNetworkInfoHandler(
@@ -154,13 +206,57 @@ public class JobVertexNetworkInfoHandler
             @Nullable Integer attemptNumber,
             MetricStore.ComponentMetricStore metricStore,
             @Nullable List<JobVertexNetworkInfo.SubtaskNetworkInfo> otherConcurrentAttempts) {
-        int outputQueueSize = getOutputQueueSize(metricStore);
+        long outputQueueSize = getOutputQueueSize(metricStore);
+        int outputQueueLength = getOutputQueueLength(metricStore);
+        float outputPoolUsage = getOutputPoolUsage(metricStore);
+        long inputQueueSize = getInputQueueSize(metricStore);
+        int inputQueueLength = getInputQueueLength(metricStore);
+        float inputPoolUsage = getInputPoolUsage(metricStore);
+        float inputExclusiveBufferUsage = getInputExclusiveBufferUsage(metricStore);
+        float inputFloatingBufferUsage = getInputFloatingBufferUsage(metricStore);
         return new JobVertexNetworkInfo.SubtaskNetworkInfo(
-                subtaskIndex, attemptNumber, outputQueueSize, otherConcurrentAttempts);
+                subtaskIndex,
+                attemptNumber,
+                outputQueueSize,
+                outputQueueLength,
+                outputPoolUsage,
+                inputQueueSize,
+                inputQueueLength,
+                inputPoolUsage,
+                inputExclusiveBufferUsage,
+                inputFloatingBufferUsage,
+                otherConcurrentAttempts);
     }
 
-    private int getOutputQueueSize(MetricStore.ComponentMetricStore metricStore) {
-        return Integer.parseInt(
-                metricStore.getMetric("Shuffle.Netty.Output.Buffers.outputQueueSize", "0"));
+    private long getOutputQueueSize(MetricStore.ComponentMetricStore metricStore) {
+        return Long.parseLong(metricStore.getMetric(OUTPUT_QUEUE_SIZE, "0"));
+    }
+
+    private int getOutputQueueLength(MetricStore.ComponentMetricStore metricStore) {
+        return Integer.parseInt(metricStore.getMetric(OUTPUT_QUEUE_LENGTH, "0"));
+    }
+
+    private float getOutputPoolUsage(MetricStore.ComponentMetricStore metricStore) {
+        return Float.parseFloat(metricStore.getMetric(OUTPUT_POOL_USAGE, "0"));
+    }
+
+    private long getInputQueueSize(MetricStore.ComponentMetricStore metricStore) {
+        return Long.parseLong(metricStore.getMetric(INPUT_QUEUE_SIZE, "0"));
+    }
+
+    private int getInputQueueLength(MetricStore.ComponentMetricStore metricStore) {
+        return Integer.parseInt(metricStore.getMetric(INPUT_QUEUE_LENGTH, "0"));
+    }
+
+    private float getInputPoolUsage(MetricStore.ComponentMetricStore metricStore) {
+        return Float.parseFloat(metricStore.getMetric(INPUT_POOL_USAGE, "0"));
+    }
+
+    private float getInputExclusiveBufferUsage(MetricStore.ComponentMetricStore metricStore) {
+        return Float.parseFloat(metricStore.getMetric(INPUT_EXCLUSIVE_BUFFERS_USAGE, "0"));
+    }
+
+    private float getInputFloatingBufferUsage(MetricStore.ComponentMetricStore metricStore) {
+        return Float.parseFloat(metricStore.getMetric(INPUT_FLOATING_BUFFERS_USAGE, "0"));
     }
 }

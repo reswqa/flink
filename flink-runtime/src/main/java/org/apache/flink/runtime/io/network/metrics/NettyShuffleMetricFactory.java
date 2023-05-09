@@ -69,16 +69,16 @@ public class NettyShuffleMetricFactory {
     // task level output metrics: Shuffle.Netty.Output.*
 
     public static final String METRIC_OUTPUT_QUEUE_LENGTH = "outputQueueLength";
-    private static final String METRIC_OUTPUT_QUEUE_SIZE = "outputQueueSize";
-    private static final String METRIC_OUTPUT_POOL_USAGE = "outPoolUsage";
+    public static final String METRIC_OUTPUT_QUEUE_SIZE = "outputQueueSize";
+    public static final String METRIC_OUTPUT_POOL_USAGE = "outPoolUsage";
 
     // task level input metrics: Shuffle.Netty.Input.*
 
-    private static final String METRIC_INPUT_QUEUE_LENGTH = "inputQueueLength";
-    private static final String METRIC_INPUT_QUEUE_SIZE = "inputQueueSize";
-    private static final String METRIC_INPUT_POOL_USAGE = "inPoolUsage";
-    private static final String METRIC_INPUT_FLOATING_BUFFERS_USAGE = "inputFloatingBuffersUsage";
-    private static final String METRIC_INPUT_EXCLUSIVE_BUFFERS_USAGE = "inputExclusiveBuffersUsage";
+    public static final String METRIC_INPUT_QUEUE_LENGTH = "inputQueueLength";
+    public static final String METRIC_INPUT_QUEUE_SIZE = "inputQueueSize";
+    public static final String METRIC_INPUT_POOL_USAGE = "inPoolUsage";
+    public static final String METRIC_INPUT_FLOATING_BUFFERS_USAGE = "inputFloatingBuffersUsage";
+    public static final String METRIC_INPUT_EXCLUSIVE_BUFFERS_USAGE = "inputExclusiveBuffersUsage";
 
     private NettyShuffleMetricFactory() {}
 

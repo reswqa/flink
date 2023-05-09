@@ -65,7 +65,7 @@
               [attempt-{{ subtask['attempt-number'] + 1 }}]
             </span>
           </td>
-          <td>{{ this.prettyPrint(subtask['outputQueueSize']) }}</td>
+          <td>{{ subtask['output-queue-size'] }}</td>
         </tr>
         <ng-container *ngIf="expandSet.has(subtask['subtask'])">
           <ng-container
@@ -81,7 +81,7 @@
                   &nbsp;[attempt-{{ attempt['attempt-number'] + 1 }}]
                 </ng-container>
               </td>
-              <td>{{ this.prettyPrint(attempt['outputQueueSize']) }}</td>
+              <td>{{ attempt['output-queue-size'] }}</td>
             </tr>
           </ng-container>
         </ng-container>

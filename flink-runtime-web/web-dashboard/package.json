@@ -3,8 +3,8 @@
   "version": "2.0.0",
   "scripts": {
     "ng": "node node_modules/@angular/cli/bin/ng",
-    "start": "ng serve",
-    "build": "ng build --configuration production --base-href ./",
+    "start": "ng serve --port 4000",
+    "build": "ng build --configuration development --base-href ./",
     "test": "ng test",
     "lint": "eslint --cache src --ext .ts,.html && stylelint \"**/*.less\"",
     "lint:fix": "eslint --fix --cache src --ext .ts,.html && stylelint \"**/*.less\" --fix",
