@@ -21,7 +21,7 @@
   [nzLoading]="isLoading"
   [nzData]="listOfSubTaskNetwork"
   [nzScroll]="{ y: 'calc( 100% - 90px )' }"
-  [nzWidthConfig]="['16%', '16%', '16%', '16%', '16%', '20%']"
+  [nzWidthConfig]="['16%', '16%', '16%', '16%', '16%', '16%', '16%', '16%', '16%']"
   [nzFrontPagination]="false"
   [nzShowPagination]="false"
   [nzVirtualItemSize]="36"
@@ -31,7 +31,7 @@
 >
   <thead>
     <tr>
-      <th colspan="6" class="title">
+      <th colspan="9" class="title">
         <span *ngIf="selectedVertex?.detail?.status === 'RUNNING'">
           Measurement:
           <span *ngIf="network['end-timestamp']">
@@ -42,13 +42,20 @@
           <nz-divider [nzType]="'vertical'"></nz-divider>
         </span>
         <span *ngIf="selectedVertex?.detail?.status !== 'RUNNING'">
-          Operator is not running. Cannot sample back pressure.
+          Operator is not running. Cannot sample network metrics.
         </span>
       </th>
     </tr>
     <tr>
       <th>SubTask</th>
-      <th [nzSortFn]="sortByOutputQueueSize" [nzSortOrder]="'descend'">OutputQueueSize</th>
+      <th [nzSortFn]="sortByOutputQueueSize" [nzSortOrder]="'descend'">outQueueSize</th>
+      <th [nzSortFn]="sortByOutputQueueLength" [nzSortOrder]="'descend'">outQueueLength</th>
+      <th [nzSortFn]="sortByOutputPoolUsage" [nzSortOrder]="'descend'">outPoolUsage</th>
+      <th [nzSortFn]="sortByInputQueueSize" [nzSortOrder]="'descend'">inQueueSize</th>
+      <th [nzSortFn]="sortByInputQueueLength" [nzSortOrder]="'descend'">inQueueLength</th>
+      <th [nzSortFn]="sortByInputPoolUsage" [nzSortOrder]="'descend'">InputPoolUsage</th>
+      <th [nzSortFn]="sortByInputFloatingBuffersUsage" [nzSortOrder]="'descend'">Floating</th>
+      <th [nzSortFn]="sortByInputExclusiveBuffersUsage" [nzSortOrder]="'descend'">Exclusive</th>
     </tr>
   </thead>
   <tbody>
@@ -65,7 +72,14 @@
               [attempt-{{ subtask['attempt-number'] + 1 }}]
             </span>
           </td>
-          <td>{{ subtask['output-queue-size'] }}</td>
+          <td>{{ subtask['outputQueueSize'] }}</td>
+          <td>{{ subtask['outputQueueLength'] }}</td>
+          <td>{{ subtask['outPoolUsage'] }}</td>
+          <td>{{ subtask['inputQueueSize'] }}</td>
+          <td>{{ subtask['inputQueueLength'] }}</td>
+          <td>{{ subtask['inPoolUsage'] }}</td>
+          <td>{{ subtask['inputFloatingBuffersUsage'] }}</td>
+          <td>{{ subtask['inputExclusiveBuffersUsage'] }}</td>
         </tr>
         <ng-container *ngIf="expandSet.has(subtask['subtask'])">
           <ng-container
@@ -81,7 +95,14 @@
                   &nbsp;[attempt-{{ attempt['attempt-number'] + 1 }}]
                 </ng-container>
               </td>
-              <td>{{ attempt['output-queue-size'] }}</td>
+              <td>{{ attempt['outputQueueSize'] }}</td>
+              <td>{{ attempt['outputQueueLength'] }}</td>
+              <td>{{ attempt['outPoolUsage'] }}</td>
+              <td>{{ attempt['inputQueueSize'] }}</td>
+              <td>{{ attempt['inputQueueLength'] }}</td>
+              <td>{{ attempt['inPoolUsage'] }}</td>
+              <td>{{ attempt['inputFloatingBuffersUsage'] }}</td>
+              <td>{{ attempt['inputExclusiveBuffersUsage'] }}</td>
             </tr>
           </ng-container>
         </ng-container>

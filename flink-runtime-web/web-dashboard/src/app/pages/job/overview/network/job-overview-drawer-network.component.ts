@@ -150,4 +150,32 @@ export class JobOverviewDrawerNetworkComponent implements OnInit, OnDestroy {
   sortByOutputQueueSize(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
     return a.outputQueueSize - b.outputQueueSize;
   }
+
+  sortByOutputQueueLength(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.outputQueueLength - b.outputQueueLength;
+  }
+
+  sortByOutputPoolUsage(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.outPoolUsage - b.outPoolUsage;
+  }
+
+  sortByInputQueueSize(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.inputQueueSize - b.inputQueueSize;
+  }
+
+  sortByInputQueueLength(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.inputQueueLength - b.inputQueueLength;
+  }
+
+  sortByInputPoolUsage(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.inPoolUsage - b.inPoolUsage;
+  }
+
+  sortByInputFloatingBuffersUsage(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.inputFloatingBuffersUsage - b.inputFloatingBuffersUsage;
+  }
+
+  sortByInputExclusiveBuffersUsage(a: JobNetworkSubtask, b: JobNetworkSubtask): number {
+    return a.inputExclusiveBuffersUsage - b.inputExclusiveBuffersUsage;
+  }
 }

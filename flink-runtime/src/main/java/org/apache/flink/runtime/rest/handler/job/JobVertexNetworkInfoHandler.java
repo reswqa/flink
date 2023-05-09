@@ -51,6 +51,9 @@ import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFact
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_GROUP_SHUFFLE;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_EXCLUSIVE_BUFFERS_USAGE;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_FLOATING_BUFFERS_USAGE;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_POOL_USAGE;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_QUEUE_LENGTH;
+import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_INPUT_QUEUE_SIZE;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_OUTPUT_POOL_USAGE;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_OUTPUT_QUEUE_LENGTH;
 import static org.apache.flink.runtime.io.network.metrics.NettyShuffleMetricFactory.METRIC_OUTPUT_QUEUE_SIZE;
@@ -67,39 +70,28 @@ public class JobVertexNetworkInfoHandler
             METRIC_GROUP_SHUFFLE + SEPARATOR + METRIC_GROUP_NETTY + SEPARATOR;
 
     private static final String OUTPUT_BUFFER_PREFIX =
-            NETTY_PREFIX
-                    + SEPARATOR
-                    + METRIC_GROUP_OUTPUT
-                    + SEPARATOR
-                    + METRIC_GROUP_BUFFERS
-                    + SEPARATOR;
+            NETTY_PREFIX + METRIC_GROUP_OUTPUT + SEPARATOR + METRIC_GROUP_BUFFERS + SEPARATOR;
 
     private static final String INPUT_BUFFER_PREFIX =
-            NETTY_PREFIX
-                    + SEPARATOR
-                    + METRIC_GROUP_INPUT
-                    + SEPARATOR
-                    + METRIC_GROUP_BUFFERS
-                    + SEPARATOR;
+            NETTY_PREFIX + METRIC_GROUP_INPUT + SEPARATOR + METRIC_GROUP_BUFFERS + SEPARATOR;
 
-    private static final String OUTPUT_QUEUE_SIZE = OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_SIZE;
+    public static final String OUTPUT_QUEUE_SIZE = OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_SIZE;
 
-    private static final String OUTPUT_QUEUE_LENGTH =
+    public static final String OUTPUT_QUEUE_LENGTH =
             OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_LENGTH;
 
-    private static final String OUTPUT_POOL_USAGE = OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_POOL_USAGE;
+    public static final String OUTPUT_POOL_USAGE = OUTPUT_BUFFER_PREFIX + METRIC_OUTPUT_POOL_USAGE;
 
-    private static final String INPUT_QUEUE_SIZE = INPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_SIZE;
+    public static final String INPUT_QUEUE_SIZE = INPUT_BUFFER_PREFIX + METRIC_INPUT_QUEUE_SIZE;
 
-    private static final String INPUT_QUEUE_LENGTH =
-            INPUT_BUFFER_PREFIX + METRIC_OUTPUT_QUEUE_LENGTH;
+    public static final String INPUT_QUEUE_LENGTH = INPUT_BUFFER_PREFIX + METRIC_INPUT_QUEUE_LENGTH;
 
-    private static final String INPUT_POOL_USAGE = INPUT_BUFFER_PREFIX + METRIC_OUTPUT_POOL_USAGE;
+    public static final String INPUT_POOL_USAGE = INPUT_BUFFER_PREFIX + METRIC_INPUT_POOL_USAGE;
 
-    private static final String INPUT_EXCLUSIVE_BUFFERS_USAGE =
+    public static final String INPUT_EXCLUSIVE_BUFFERS_USAGE =
             INPUT_BUFFER_PREFIX + METRIC_INPUT_EXCLUSIVE_BUFFERS_USAGE;
 
-    private static final String INPUT_FLOATING_BUFFERS_USAGE =
+    public static final String INPUT_FLOATING_BUFFERS_USAGE =
             INPUT_BUFFER_PREFIX + METRIC_INPUT_FLOATING_BUFFERS_USAGE;
 
     private final MetricFetcher metricFetcher;

@@ -25,6 +25,20 @@ export interface JobNetworkSubtaskData {
   subtask: number;
   'attempt-number'?: number;
   outputQueueSize: number;
+
+  outputQueueLength: number;
+
+  outPoolUsage: number;
+
+  inputQueueSize: number;
+
+  inputQueueLength: number;
+
+  inPoolUsage: number;
+
+  inputFloatingBuffersUsage: number;
+
+  inputExclusiveBuffersUsage: number;
 }
 
 export interface JobNetworkSubtask extends JobNetworkSubtaskData {
