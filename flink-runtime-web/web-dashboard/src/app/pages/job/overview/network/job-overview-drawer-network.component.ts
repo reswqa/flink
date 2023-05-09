@@ -23,6 +23,7 @@ import { of, Subject } from 'rxjs';
 import { catchError, mergeMap, takeUntil, tap } from 'rxjs/operators';
 
 import { DynamicHostComponent } from '@flink-runtime-web/components/dynamic/dynamic-host.component';
+import { HumanizeBytesPipe } from '@flink-runtime-web/components/humanize-bytes.pipe';
 import { HumanizeDurationPipe } from '@flink-runtime-web/components/humanize-duration.pipe';
 import { JobVertexSubTaskData, JobVertexSubTaskDetail, NodesItemCorrect } from '@flink-runtime-web/interfaces';
 import { JobNetwork, JobNetworkSubtask, JobNetworkSubtaskData } from '@flink-runtime-web/interfaces/job-network';
@@ -43,7 +44,16 @@ import { JobLocalService } from '../../job-local.service';
   templateUrl: './job-overview-drawer-network.component.html',
   styleUrls: ['./job-overview-drawer-network.component.less'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NzTableModule, NgIf, HumanizeDurationPipe, NzDividerModule, DynamicHostComponent, NgForOf, RouterModule],
+  imports: [
+    NzTableModule,
+    NgIf,
+    HumanizeDurationPipe,
+    HumanizeBytesPipe,
+    NzDividerModule,
+    DynamicHostComponent,
+    NgForOf,
+    RouterModule
+  ],
   standalone: true
 })
 export class JobOverviewDrawerNetworkComponent implements OnInit, OnDestroy {

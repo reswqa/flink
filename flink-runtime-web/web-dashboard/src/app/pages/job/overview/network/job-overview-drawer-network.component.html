@@ -72,14 +72,14 @@
               [attempt-{{ subtask['attempt-number'] + 1 }}]
             </span>
           </td>
-          <td>{{ subtask['outputQueueSize'] }}</td>
+          <td>{{ subtask['outputQueueSize'] | humanizeBytes }}</td>
           <td>{{ subtask['outputQueueLength'] }}</td>
-          <td>{{ subtask['outPoolUsage'] }}</td>
-          <td>{{ subtask['inputQueueSize'] }}</td>
+          <td>{{ this.prettyPrint(subtask['outPoolUsage']) }}</td>
+          <td>{{ subtask['inputQueueSize'] | humanizeBytes }}</td>
           <td>{{ subtask['inputQueueLength'] }}</td>
-          <td>{{ subtask['inPoolUsage'] }}</td>
-          <td>{{ subtask['inputFloatingBuffersUsage'] }}</td>
-          <td>{{ subtask['inputExclusiveBuffersUsage'] }}</td>
+          <td>{{ this.prettyPrint(subtask['inPoolUsage']) }}</td>
+          <td>{{ this.prettyPrint(subtask['inputFloatingBuffersUsage']) }}</td>
+          <td>{{ this.prettyPrint(subtask['inputExclusiveBuffersUsage']) }}</td>
         </tr>
         <ng-container *ngIf="expandSet.has(subtask['subtask'])">
           <ng-container
