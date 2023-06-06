@@ -18,12 +18,11 @@
 
 package org.apache.flink.processfunction.api.function;
 
+import org.apache.flink.api.common.state.States.StateDeclaration;
 import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.State;
-import org.apache.flink.processfunction.api.StateDescriptor;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -52,17 +51,18 @@ public final class Functions {
 
     public static <T> SingleStreamProcessFunction<T, T> reduce(BiFunction<T, T, T> reduceFunc) {
         return new SingleStreamProcessFunction<T, T>() {
-            private final StateDescriptor stateDescriptor = null;
+            // TODO Supports and initialize the value state declaration.
+            private final StateDeclaration stateDeclaration = null;
 
             @Override
-            public Map<String, StateDescriptor> usesStates() {
-                return Collections.singletonMap("reduceState", stateDescriptor);
+            public Set<StateDeclaration> usesStates() {
+                return Collections.singleton(stateDeclaration);
             }
 
             @Override
             public void processRecord(T record, Consumer<T> output, RuntimeContext ctx) {
-                State state = ctx.getState("reduceState");
                 // TODO:
+                // State state = ctx.getValueState("reduceState");
                 //  T result = reduceFunc.apply(state.getValue(), record);
                 //  state.setValue(result);
                 //  if (ctx.getExecutionMode() == STREAM) {

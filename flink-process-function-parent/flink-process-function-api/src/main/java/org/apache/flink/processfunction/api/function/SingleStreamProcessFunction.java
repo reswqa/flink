@@ -23,5 +23,5 @@ import org.apache.flink.processfunction.api.RuntimeContext;
 import java.util.function.Consumer;
 
 public interface SingleStreamProcessFunction<IN, OUT> extends ProcessFunction {
-    void processRecord(IN record, Consumer<OUT> output, RuntimeContext ctx);
+    void processRecord(IN record, Consumer<OUT> output, RuntimeContext ctx) throws Exception;
 }

@@ -19,14 +19,14 @@
 package org.apache.flink.processfunction.api.function;
 
 import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.processfunction.api.StateDescriptor;
+import org.apache.flink.api.common.state.States.StateDeclaration;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.Set;
 
 public interface ProcessFunction extends Function {
     // Explicitly declares states upfront. See FLIP-22.
-    default Map<String, StateDescriptor> usesStates() { // stateId -> stateDescriptor
-        return Collections.emptyMap();
+    default Set<StateDeclaration> usesStates() {
+        return Collections.emptySet();
     }
 }

@@ -18,14 +18,19 @@
 
 package org.apache.flink.processfunction.operators;
 
+import org.apache.flink.api.common.state.ListState;
+import org.apache.flink.api.common.state.ListStateDescriptor;
+import org.apache.flink.api.common.state.StateDeclarationConverter;
+import org.apache.flink.api.common.state.States.ListStateDeclaration;
+import org.apache.flink.api.common.state.States.StateDeclaration;
 import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.State;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
+import java.util.Set;
 import java.util.function.Consumer;
 
 /** Operator for {@link SingleStreamProcessFunction}. */
@@ -36,6 +41,8 @@ public class ProcessOperator<IN, OUT>
     private transient RuntimeContext context;
 
     private transient OutputCollector outputCollector;
+
+    private transient Set<StateDeclaration> usedStates;
 
     public ProcessOperator(SingleStreamProcessFunction<IN, OUT> userFunction) {
         super(userFunction);
@@ -48,10 +55,11 @@ public class ProcessOperator<IN, OUT>
         super.open();
         context = new ContextImpl();
         outputCollector = new OutputCollector();
+        usedStates = userFunction.usesStates();
     }
 
     @Override
-    public void processElement(StreamRecord<IN> element) {
+    public void processElement(StreamRecord<IN> element) throws Exception {
         userFunction.processRecord(element.getValue(), outputCollector, context);
     }
 
@@ -65,12 +73,20 @@ public class ProcessOperator<IN, OUT>
         }
     }
 
-    private static class ContextImpl implements RuntimeContext {
+    private class ContextImpl implements RuntimeContext {
+
+        private ContextImpl() {}
 
         @Override
-        public State getState(String stateId) {
-            // TODO return state.
-            return null;
+        public <T> ListState<T> getState(ListStateDeclaration<T> stateDeclaration)
+                throws Exception {
+            if (!usedStates.contains(stateDeclaration)) {
+                throw new IllegalArgumentException("This state is not registered.");
+            }
+
+            ListStateDescriptor<T> listStateDescriptor =
+                    StateDeclarationConverter.getListStateDescriptor(stateDeclaration);
+            return getOperatorStateBackend().getListState(listStateDescriptor);
         }
     }
 }

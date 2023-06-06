@@ -16,6 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.api.common.state;
 
-public interface State {}
+import org.apache.flink.api.common.state.States.ListStateDeclaration;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
+
+/** Utils to convert {@link StateDeclaration} to {@link StateDescriptor}. */
+public class StateDeclarationConverter {
+    public static <T> ListStateDescriptor<T> getListStateDescriptor(
+            ListStateDeclaration<T> stateDeclaration) {
+        //noinspection unchecked
+        return new ListStateDescriptor<>(
+                stateDeclaration.getName(),
+                (TypeInformation<T>)
+                        TypeInformationUtils.fromTypeDescriptor(
+                                stateDeclaration.getElementTypeDescriptor()));
+    }
+}
