@@ -18,13 +18,14 @@
 
 package org.apache.flink.api.java.typeutils;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInfoFactory;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -134,9 +135,10 @@ public class TypeInfoFactoryTest {
     @Test
     public void testWithFieldTypeInfoAnnotation() {
         TypeInformation<WithFieldTypeInfoAnnotation<Double, String>> typeWithAnnotation =
-                TypeInformation.of(new TypeHint<WithFieldTypeInfoAnnotation<Double, String>>() {});
+                TypeInformationUtils.of(
+                        new TypeHint<WithFieldTypeInfoAnnotation<Double, String>>() {});
         TypeInformation<WithoutFieldTypeInfoAnnotation<Double, String>> typeWithoutAnnotation =
-                TypeInformation.of(
+                TypeInformationUtils.of(
                         new TypeHint<WithoutFieldTypeInfoAnnotation<Double, String>>() {});
 
         assertTrue(typeWithAnnotation instanceof PojoTypeInfo);
@@ -257,7 +259,7 @@ public class TypeInfoFactoryTest {
         }
 
         @Override
-        public TypeSerializer<MyFaulty> createSerializer(ExecutionConfig config) {
+        public TypeSerializer<MyFaulty> createSerializer(SerializerContext serializerContext) {
             return null;
         }
 
@@ -356,7 +358,7 @@ public class TypeInfoFactoryTest {
         }
 
         @Override
-        public TypeSerializer<MyTuple<T0, T1>> createSerializer(ExecutionConfig config) {
+        public TypeSerializer<MyTuple<T0, T1>> createSerializer(SerializerContext serializerContext) {
             return null;
         }
 
@@ -454,7 +456,7 @@ public class TypeInfoFactoryTest {
         }
 
         @Override
-        public TypeSerializer<MyOption<T>> createSerializer(ExecutionConfig config) {
+        public TypeSerializer<MyOption<T>> createSerializer(SerializerContext serializerContext) {
             return null;
         }
 

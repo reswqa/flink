@@ -32,11 +32,11 @@ import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.PrimitiveArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.EnumTypeInfo;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
@@ -1581,7 +1581,9 @@ public class DataStreamTest extends TestLogger {
         expectedException.expect(InvalidProgramException.class);
         expectedException.expectMessage(
                 new StringStartsWith(
-                        "Type " + EnumTypeInfo.of(TestEnum.class) + " cannot be used as key."));
+                        "Type "
+                                + TypeInformationUtils.of(TestEnum.class)
+                                + " cannot be used as key."));
 
         input.keyBy(keySelector);
     }

@@ -19,7 +19,7 @@
 package org.apache.flink.table.runtime.typeutils;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.util.Preconditions;
@@ -77,9 +77,9 @@ public class SortedMapTypeInfo<K, V> extends AbstractMapTypeInfo<K, V, SortedMap
     }
 
     @Override
-    public TypeSerializer<SortedMap<K, V>> createSerializer(ExecutionConfig config) {
-        TypeSerializer<K> keyTypeSerializer = keyTypeInfo.createSerializer(config);
-        TypeSerializer<V> valueTypeSerializer = valueTypeInfo.createSerializer(config);
+    public TypeSerializer<SortedMap<K, V>> createSerializer(SerializerContext serializerContext) {
+        TypeSerializer<K> keyTypeSerializer = keyTypeInfo.createSerializer(serializerContext);
+        TypeSerializer<V> valueTypeSerializer = valueTypeInfo.createSerializer(serializerContext);
 
         return new SortedMapSerializer<>(comparator, keyTypeSerializer, valueTypeSerializer);
     }

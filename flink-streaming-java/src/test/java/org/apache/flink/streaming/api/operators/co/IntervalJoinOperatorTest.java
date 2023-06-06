@@ -22,6 +22,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -412,7 +413,7 @@ public class IntervalJoinOperatorTest {
                         op,
                         (elem) -> elem.key,
                         (elem) -> elem.key,
-                        TypeInformation.of(String.class))) {
+                        TypeInformationUtils.of(String.class))) {
 
             testHarness.setup();
             testHarness.open();
@@ -454,7 +455,7 @@ public class IntervalJoinOperatorTest {
                         op,
                         (elem) -> elem.key,
                         (elem) -> elem.key,
-                        TypeInformation.of(String.class))) {
+                        TypeInformationUtils.of(String.class))) {
 
             testHarness.setup();
             testHarness.open();
@@ -493,7 +494,7 @@ public class IntervalJoinOperatorTest {
                         op,
                         (elem) -> elem.key,
                         (elem) -> elem.key,
-                        TypeInformation.of(String.class))) {
+                        TypeInformationUtils.of(String.class))) {
 
             testHarness.setup();
             testHarness.open();
@@ -652,7 +653,7 @@ public class IntervalJoinOperatorTest {
                 operator,
                 (elem) -> elem.key, // key
                 (elem) -> elem.key, // key
-                TypeInformation.of(String.class));
+                TypeInformationUtils.of(String.class));
     }
 
     private JoinTestBuilder setupHarness(
@@ -681,7 +682,7 @@ public class IntervalJoinOperatorTest {
                         operator,
                         (elem) -> elem.key, // key
                         (elem) -> elem.key, // key
-                        TypeInformation.of(String.class));
+                        TypeInformationUtils.of(String.class));
 
         return new JoinTestBuilder(t, operator);
     }
@@ -900,7 +901,7 @@ public class IntervalJoinOperatorTest {
         }
 
         public static TypeSerializer<TestElem> serializer() {
-            return TypeInformation.of(new TypeHint<TestElem>() {})
+            return TypeInformationUtils.of(new TypeHint<TestElem>() {})
                     .createSerializer(new ExecutionConfig());
         }
     }

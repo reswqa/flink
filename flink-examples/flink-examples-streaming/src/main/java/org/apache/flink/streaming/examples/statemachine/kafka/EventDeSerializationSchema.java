@@ -21,6 +21,7 @@ package org.apache.flink.streaming.examples.statemachine.kafka;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.streaming.examples.statemachine.event.Event;
 import org.apache.flink.streaming.examples.statemachine.event.EventType;
 
@@ -57,6 +58,6 @@ public class EventDeSerializationSchema
 
     @Override
     public TypeInformation<Event> getProducedType() {
-        return TypeInformation.of(Event.class);
+        return TypeInformationUtils.of(Event.class);
     }
 }

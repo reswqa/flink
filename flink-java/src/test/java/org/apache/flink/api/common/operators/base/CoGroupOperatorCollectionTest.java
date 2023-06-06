@@ -28,6 +28,7 @@ import org.apache.flink.api.common.functions.util.RuntimeUDFContext;
 import org.apache.flink.api.common.operators.BinaryOperatorInformation;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.builder.Tuple2Builder;
 import org.apache.flink.configuration.Configuration;
@@ -215,7 +216,7 @@ class CoGroupOperatorCollectionTest implements Serializable {
                             udf) {
 
         TypeInformation<Tuple2<String, Integer>> tuple2Info =
-                TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {});
 
         return new CoGroupOperatorBase<>(
                 udf,

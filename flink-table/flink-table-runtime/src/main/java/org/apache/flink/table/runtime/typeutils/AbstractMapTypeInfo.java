@@ -19,6 +19,7 @@
 package org.apache.flink.table.runtime.typeutils;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.util.Preconditions;
 
 import java.util.Map;
@@ -64,8 +65,8 @@ abstract class AbstractMapTypeInfo<K, V, M extends Map<K, V>> extends TypeInform
         Preconditions.checkNotNull(keyClass, "The key class cannot be null.");
         Preconditions.checkNotNull(valueClass, "The value class cannot be null.");
 
-        this.keyTypeInfo = TypeInformation.of(keyClass);
-        this.valueTypeInfo = TypeInformation.of(valueClass);
+        this.keyTypeInfo = TypeInformationUtils.of(keyClass);
+        this.valueTypeInfo = TypeInformationUtils.of(valueClass);
     }
 
     // ------------------------------------------------------------------------

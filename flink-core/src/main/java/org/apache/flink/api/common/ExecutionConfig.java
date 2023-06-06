@@ -76,8 +76,8 @@ import static org.apache.flink.util.Preconditions.checkArgument;
  * </ul>
  */
 @Public
-public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecutionConfig> {
-
+public class ExecutionConfig
+        implements Serializable, Archiveable<ArchivedExecutionConfig>, SerializerContext {
     // NOTE TO IMPLEMENTERS:
     // Please do not add further fields to this class. Use the ConfigOption stack instead!
     // It is currently very tricky to keep this kind of POJO classes in sync with instances of
@@ -1009,21 +1009,6 @@ public class ExecutionConfig implements Serializable, Archiveable<ArchivedExecut
     }
 
     // ------------------------------ Utilities  ----------------------------------
-
-    public static class SerializableSerializer<T extends Serializer<?> & Serializable>
-            implements Serializable {
-        private static final long serialVersionUID = 4687893502781067189L;
-
-        private T serializer;
-
-        public SerializableSerializer(T serializer) {
-            this.serializer = serializer;
-        }
-
-        public T getSerializer() {
-            return serializer;
-        }
-    }
 
     /**
      * Abstract class for a custom user configuration object registered at the execution config.

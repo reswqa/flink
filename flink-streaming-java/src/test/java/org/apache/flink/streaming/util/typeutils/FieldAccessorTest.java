@@ -22,6 +22,7 @@ import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.PrimitiveArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -274,7 +275,7 @@ public class FieldAccessorTest {
     @Test
     public void testPojoInPojo() {
         Outer o = new Outer(10, new Inner(4L), (short) 12);
-        PojoTypeInfo<Outer> tpeInfo = (PojoTypeInfo<Outer>) TypeInformation.of(Outer.class);
+        PojoTypeInfo<Outer> tpeInfo = (PojoTypeInfo<Outer>) TypeInformationUtils.of(Outer.class);
 
         FieldAccessor<Outer, Long> fix = FieldAccessorFactory.getAccessor(tpeInfo, "i.x", null);
         assertEquals(Long.class, fix.getFieldType().getTypeClass());
@@ -346,7 +347,7 @@ public class FieldAccessorTest {
     public void testArrayInPojo() {
         ArrayInPojo o = new ArrayInPojo(10L, new int[] {3, 4, 5}, 12);
         PojoTypeInfo<ArrayInPojo> tpeInfo =
-                (PojoTypeInfo<ArrayInPojo>) TypeInformation.of(ArrayInPojo.class);
+                (PojoTypeInfo<ArrayInPojo>) TypeInformationUtils.of(ArrayInPojo.class);
 
         FieldAccessor<ArrayInPojo, Integer> fix =
                 FieldAccessorFactory.getAccessor(tpeInfo, "arr.1", null);

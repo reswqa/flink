@@ -25,6 +25,7 @@ import org.apache.flink.api.common.operators.SlotSharingGroup;
 import org.apache.flink.api.common.operators.util.OperatorValidationUtils;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
@@ -295,7 +296,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
         requireNonNull(typeClass, "type class must not be null.");
 
         try {
-            return returns(TypeInformation.of(typeClass));
+            return returns(TypeInformationUtils.of(typeClass));
         } catch (InvalidTypesException e) {
             throw new InvalidTypesException(
                     "Cannot infer the type information from the class alone."
@@ -325,7 +326,7 @@ public class SingleOutputStreamOperator<T> extends DataStream<T> {
         requireNonNull(typeHint, "TypeHint must not be null");
 
         try {
-            return returns(TypeInformation.of(typeHint));
+            return returns(TypeInformationUtils.of(typeHint));
         } catch (InvalidTypesException e) {
             throw new InvalidTypesException(
                     "Cannot infer the type information from the type hint. "

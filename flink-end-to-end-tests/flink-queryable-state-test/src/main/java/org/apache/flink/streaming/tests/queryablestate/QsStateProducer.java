@@ -22,7 +22,7 @@ import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
@@ -156,8 +156,8 @@ public class QsStateProducer {
             MapStateDescriptor<EmailId, EmailInformation> stateDescriptor =
                     new MapStateDescriptor<>(
                             QsConstants.STATE_NAME,
-                            TypeInformation.of(new TypeHint<EmailId>() {}),
-                            TypeInformation.of(new TypeHint<EmailInformation>() {}));
+                            TypeInformationUtils.of(new TypeHint<EmailId>() {}),
+                            TypeInformationUtils.of(new TypeHint<EmailInformation>() {}));
 
             stateDescriptor.setQueryable(QsConstants.QUERY_NAME);
             state = getRuntimeContext().getMapState(stateDescriptor);

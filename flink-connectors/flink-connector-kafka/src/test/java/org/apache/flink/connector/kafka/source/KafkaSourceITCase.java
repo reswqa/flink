@@ -26,6 +26,7 @@ import org.apache.flink.api.common.eventtime.WatermarkOutput;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
@@ -136,7 +137,7 @@ public class KafkaSourceITCase {
             // Verify that the timestamp and watermark are working fine.
             stream.transform(
                     "timestampVerifier",
-                    TypeInformation.of(PartitionAndValue.class),
+                    TypeInformationUtils.of(PartitionAndValue.class),
                     new WatermarkVerifyingOperator(v -> v));
             stream.addSink(new DiscardingSink<>());
             JobExecutionResult result = env.execute();
@@ -454,7 +455,7 @@ public class KafkaSourceITCase {
 
         @Override
         public TypeInformation<PartitionAndValue> getProducedType() {
-            return TypeInformation.of(PartitionAndValue.class);
+            return TypeInformationUtils.of(PartitionAndValue.class);
         }
     }
 

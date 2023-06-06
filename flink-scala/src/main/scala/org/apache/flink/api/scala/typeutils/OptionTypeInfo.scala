@@ -18,7 +18,7 @@
 package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.annotation.{Public, PublicEvolving, VisibleForTesting}
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.{ExecutionConfig, SerializerContext}
 import org.apache.flink.api.common.typeinfo.{AtomicType, TypeInformation}
 import org.apache.flink.api.common.typeutils.{TypeComparator, TypeSerializer}
 
@@ -58,7 +58,7 @@ class OptionTypeInfo[A, T <: Option[A]](private val elemTypeInfo: TypeInformatio
   }
 
   @PublicEvolving
-  def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = {
+  def createSerializer(executionConfig: SerializerContext): TypeSerializer[T] = {
     if (elemTypeInfo == null) {
       // this happens when the type of a DataSet is None, i.e. DataSet[None]
       new OptionSerializer(new NothingSerializer).asInstanceOf[TypeSerializer[T]]

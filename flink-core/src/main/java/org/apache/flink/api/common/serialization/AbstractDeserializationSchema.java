@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.util.FlinkRuntimeException;
 
@@ -126,7 +127,7 @@ public abstract class AbstractDeserializationSchema<T> implements Deserializatio
      */
     protected AbstractDeserializationSchema(Class<T> type) {
         checkNotNull(type, "type");
-        this.type = TypeInformation.of(type);
+        this.type = TypeInformationUtils.of(type);
     }
 
     /**

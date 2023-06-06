@@ -20,6 +20,7 @@ package org.apache.flink.types;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.api.java.typeutils.runtime.PojoSerializer;
@@ -42,7 +43,7 @@ public class PojoTestUtils {
      * @throws AssertionError if instances of the class cannot be serialized as a POJO
      */
     public static <T> void assertSerializedAsPojo(Class<T> clazz) throws AssertionError {
-        final TypeInformation<T> typeInformation = TypeInformation.of(clazz);
+        final TypeInformation<T> typeInformation = TypeInformationUtils.of(clazz);
         final TypeSerializer<T> actualSerializer =
                 typeInformation.createSerializer(new ExecutionConfig());
 
@@ -71,7 +72,7 @@ public class PojoTestUtils {
         final ExecutionConfig executionConfig = new ExecutionConfig();
         executionConfig.disableGenericTypes();
 
-        final TypeInformation<T> typeInformation = TypeInformation.of(clazz);
+        final TypeInformation<T> typeInformation = TypeInformationUtils.of(clazz);
         final TypeSerializer<T> actualSerializer;
         try {
             actualSerializer = typeInformation.createSerializer(executionConfig);

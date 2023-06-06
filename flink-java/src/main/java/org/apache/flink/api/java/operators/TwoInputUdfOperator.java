@@ -26,6 +26,7 @@ import org.apache.flink.api.common.operators.DualInputSemanticProperties;
 import org.apache.flink.api.common.operators.SemanticProperties;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.FunctionAnnotation;
 import org.apache.flink.api.java.functions.SemanticPropUtil;
@@ -317,7 +318,7 @@ public abstract class TwoInputUdfOperator<
         requireNonNull(typeClass, "type class must not be null");
 
         try {
-            return returns(TypeInformation.of(typeClass));
+            return returns(TypeInformationUtils.of(typeClass));
         } catch (InvalidTypesException e) {
             throw new InvalidTypesException(
                     "Cannot infer the type information from the class alone."
@@ -349,7 +350,7 @@ public abstract class TwoInputUdfOperator<
         requireNonNull(typeHint, "TypeHint must not be null");
 
         try {
-            return returns(TypeInformation.of(typeHint));
+            return returns(TypeInformationUtils.of(typeHint));
         } catch (InvalidTypesException e) {
             throw new InvalidTypesException(
                     "Cannot infer the type information from the type hint. "

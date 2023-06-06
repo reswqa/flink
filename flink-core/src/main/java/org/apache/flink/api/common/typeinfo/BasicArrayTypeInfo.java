@@ -20,7 +20,7 @@ package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.GenericArraySerializer;
@@ -124,7 +124,7 @@ public final class BasicArrayTypeInfo<T, C> extends TypeInformation<T> {
     @Override
     @SuppressWarnings("unchecked")
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerContext executionConfig) {
         // special case the string array
         if (componentInfo.getTypeClass().equals(String.class)) {
             return (TypeSerializer<T>) StringArraySerializer.INSTANCE;

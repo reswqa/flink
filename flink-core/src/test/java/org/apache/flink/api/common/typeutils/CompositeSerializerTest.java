@@ -19,7 +19,7 @@
 package org.apache.flink.api.common.typeutils;
 
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.base.BooleanSerializer;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
@@ -49,7 +49,7 @@ class CompositeSerializerTest {
                     Tuple2.of(LongSerializer.INSTANCE, new Object[] {1L, 23L}),
                     Tuple2.of(StringSerializer.INSTANCE, new Object[] {"teststr1", "teststr2"}),
                     Tuple2.of(
-                            TypeInformation.of(Pojo.class).createSerializer(execConf),
+                            TypeInformationUtils.of(Pojo.class).createSerializer(execConf),
                             new Object[] {
                                 new Pojo(3, new String[] {"123", "456"}),
                                 new Pojo(6, new String[] {})

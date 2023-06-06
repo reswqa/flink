@@ -20,6 +20,7 @@ package org.apache.flink.connector.kafka.sink.testutils;
 
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
@@ -245,7 +246,7 @@ public class KafkaSinkExternalContext implements DataStreamSinkV2ExternalContext
 
     @Override
     public TypeInformation<String> getProducedType() {
-        return TypeInformation.of(String.class);
+        return TypeInformationUtils.of(String.class);
     }
 
     private DeliveryGuarantee toDeliveryGuarantee(CheckpointingMode checkpointingMode) {

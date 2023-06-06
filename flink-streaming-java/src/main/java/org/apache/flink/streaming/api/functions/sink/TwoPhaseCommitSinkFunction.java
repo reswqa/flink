@@ -24,7 +24,7 @@ import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
@@ -112,8 +112,8 @@ public abstract class TwoPhaseCommitSinkFunction<IN, TXN, CONTEXT> extends RichS
 
     /**
      * Use default {@link ListStateDescriptor} for internal state serialization. Helpful utilities
-     * for using this constructor are {@link TypeInformation#of(Class)}, {@link
-     * org.apache.flink.api.common.typeinfo.TypeHint} and {@link TypeInformation#of(TypeHint)}.
+     * for using this constructor are {@link TypeInformationUtils#of(Class)}, {@link
+     * org.apache.flink.api.common.typeinfo.TypeHint} and {@link TypeInformationUtils#of(TypeHint)}.
      * Example:
      *
      * <pre>{@code

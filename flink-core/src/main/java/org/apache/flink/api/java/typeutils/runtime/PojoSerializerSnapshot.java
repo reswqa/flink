@@ -511,7 +511,7 @@ public class PojoSerializerSnapshot<T> implements TypeSerializerSnapshot<T> {
                 reconfiguredSubclassRegistry.f0,
                 reconfiguredSubclassRegistry.f1,
                 restoreSerializers(nonRegisteredSubclassSerializerSnapshots.unwrapOptionals()),
-                originalNewPojoSerializer.getExecutionConfig());
+                originalNewPojoSerializer.getSerializerContext());
     }
 
     private static TypeSerializer[] constructReconfiguredFieldSerializers(

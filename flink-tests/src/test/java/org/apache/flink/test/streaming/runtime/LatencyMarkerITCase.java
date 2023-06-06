@@ -21,7 +21,7 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -61,7 +61,7 @@ public class LatencyMarkerITCase {
         // broadcast the configurations and create the broadcast state
 
         DataStream<String> streamWithoutData =
-                env.fromCollection(Collections.emptyList(), TypeInformation.of(String.class));
+                env.fromCollection(Collections.emptyList(), TypeInformationUtils.of(String.class));
 
         MapStateDescriptor<String, Integer> stateDescriptor =
                 new MapStateDescriptor<>(

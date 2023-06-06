@@ -23,7 +23,7 @@ import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.avro.generated.Address;
@@ -87,12 +87,12 @@ public class StatefulStreamingJob {
         private static final ValueStateDescriptor<Tuple2<String, Integer>> TUPLE_DESCRIPTOR =
                 new ValueStateDescriptor<>(
                         "tuple-state",
-                        TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {}));
+                        TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {}));
 
         private static final ValueStateDescriptor<Either<String, Boolean>> EITHER_DESCRIPTOR =
                 new ValueStateDescriptor<>(
                         "either-state",
-                        TypeInformation.of(new TypeHint<Either<String, Boolean>>() {}));
+                        TypeInformationUtils.of(new TypeHint<Either<String, Boolean>>() {}));
 
         private transient ValueState<Address> avroState;
         private transient ValueState<Tuple2<String, Integer>> tupleState;

@@ -20,7 +20,7 @@ package org.apache.flink.runtime.operators.sort;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -62,7 +62,7 @@ public class LargeRecordHandlerTest {
 
             final TupleTypeInfo<Tuple2<Long, String>> typeInfo =
                     (TupleTypeInfo<Tuple2<Long, String>>)
-                            TypeInformation.of(new TypeHint<Tuple2<Long, String>>() {});
+                            TypeInformationUtils.of(new TypeHint<Tuple2<Long, String>>() {});
 
             final TypeSerializer<Tuple2<Long, String>> serializer =
                     typeInfo.createSerializer(new ExecutionConfig());
@@ -122,7 +122,7 @@ public class LargeRecordHandlerTest {
 
             final TupleTypeInfo<Tuple2<Long, String>> typeInfo =
                     (TupleTypeInfo<Tuple2<Long, String>>)
-                            TypeInformation.of(new TypeHint<Tuple2<Long, String>>() {});
+                            TypeInformationUtils.of(new TypeHint<Tuple2<Long, String>>() {});
 
             final TypeSerializer<Tuple2<Long, String>> serializer =
                     typeInfo.createSerializer(new ExecutionConfig());
@@ -215,7 +215,7 @@ public class LargeRecordHandlerTest {
 
             final TupleTypeInfo<Tuple3<Long, String, Byte>> typeInfo =
                     (TupleTypeInfo<Tuple3<Long, String, Byte>>)
-                            TypeInformation.of(new TypeHint<Tuple3<Long, String, Byte>>() {});
+                            TypeInformationUtils.of(new TypeHint<Tuple3<Long, String, Byte>>() {});
 
             final TypeSerializer<Tuple3<Long, String, Byte>> serializer =
                     typeInfo.createSerializer(new ExecutionConfig());

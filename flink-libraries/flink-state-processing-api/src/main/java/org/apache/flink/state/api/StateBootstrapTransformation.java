@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.configuration.Configuration;
@@ -134,7 +135,7 @@ public class StateBootstrapTransformation<T> {
                         operatorID, stateBackend, config, savepointPath, localMaxParallelism)
                 .transform(
                         "reduce(OperatorSubtaskState)",
-                        TypeInformation.of(OperatorState.class),
+                        TypeInformationUtils.of(OperatorState.class),
                         new GroupReduceOperator<>(
                                 new OperatorSubtaskStateReducer(operatorID, localMaxParallelism)))
                 .forceNonParallel();
@@ -174,7 +175,7 @@ public class StateBootstrapTransformation<T> {
         SingleOutputStreamOperator<TaggedOperatorSubtaskState> subtaskStates =
                 input.transform(
                                 operatorID.toHexString(),
-                                TypeInformation.of(TaggedOperatorSubtaskState.class),
+                                TypeInformationUtils.of(TaggedOperatorSubtaskState.class),
                                 operatorRunner)
                         .setMaxParallelism(localMaxParallelism);
 

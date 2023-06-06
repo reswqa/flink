@@ -23,7 +23,7 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.client.program.ClusterClient;
@@ -165,8 +165,11 @@ public class NotifyCheckpointAbortedITCase extends TestLogger {
         env.addSource(new NormalSource())
                 .name("NormalSource")
                 .keyBy((KeySelector<Tuple2<Integer, Integer>, Integer>) value -> value.f0)
-                .transform("NormalMap", TypeInformation.of(Integer.class), new NormalMap())
-                .transform(DECLINE_SINK_NAME, TypeInformation.of(Object.class), new DeclineSink());
+                .transform("NormalMap", TypeInformationUtils.of(Integer.class), new NormalMap())
+                .transform(
+                        DECLINE_SINK_NAME,
+                        TypeInformationUtils.of(Object.class),
+                        new DeclineSink());
 
         final ClusterClient<?> clusterClient = cluster.getClusterClient();
         JobGraph jobGraph = env.getStreamGraph().getJobGraph();

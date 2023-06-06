@@ -36,13 +36,13 @@ public class TypeInformationTest {
 
     @Test
     public void testOfClass() {
-        assertEquals(BasicTypeInfo.STRING_TYPE_INFO, TypeInformation.of(String.class));
+        assertEquals(BasicTypeInfo.STRING_TYPE_INFO, TypeInformationUtils.of(String.class));
     }
 
     @Test
     public void testOfGenericClassForFlink() {
         try {
-            TypeInformation.of(Tuple3.class);
+            TypeInformationUtils.of(Tuple3.class);
             fail("should fail with an exception");
         } catch (FlinkRuntimeException e) {
             // check that the error message mentions the TypeHint
@@ -52,13 +52,14 @@ public class TypeInformationTest {
 
     @Test
     public void testOfGenericClassForGenericType() {
-        assertEquals(new GenericTypeInfo<>(List.class), TypeInformation.of(List.class));
+        assertEquals(new GenericTypeInfo<>(List.class), TypeInformationUtils.of(List.class));
     }
 
     @Test
     public void testOfTypeHint() {
-        assertEquals(BasicTypeInfo.STRING_TYPE_INFO, TypeInformation.of(String.class));
-        assertEquals(BasicTypeInfo.STRING_TYPE_INFO, TypeInformation.of(new TypeHint<String>() {}));
+        assertEquals(BasicTypeInfo.STRING_TYPE_INFO, TypeInformationUtils.of(String.class));
+        assertEquals(
+                BasicTypeInfo.STRING_TYPE_INFO, TypeInformationUtils.of(new TypeHint<String>() {}));
 
         TypeInformation<Tuple3<String, Double, Boolean>> tupleInfo =
                 new TupleTypeInfo<>(
@@ -67,6 +68,7 @@ public class TypeInformationTest {
                         BasicTypeInfo.BOOLEAN_TYPE_INFO);
 
         assertEquals(
-                tupleInfo, TypeInformation.of(new TypeHint<Tuple3<String, Double, Boolean>>() {}));
+                tupleInfo,
+                TypeInformationUtils.of(new TypeHint<Tuple3<String, Double, Boolean>>() {}));
     }
 }

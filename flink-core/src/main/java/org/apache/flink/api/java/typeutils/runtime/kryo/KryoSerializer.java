@@ -19,8 +19,8 @@
 package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.ExecutionConfig.SerializableSerializer;
+import org.apache.flink.api.common.SerializableSerializer;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.api.java.typeutils.AvroUtils;
@@ -134,8 +134,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
     // ------------------------------------------------------------------------
 
-    private final LinkedHashMap<Class<?>, ExecutionConfig.SerializableSerializer<?>>
-            defaultSerializers;
+    private final LinkedHashMap<Class<?>, SerializableSerializer<?>> defaultSerializers;
     private final LinkedHashMap<Class<?>, Class<? extends Serializer<?>>> defaultSerializerClasses;
 
     /**
@@ -163,8 +162,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
     // ------------------------------------------------------------------------
     // legacy fields; these fields cannot yet be removed to retain backwards compatibility
 
-    private LinkedHashMap<Class<?>, ExecutionConfig.SerializableSerializer<?>>
-            registeredTypesWithSerializers;
+    private LinkedHashMap<Class<?>, SerializableSerializer<?>> registeredTypesWithSerializers;
     private LinkedHashMap<Class<?>, Class<? extends Serializer<?>>>
             registeredTypesWithSerializerClasses;
     private LinkedHashSet<Class<?>> registeredTypes;
@@ -174,18 +172,18 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
     // ------------------------------------------------------------------------
 
-    public KryoSerializer(Class<T> type, ExecutionConfig executionConfig) {
+    public KryoSerializer(Class<T> type, SerializerContext serializerContext) {
         this.type = checkNotNull(type);
 
-        this.defaultSerializers = executionConfig.getDefaultKryoSerializers();
-        this.defaultSerializerClasses = executionConfig.getDefaultKryoSerializerClasses();
+        this.defaultSerializers = serializerContext.getDefaultKryoSerializers();
+        this.defaultSerializerClasses = serializerContext.getDefaultKryoSerializerClasses();
 
         this.kryoRegistrations =
                 buildKryoRegistrations(
                         this.type,
-                        executionConfig.getRegisteredKryoTypes(),
-                        executionConfig.getRegisteredTypesWithKryoSerializerClasses(),
-                        executionConfig.getRegisteredTypesWithKryoSerializers());
+                        serializerContext.getRegisteredKryoTypes(),
+                        serializerContext.getRegisteredTypesWithKryoSerializerClasses(),
+                        serializerContext.getRegisteredTypesWithKryoSerializers());
     }
 
     /**
@@ -199,7 +197,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
         this.kryoRegistrations = new LinkedHashMap<>(toCopy.kryoRegistrations.size());
 
         // deep copy the serializer instances in defaultSerializers
-        for (Map.Entry<Class<?>, ExecutionConfig.SerializableSerializer<?>> entry :
+        for (Map.Entry<Class<?>, SerializableSerializer<?>> entry :
                 toCopy.defaultSerializers.entrySet()) {
 
             this.defaultSerializers.put(entry.getKey(), deepCopySerializer(entry.getValue()));
@@ -213,7 +211,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
             if (kryoRegistration.getSerializerDefinitionType()
                     == KryoRegistration.SerializerDefinitionType.INSTANCE) {
 
-                ExecutionConfig.SerializableSerializer<? extends Serializer<?>> serializerInstance =
+                SerializableSerializer<? extends Serializer<?>> serializerInstance =
                         kryoRegistration.getSerializableSerializerInstance();
 
                 if (serializerInstance != null) {
@@ -529,7 +527,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
 
             // Add default serializers first, so that the type registrations without a serializer
             // are registered with a default serializer
-            for (Map.Entry<Class<?>, ExecutionConfig.SerializableSerializer<?>> entry :
+            for (Map.Entry<Class<?>, SerializableSerializer<?>> entry :
                     defaultSerializers.entrySet()) {
                 kryo.addDefaultSerializer(entry.getKey(), entry.getValue().getSerializer());
             }
@@ -574,8 +572,7 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
             LinkedHashSet<Class<?>> registeredTypes,
             LinkedHashMap<Class<?>, Class<? extends Serializer<?>>>
                     registeredTypesWithSerializerClasses,
-            LinkedHashMap<Class<?>, ExecutionConfig.SerializableSerializer<?>>
-                    registeredTypesWithSerializers) {
+            LinkedHashMap<Class<?>, SerializableSerializer<?>> registeredTypesWithSerializers) {
 
         final LinkedHashMap<String, KryoRegistration> kryoRegistrations = new LinkedHashMap<>();
 
@@ -596,9 +593,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
                             registeredTypeWithSerializerClassEntry.getValue()));
         }
 
-        for (Map.Entry<Class<?>, ExecutionConfig.SerializableSerializer<?>>
-                registeredTypeWithSerializerEntry :
-                        checkNotNull(registeredTypesWithSerializers).entrySet()) {
+        for (Map.Entry<Class<?>, SerializableSerializer<?>> registeredTypeWithSerializerEntry :
+                checkNotNull(registeredTypesWithSerializers).entrySet()) {
 
             kryoRegistrations.put(
                     registeredTypeWithSerializerEntry.getKey().getName(),
@@ -639,8 +635,8 @@ public class KryoSerializer<T> extends TypeSerializer<T> {
         }
     }
 
-    private ExecutionConfig.SerializableSerializer<? extends Serializer<?>> deepCopySerializer(
-            ExecutionConfig.SerializableSerializer<? extends Serializer<?>> original) {
+    private SerializableSerializer<? extends Serializer<?>> deepCopySerializer(
+            SerializableSerializer<? extends Serializer<?>> original) {
         try {
             return InstantiationUtil.clone(
                     original, Thread.currentThread().getContextClassLoader());

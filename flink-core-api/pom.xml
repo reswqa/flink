@@ -41,5 +41,12 @@
 			<artifactId>flink-annotations</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!-- for the fallback generic serializer -->
+		<dependency>
+			<groupId>com.esotericsoftware.kryo</groupId>
+			<artifactId>kryo</artifactId>
+			<!-- managed version -->
+		</dependency>
 	</dependencies>
 </project>

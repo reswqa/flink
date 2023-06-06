@@ -20,7 +20,7 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.GenericArraySerializer;
@@ -90,7 +90,7 @@ public class ObjectArrayTypeInfo<T, C> extends TypeInformation<T> {
     @SuppressWarnings("unchecked")
     @Override
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerContext executionConfig) {
         return (TypeSerializer<T>)
                 new GenericArraySerializer<C>(
                         componentInfo.getTypeClass(),

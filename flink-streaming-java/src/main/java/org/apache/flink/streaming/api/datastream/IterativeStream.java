@@ -21,6 +21,7 @@ import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
@@ -89,7 +90,7 @@ public class IterativeStream<T> extends SingleOutputStreamOperator<T> {
      * @return A {@link ConnectedIterativeStreams}.
      */
     public <F> ConnectedIterativeStreams<T, F> withFeedbackType(Class<F> feedbackTypeClass) {
-        return withFeedbackType(TypeInformation.of(feedbackTypeClass));
+        return withFeedbackType(TypeInformationUtils.of(feedbackTypeClass));
     }
 
     /**
@@ -102,7 +103,7 @@ public class IterativeStream<T> extends SingleOutputStreamOperator<T> {
      * @return A {@link ConnectedIterativeStreams}.
      */
     public <F> ConnectedIterativeStreams<T, F> withFeedbackType(TypeHint<F> feedbackTypeHint) {
-        return withFeedbackType(TypeInformation.of(feedbackTypeHint));
+        return withFeedbackType(TypeInformationUtils.of(feedbackTypeHint));
     }
 
     /**

@@ -22,7 +22,7 @@ import org.apache.flink.api.common.eventtime.Watermark;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.operators.lifecycle.TestJobWithDescription;
 import org.apache.flink.runtime.operators.lifecycle.command.TestCommandDispatcher;
@@ -90,7 +90,7 @@ public class TestJobBuilders {
                     SingleOutputStreamOperator<TestDataElement> forwardTransform =
                             src.transform(
                                             "transform-1-forward",
-                                            TypeInformation.of(TestDataElement.class),
+                                            TypeInformationUtils.of(TestDataElement.class),
                                             new OneInputTestStreamOperatorFactory(
                                                     mapForward, eventQueue, commandQueue))
                                     .setUidHash(mapForward);
@@ -170,7 +170,7 @@ public class TestJobBuilders {
                                     "MultipleInputOperator",
                                     new MultiInputTestOperatorFactory(
                                             inputs.length, eventQueue, multipleInput),
-                                    TypeInformation.of(TestDataElement.class),
+                                    TypeInformationUtils.of(TestDataElement.class),
                                     env.getParallelism());
                     for (DataStream<?> input : inputs) {
                         multipleInputsTransform.addInput(input.getTransformation());
@@ -188,7 +188,7 @@ public class TestJobBuilders {
                                     .startNewChain()
                                     .transform(
                                             "transform-1-forward",
-                                            TypeInformation.of(TestDataElement.class),
+                                            TypeInformationUtils.of(TestDataElement.class),
                                             new OneInputTestStreamOperatorFactory(
                                                     mapForward, eventQueue, commandQueue))
                                     .setUidHash(mapForward);
@@ -201,7 +201,7 @@ public class TestJobBuilders {
                                     .keyBy(e -> e.seq % 1000)
                                     .transform(
                                             "transform-2-keyed",
-                                            TypeInformation.of(TestDataElement.class),
+                                            TypeInformationUtils.of(TestDataElement.class),
                                             new OneInputTestStreamOperatorFactory(
                                                     mapKeyed, eventQueue, commandQueue))
                                     .setUidHash(mapKeyed);
@@ -218,7 +218,7 @@ public class TestJobBuilders {
                                                     .setUidHash(connectedSource))
                                     .transform(
                                             "transform-3-two-input",
-                                            TypeInformation.of(TestDataElement.class),
+                                            TypeInformationUtils.of(TestDataElement.class),
                                             new TwoInputTestStreamOperator(mapTwoInput, eventQueue))
                                     .setUidHash(mapTwoInput);
 

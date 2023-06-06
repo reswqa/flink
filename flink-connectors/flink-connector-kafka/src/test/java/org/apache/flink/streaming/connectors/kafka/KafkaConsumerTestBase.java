@@ -34,6 +34,7 @@ import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -447,7 +448,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
 
         // serialization / deserialization schemas for writing and consuming the extra records
         final TypeInformation<Tuple2<Integer, Integer>> resultType =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {});
 
         final SerializationSchema<Tuple2<Integer, Integer>> serSchema =
                 new TypeInformationSerializationSchema<>(resultType, new ExecutionConfig());
@@ -824,7 +825,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         env.setRestartStrategy(RestartStrategies.noRestart()); // fail immediately
 
         TypeInformation<Tuple2<Long, String>> longStringType =
-                TypeInformation.of(new TypeHint<Tuple2<Long, String>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Long, String>>() {});
 
         TypeInformationSerializationSchema<Tuple2<Long, String>> sourceSchema =
                 new TypeInformationSerializationSchema<>(longStringType, env.getConfig());
@@ -1349,7 +1350,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         createTestTopic(topic, parallelism, 1);
 
         final TypeInformation<Tuple2<Long, byte[]>> longBytesInfo =
-                TypeInformation.of(new TypeHint<Tuple2<Long, byte[]>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Long, byte[]>>() {});
 
         final TypeInformationSerializationSchema<Tuple2<Long, byte[]>> serSchema =
                 new TypeInformationSerializationSchema<>(longBytesInfo, new ExecutionConfig());
@@ -1806,7 +1807,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
 
         TypeInformationSerializationSchema<Tuple2<Integer, Integer>> schema =
                 new TypeInformationSerializationSchema<>(
-                        TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {}),
+                        TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {}),
                         env1.getConfig());
 
         DataStream<Tuple2<Integer, Integer>> fromKafka =
@@ -1925,9 +1926,9 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         final int finalCount;
 
         TypeInformation<Tuple2<Integer, String>> ti =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, String>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, String>>() {});
         TypeSerializer<Tuple2<Integer, Integer>> ser =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {})
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {})
                         .createSerializer(new ExecutionConfig());
 
         public CollectingDeserializationSchema(int finalCount) {
@@ -1969,7 +1970,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         int count = 0;
 
         TypeInformation<Tuple2<Integer, Integer>> ti =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {});
         TypeSerializer<Tuple2<Integer, Integer>> ser = ti.createSerializer(new ExecutionConfig());
 
         public FixedNumberDeserializationSchema(int finalCount) {
@@ -2022,7 +2023,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
         final int finalCount = finalCountTmp;
 
         final TypeInformation<Tuple2<Integer, Integer>> intIntTupleType =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {});
 
         final TypeInformationSerializationSchema<Tuple2<Integer, Integer>> deser =
                 new TypeInformationSerializationSchema<>(intIntTupleType, env.getConfig());
@@ -2230,7 +2231,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
                         + "===================================");
 
         final TypeInformation<Tuple2<Integer, Integer>> resultType =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {});
 
         final SerializationSchema<Tuple2<Integer, Integer>> serSchema =
                 new TypeInformationSerializationSchema<>(resultType, new ExecutionConfig());
@@ -2343,7 +2344,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
                         + "===================================");
 
         final TypeInformation<Tuple2<Integer, Integer>> resultType =
-                TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {});
 
         final SerializationSchema<Tuple2<Integer, Integer>> serSchema =
                 new TypeInformationSerializationSchema<>(resultType, new ExecutionConfig());
@@ -2649,7 +2650,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
 
         public AbstractTestDeserializer(ExecutionConfig ec) {
             ts =
-                    TypeInformation.of(new TypeHint<Tuple2<Integer, Integer>>() {})
+                    TypeInformationUtils.of(new TypeHint<Tuple2<Integer, Integer>>() {})
                             .createSerializer(ec);
         }
 
@@ -2669,7 +2670,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBaseWithFlink {
 
         @Override
         public TypeInformation<Tuple3<Integer, Integer, String>> getProducedType() {
-            return TypeInformation.of(new TypeHint<Tuple3<Integer, Integer, String>>() {});
+            return TypeInformationUtils.of(new TypeHint<Tuple3<Integer, Integer, String>>() {});
         }
     }
 

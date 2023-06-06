@@ -65,8 +65,9 @@ import java.util.Map;
  *
  * <p>A more convenient alternative might be a {@link TypeHint}.
  *
- * @see TypeInformation#of(Class) specify type information based on a class that will be analyzed
- * @see TypeInformation#of(TypeHint) specify type information based on a {@link TypeHint}
+ * @see TypeInformationUtils#of(Class) specify type information based on a class that will be
+ *     analyzed
+ * @see TypeInformationUtils#of(TypeHint) specify type information based on a {@link TypeHint}
  */
 @PublicEvolving
 public class Types {

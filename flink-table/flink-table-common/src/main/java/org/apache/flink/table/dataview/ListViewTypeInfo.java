@@ -19,7 +19,7 @@
 package org.apache.flink.table.dataview;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.ListSerializer;
@@ -93,11 +93,11 @@ public class ListViewTypeInfo<T> extends TypeInformation<ListView<T>> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public TypeSerializer<ListView<T>> createSerializer(ExecutionConfig config) {
+    public TypeSerializer<ListView<T>> createSerializer(SerializerContext serializerContext) {
         if (nullSerializer) {
             return (TypeSerializer<ListView<T>>) (TypeSerializer<?>) NullSerializer.INSTANCE;
         } else {
-            TypeSerializer<T> elementSerializer = elementType.createSerializer(config);
+            TypeSerializer<T> elementSerializer = elementType.createSerializer(serializerContext);
             return new ListViewSerializer<>(new ListSerializer<>(elementSerializer));
         }
     }

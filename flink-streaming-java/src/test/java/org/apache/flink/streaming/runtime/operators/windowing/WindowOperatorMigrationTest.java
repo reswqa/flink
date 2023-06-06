@@ -26,6 +26,7 @@ import org.apache.flink.api.common.state.ReducingStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -86,7 +87,7 @@ public class WindowOperatorMigrationTest implements MigrationTest {
     }
 
     private static final TypeInformation<Tuple2<String, Integer>> STRING_INT_TUPLE =
-            TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {});
+            TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {});
 
     private final FlinkVersion testMigrateVersion;
 
@@ -949,7 +950,7 @@ public class WindowOperatorMigrationTest implements MigrationTest {
                         inputType.createSerializer(new ExecutionConfig()));
 
         TypeSerializer<NonPojoType> keySerializer =
-                TypeInformation.of(NonPojoType.class).createSerializer(new ExecutionConfig());
+                TypeInformationUtils.of(NonPojoType.class).createSerializer(new ExecutionConfig());
         assertTrue(keySerializer instanceof KryoSerializer);
 
         WindowOperator<
@@ -979,7 +980,7 @@ public class WindowOperatorMigrationTest implements MigrationTest {
                         new KeyedOneInputStreamOperatorTestHarness<>(
                                 operator,
                                 new TupleKeySelector<>(),
-                                TypeInformation.of(NonPojoType.class));
+                                TypeInformationUtils.of(NonPojoType.class));
 
         testHarness.setup();
         testHarness.open();
@@ -1044,7 +1045,7 @@ public class WindowOperatorMigrationTest implements MigrationTest {
                         inputType.createSerializer(new ExecutionConfig()));
 
         TypeSerializer<NonPojoType> keySerializer =
-                TypeInformation.of(NonPojoType.class).createSerializer(new ExecutionConfig());
+                TypeInformationUtils.of(NonPojoType.class).createSerializer(new ExecutionConfig());
         assertTrue(keySerializer instanceof KryoSerializer);
 
         WindowOperator<
@@ -1074,7 +1075,7 @@ public class WindowOperatorMigrationTest implements MigrationTest {
                         new KeyedOneInputStreamOperatorTestHarness<>(
                                 operator,
                                 new TupleKeySelector<>(),
-                                TypeInformation.of(NonPojoType.class));
+                                TypeInformationUtils.of(NonPojoType.class));
 
         testHarness.setup();
 

@@ -21,7 +21,7 @@ package org.apache.flink.formats.csv;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.BulkWriter;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.connector.file.sink.FileSink;
 import org.apache.flink.connector.file.src.FileSource;
 import org.apache.flink.connector.file.src.reader.StreamFormat;
@@ -171,7 +171,7 @@ public class DataStreamCsvITCase {
                                 mapper.schemaFor(CityPojo.class)
                                         .withoutQuoteChar()
                                         .withColumnSeparator('|'),
-                        TypeInformation.of(CityPojo.class));
+                        TypeInformationUtils.of(CityPojo.class));
         final List<CityPojo> result = initializeSourceAndReadData(outDir, csvFormat);
 
         assertThat(Arrays.asList(POJOS)).isEqualTo(result);

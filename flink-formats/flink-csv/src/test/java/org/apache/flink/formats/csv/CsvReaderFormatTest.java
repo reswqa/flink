@@ -18,7 +18,7 @@
 package org.apache.flink.formats.csv;
 
 import org.apache.flink.api.common.io.InputStreamFSInputWrapper;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.InstantiationUtil;
 
@@ -48,7 +48,7 @@ class CsvReaderFormatTest {
     void testForSchemaSerializability() throws IOException, ClassNotFoundException {
         final CsvSchema schema = new CsvMapper().schemaFor(Pojo.class);
         final CsvReaderFormat<Pojo> format =
-                CsvReaderFormat.forSchema(schema, TypeInformation.of(Pojo.class));
+                CsvReaderFormat.forSchema(schema, TypeInformationUtils.of(Pojo.class));
 
         final byte[] bytes = InstantiationUtil.serializeObject(format);
         InstantiationUtil.deserializeObject(bytes, CsvReaderFormatTest.class.getClassLoader());
@@ -60,7 +60,7 @@ class CsvReaderFormatTest {
                 CsvReaderFormat.forSchema(
                         () -> new CsvMapper(),
                         mapper -> mapper.schemaFor(Pojo.class),
-                        TypeInformation.of(Pojo.class));
+                        TypeInformationUtils.of(Pojo.class));
 
         final byte[] bytes = InstantiationUtil.serializeObject(format);
         InstantiationUtil.deserializeObject(bytes, CsvReaderFormatTest.class.getClassLoader());
@@ -82,7 +82,7 @@ class CsvReaderFormatTest {
                             return csvMapper;
                         },
                         mapper -> mapper.schemaFor(Pojo.class),
-                        TypeInformation.of(Pojo.class));
+                        TypeInformationUtils.of(Pojo.class));
 
         final byte[] bytes = InstantiationUtil.serializeObject(format);
         InstantiationUtil.deserializeObject(bytes, CsvReaderFormatTest.class.getClassLoader());
@@ -101,7 +101,7 @@ class CsvReaderFormatTest {
                             passedMapper.set(csvMapper);
                             return mapper.schemaFor(Pojo.class);
                         },
-                        TypeInformation.of(Pojo.class));
+                        TypeInformationUtils.of(Pojo.class));
 
         format.createReader(
                 new Configuration(),

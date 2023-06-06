@@ -19,6 +19,7 @@
 package org.apache.flink.connector.kafka.testutils;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -146,7 +147,7 @@ public class KafkaSourceExternalContext implements DataStreamSourceExternalConte
 
     @Override
     public TypeInformation<String> getProducedType() {
-        return TypeInformation.of(String.class);
+        return TypeInformationUtils.of(String.class);
     }
 
     @Override

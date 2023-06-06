@@ -27,7 +27,7 @@ import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
@@ -197,7 +197,7 @@ public class FlinkKafkaProducer<IN>
             NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR =
                     new ListStateDescriptor<>(
                             "next-transactional-id-hint",
-                            TypeInformation.of(NextTransactionalIdHint.class));
+                            TypeInformationUtils.of(NextTransactionalIdHint.class));
 
     private static final ListStateDescriptor<FlinkKafkaProducer.NextTransactionalIdHint>
             NEXT_TRANSACTIONAL_ID_HINT_DESCRIPTOR_V2 =

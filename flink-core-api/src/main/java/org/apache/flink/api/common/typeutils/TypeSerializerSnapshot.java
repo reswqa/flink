@@ -84,7 +84,6 @@ public interface TypeSerializerSnapshot<T> {
      *
      * @param out the {@link DataOutputView} to write the snapshot to.
      * @throws IOException Thrown if the snapshot data could not be written.
-     * @see #writeVersionedSnapshot(DataOutputView, TypeSerializerSnapshot)
      */
     void writeSnapshot(DataOutputView out) throws IOException;
 
@@ -97,7 +96,6 @@ public interface TypeSerializerSnapshot<T> {
      * @param in the {@link DataInputView} to read the snapshot from.
      * @param userCodeClassLoader the user code classloader
      * @throws IOException Thrown if the snapshot data could be read or parsed.
-     * @see #readVersionedSnapshot(DataInputView, ClassLoader)
      */
     void readSnapshot(int readVersion, DataInputView in, ClassLoader userCodeClassLoader)
             throws IOException;
@@ -129,38 +127,4 @@ public interface TypeSerializerSnapshot<T> {
      */
     TypeSerializerSchemaCompatibility<T> resolveSchemaCompatibility(
             TypeSerializer<T> newSerializer);
-
-    // ------------------------------------------------------------------------
-    //  read / write utilities
-    // ------------------------------------------------------------------------
-
-    /**
-     * Writes the given snapshot to the out stream. One should always use this method to write
-     * snapshots out, rather than directly calling {@link #writeSnapshot(DataOutputView)}.
-     *
-     * <p>The snapshot written with this method can be read via {@link
-     * #readVersionedSnapshot(DataInputView, ClassLoader)}.
-     */
-    static void writeVersionedSnapshot(DataOutputView out, TypeSerializerSnapshot<?> snapshot)
-            throws IOException {
-        out.writeUTF(snapshot.getClass().getName());
-        out.writeInt(snapshot.getCurrentVersion());
-        snapshot.writeSnapshot(out);
-    }
-
-    /**
-     * Reads a snapshot from the stream, performing resolving
-     *
-     * <p>This method reads snapshots written by {@link #writeVersionedSnapshot(DataOutputView,
-     * TypeSerializerSnapshot)}.
-     */
-    static <T> TypeSerializerSnapshot<T> readVersionedSnapshot(DataInputView in, ClassLoader cl)
-            throws IOException {
-        final TypeSerializerSnapshot<T> snapshot =
-                TypeSerializerSnapshotSerializationUtil.readAndInstantiateSnapshotClass(in, cl);
-
-        int version = in.readInt();
-        snapshot.readSnapshot(version, in, cl);
-        return snapshot;
-    }
 }

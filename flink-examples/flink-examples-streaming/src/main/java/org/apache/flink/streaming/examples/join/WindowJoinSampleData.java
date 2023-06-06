@@ -19,7 +19,7 @@
 package org.apache.flink.streaming.examples.join;
 
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -61,7 +61,7 @@ public class WindowJoinSampleData {
                 StreamExecutionEnvironment env, long rate) {
             return env.fromCollection(
                     new ThrottledIterator<>(new GradeSource(), rate),
-                    TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {}));
+                    TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {}));
         }
     }
 
@@ -89,7 +89,7 @@ public class WindowJoinSampleData {
                 StreamExecutionEnvironment env, long rate) {
             return env.fromCollection(
                     new ThrottledIterator<>(new SalarySource(), rate),
-                    TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {}));
+                    TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {}));
         }
     }
 }

@@ -18,7 +18,7 @@
 
 package org.apache.flink.formats.hadoop.bulk;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.filesystem.HadoopPathBasedBulkFormatBuilder;
@@ -82,7 +82,7 @@ public class HadoopPathBasedPartFileWriterITCase extends AbstractTestBase {
         // FiniteTestSource will generate two elements with a checkpoint trigger in between the two
         // elements
         DataStream<String> stream =
-                env.addSource(new FiniteTestSource<>(data), TypeInformation.of(String.class));
+                env.addSource(new FiniteTestSource<>(data), TypeInformationUtils.of(String.class));
         Configuration configuration = new Configuration();
         // Elements from source are going to be assigned to one bucket
         HadoopPathBasedBulkFormatBuilder<String, String, ?> builder =

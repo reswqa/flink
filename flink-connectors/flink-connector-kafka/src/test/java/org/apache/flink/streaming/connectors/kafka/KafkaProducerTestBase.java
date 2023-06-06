@@ -26,6 +26,7 @@ import org.apache.flink.api.common.serialization.TypeInformationSerializationSch
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -105,7 +106,7 @@ public abstract class KafkaProducerTestBase extends KafkaTestBaseWithFlink {
             expectedTopicsToNumPartitions.put(dynamicTopic, dynamicTopicPartitions);
 
             TypeInformation<Tuple2<Long, String>> longStringInfo =
-                    TypeInformation.of(new TypeHint<Tuple2<Long, String>>() {});
+                    TypeInformationUtils.of(new TypeHint<Tuple2<Long, String>>() {});
 
             StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
             env.setRestartStrategy(RestartStrategies.noRestart());

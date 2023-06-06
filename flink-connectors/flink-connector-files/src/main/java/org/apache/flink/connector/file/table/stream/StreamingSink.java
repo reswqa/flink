@@ -19,7 +19,7 @@
 package org.apache.flink.connector.file.table.stream;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.file.table.FileSystemFactory;
@@ -75,7 +75,7 @@ public class StreamingSink {
         SingleOutputStreamOperator<PartitionCommitInfo> writerStream =
                 inputStream.transform(
                         StreamingFileWriter.class.getSimpleName(),
-                        TypeInformation.of(PartitionCommitInfo.class),
+                        TypeInformationUtils.of(PartitionCommitInfo.class),
                         fileWriter);
         writerStream.getTransformation().setParallelism(parallelism, parallelismConfigured);
         providerContext.generateUid("streaming-writer").ifPresent(writerStream::uid);
@@ -109,7 +109,9 @@ public class StreamingSink {
 
         SingleOutputStreamOperator<CoordinatorInput> writerStream =
                 inputStream.transform(
-                        "streaming-writer", TypeInformation.of(CoordinatorInput.class), writer);
+                        "streaming-writer",
+                        TypeInformationUtils.of(CoordinatorInput.class),
+                        writer);
         writerStream.getTransformation().setParallelism(parallelism, parallelismConfigured);
 
         providerContext.generateUid("streaming-writer").ifPresent(writerStream::uid);
@@ -118,7 +120,7 @@ public class StreamingSink {
                 writerStream
                         .transform(
                                 "compact-coordinator",
-                                TypeInformation.of(CoordinatorOutput.class),
+                                TypeInformationUtils.of(CoordinatorOutput.class),
                                 coordinator)
                         .setParallelism(1)
                         .setMaxParallelism(1);
@@ -137,7 +139,7 @@ public class StreamingSink {
                         .broadcast()
                         .transform(
                                 "compact-operator",
-                                TypeInformation.of(PartitionCommitInfo.class),
+                                TypeInformationUtils.of(PartitionCommitInfo.class),
                                 compacter);
         operatorStream.getTransformation().setParallelism(parallelism, parallelismConfigured);
         providerContext.generateUid("compact-operator").ifPresent(operatorStream::uid);

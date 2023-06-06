@@ -19,6 +19,7 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
@@ -248,11 +249,11 @@ public class RowTypeInfo extends TupleTypeInfoBase<Row> {
     }
 
     @Override
-    public TypeSerializer<Row> createSerializer(ExecutionConfig config) {
+    public TypeSerializer<Row> createSerializer(SerializerContext serializerContext) {
         int len = getArity();
         TypeSerializer<?>[] fieldSerializers = new TypeSerializer[len];
         for (int i = 0; i < len; i++) {
-            fieldSerializers[i] = types[i].createSerializer(config);
+            fieldSerializers[i] = types[i].createSerializer(serializerContext);
         }
         final LinkedHashMap<String, Integer> positionByName = new LinkedHashMap<>();
         for (int i = 0; i < fieldNames.length; i++) {

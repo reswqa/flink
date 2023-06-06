@@ -24,6 +24,7 @@ import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -64,7 +65,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class EvictingWindowOperatorTest {
 
     private static final TypeInformation<Tuple2<String, Integer>> STRING_INT_TUPLE =
-            TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {});
+            TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {});
 
     /** Tests CountEvictor evictAfter behavior. */
     @Test

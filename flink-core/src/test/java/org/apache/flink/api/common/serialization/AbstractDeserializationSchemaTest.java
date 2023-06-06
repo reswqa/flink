@@ -21,6 +21,7 @@ package org.apache.flink.api.common.serialization;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.FlinkRuntimeException;
 
@@ -41,7 +42,7 @@ public class AbstractDeserializationSchemaTest {
     public void testTypeExtractionTuple() {
         TypeInformation<Tuple2<byte[], byte[]>> type = new TupleSchema().getProducedType();
         TypeInformation<Tuple2<byte[], byte[]>> expected =
-                TypeInformation.of(new TypeHint<Tuple2<byte[], byte[]>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<byte[], byte[]>>() {});
         assertEquals(expected, type);
     }
 
@@ -56,14 +57,15 @@ public class AbstractDeserializationSchemaTest {
                 }.getProducedType();
 
         TypeInformation<Tuple2<byte[], byte[]>> expected =
-                TypeInformation.of(new TypeHint<Tuple2<byte[], byte[]>>() {});
+                TypeInformationUtils.of(new TypeHint<Tuple2<byte[], byte[]>>() {});
         assertEquals(expected, type);
     }
 
     @Test
     public void testTypeExtractionGeneric() {
         TypeInformation<JSONPObject> type = new JsonSchema().getProducedType();
-        TypeInformation<JSONPObject> expected = TypeInformation.of(new TypeHint<JSONPObject>() {});
+        TypeInformation<JSONPObject> expected =
+                TypeInformationUtils.of(new TypeHint<JSONPObject>() {});
         assertEquals(expected, type);
     }
 
@@ -77,7 +79,8 @@ public class AbstractDeserializationSchemaTest {
                     }
                 }.getProducedType();
 
-        TypeInformation<JSONPObject> expected = TypeInformation.of(new TypeHint<JSONPObject>() {});
+        TypeInformation<JSONPObject> expected =
+                TypeInformationUtils.of(new TypeHint<JSONPObject>() {});
         assertEquals(expected, type);
     }
 

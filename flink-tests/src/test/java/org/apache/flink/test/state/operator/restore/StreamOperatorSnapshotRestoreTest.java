@@ -23,7 +23,7 @@ import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.contrib.streaming.state.RocksDBStateBackend;
@@ -203,7 +203,7 @@ public class StreamOperatorSnapshotRestoreTest extends TestLogger {
                 new KeyedOneInputStreamOperatorTestHarness<>(
                         op,
                         (KeySelector<Integer, Integer>) value -> value,
-                        TypeInformation.of(Integer.class),
+                        TypeInformationUtils.of(Integer.class),
                         mockEnvironment);
 
         testHarness.setStateBackend(stateBackend);
@@ -225,7 +225,7 @@ public class StreamOperatorSnapshotRestoreTest extends TestLogger {
                 new KeyedOneInputStreamOperatorTestHarness<>(
                         op,
                         (KeySelector<Integer, Integer>) value -> value,
-                        TypeInformation.of(Integer.class),
+                        TypeInformationUtils.of(Integer.class),
                         MAX_PARALLELISM,
                         1 /* num subtasks */,
                         0 /* subtask index */);

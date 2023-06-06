@@ -18,7 +18,7 @@
 package org.apache.flink.test.checkpointing;
 
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.changelog.fs.FsStateChangelogStorageFactory;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.operators.lifecycle.TestJobExecutor;
@@ -115,7 +115,7 @@ public class IncrementalStateReuseAfterFailureITCase {
                 src.keyBy(x -> x)
                         .transform(
                                 "transform-1",
-                                TypeInformation.of(TestDataElement.class),
+                                TypeInformationUtils.of(TestDataElement.class),
                                 new OneInputTestStreamOperatorFactory(UID_OP1, evQueue, cmdQueue))
                         .setUidHash(UID_OP1);
 
@@ -124,7 +124,7 @@ public class IncrementalStateReuseAfterFailureITCase {
                 DataStreamUtils.reinterpretAsKeyedStream(transform1, x -> x)
                         .transform(
                                 "transform-2",
-                                TypeInformation.of(TestDataElement.class),
+                                TypeInformationUtils.of(TestDataElement.class),
                                 new OneInputTestStreamOperatorFactory(UID_OP2, evQueue, cmdQueue))
                         .setUidHash(UID_OP2);
 

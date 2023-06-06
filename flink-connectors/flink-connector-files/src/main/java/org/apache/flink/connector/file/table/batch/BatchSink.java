@@ -19,7 +19,7 @@
 package org.apache.flink.connector.file.table.batch;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.connector.file.table.FileSystemFactory;
 import org.apache.flink.connector.file.table.FileSystemOutputFormat;
 import org.apache.flink.connector.file.table.PartitionCommitPolicyFactory;
@@ -106,14 +106,14 @@ public class BatchSink {
                 dataStream
                         .transform(
                                 COORDINATOR_OP_NAME,
-                                TypeInformation.of(CompactMessages.CoordinatorOutput.class),
+                                TypeInformationUtils.of(CompactMessages.CoordinatorOutput.class),
                                 new BatchCompactCoordinator(
                                         fsSupplier, compactAverageSize, compactTargetSize))
                         .setParallelism(1)
                         .setMaxParallelism(1)
                         .transform(
                                 COMPACT_OP_NAME,
-                                TypeInformation.of(CompactMessages.CompactOutput.class),
+                                TypeInformationUtils.of(CompactMessages.CompactOutput.class),
                                 new BatchCompactOperator<>(fsSupplier, readFactory, writerFactory));
         transform
                 .getTransformation()

@@ -20,7 +20,7 @@ package org.apache.flink.connectors.hive;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.serialization.BulkWriter;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.connector.file.table.EmptyMetaStoreFactory;
 import org.apache.flink.connector.file.table.FileSystemConnectorOptions;
@@ -481,7 +481,7 @@ public class HiveTableSink implements DynamicTableSink, SupportsPartitioning, Su
         DataStream<CoordinatorInput> writerDataStream =
                 map.transform(
                         BATCH_COMPACT_WRITER_OP_NAME,
-                        TypeInformation.of(CoordinatorInput.class),
+                        TypeInformationUtils.of(CoordinatorInput.class),
                         new BatchFileWriter<>(
                                 fsFactory,
                                 tmpPath,

@@ -19,7 +19,7 @@
 package org.apache.flink.api.java.typeutils.runtime;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.core.memory.DataInputView;
@@ -84,7 +84,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
     // --------------------------------------------------------------------------------------------
 
     /** Configuration of the current execution. */
-    private final ExecutionConfig executionConfig;
+    private final SerializerContext serializerContext;
 
     private transient ClassLoader cl;
 
@@ -94,13 +94,13 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
             Class<T> clazz,
             TypeSerializer<?>[] fieldSerializers,
             Field[] fields,
-            ExecutionConfig executionConfig) {
+            SerializerContext context) {
 
         this.clazz = checkNotNull(clazz);
         this.fieldSerializers = (TypeSerializer<Object>[]) checkNotNull(fieldSerializers);
         this.fields = checkNotNull(fields);
         this.numFields = fieldSerializers.length;
-        this.executionConfig = checkNotNull(executionConfig);
+        this.serializerContext = checkNotNull(context);
 
         for (int i = 0; i < numFields; i++) {
             this.fields[i].setAccessible(true);
@@ -110,11 +110,11 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 
         // We only want those classes that are not our own class and are actually sub-classes.
         LinkedHashSet<Class<?>> registeredSubclasses =
-                getRegisteredSubclassesFromExecutionConfig(clazz, executionConfig);
+                getRegisteredSubclassesFromExecutionConfig(clazz, serializerContext);
 
         this.registeredClasses = createRegisteredSubclassTags(registeredSubclasses);
         this.registeredSerializers =
-                createRegisteredSubclassSerializers(registeredSubclasses, executionConfig);
+                createRegisteredSubclassSerializers(registeredSubclasses, serializerContext);
 
         this.subclassSerializerCache = new HashMap<>();
     }
@@ -130,7 +130,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
             LinkedHashMap<Class<?>, Integer> registeredClasses,
             TypeSerializer<?>[] registeredSerializers,
             Map<Class<?>, TypeSerializer<?>> subclassSerializerCache,
-            ExecutionConfig executionConfig) {
+            SerializerContext serializerContext) {
 
         this.clazz = checkNotNull(clazz);
         this.fields = checkNotNull(fields);
@@ -139,7 +139,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
         this.registeredClasses = checkNotNull(registeredClasses);
         this.registeredSerializers = checkNotNull(registeredSerializers);
         this.subclassSerializerCache = checkNotNull(subclassSerializerCache);
-        this.executionConfig = checkNotNull(executionConfig);
+        this.serializerContext = checkNotNull(serializerContext);
         this.cl = Thread.currentThread().getContextClassLoader();
     }
 
@@ -163,7 +163,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
                 subclassSerializerCache.entrySet().stream()
                         .collect(
                                 Collectors.toMap(Map.Entry::getKey, e -> e.getValue().duplicate())),
-                executionConfig);
+                serializerContext);
     }
 
     @SuppressWarnings("unchecked")
@@ -642,8 +642,8 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
         return fieldSerializers[fieldIndex];
     }
 
-    ExecutionConfig getExecutionConfig() {
-        return executionConfig;
+    public SerializerContext getSerializerContext() {
+        return serializerContext;
     }
 
     LinkedHashMap<Class<?>, Integer> getRegisteredClasses() {
@@ -672,11 +672,11 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 
     /** Extracts the subclasses of the base POJO class registered in the execution config. */
     private static LinkedHashSet<Class<?>> getRegisteredSubclassesFromExecutionConfig(
-            Class<?> basePojoClass, ExecutionConfig executionConfig) {
+            Class<?> basePojoClass, SerializerContext serializerContext) {
 
         LinkedHashSet<Class<?>> subclassesInRegistrationOrder =
-                new LinkedHashSet<>(executionConfig.getRegisteredPojoTypes().size());
-        for (Class<?> registeredClass : executionConfig.getRegisteredPojoTypes()) {
+                new LinkedHashSet<>(serializerContext.getRegisteredPojoTypes().size());
+        for (Class<?> registeredClass : serializerContext.getRegisteredPojoTypes()) {
             if (registeredClass.equals(basePojoClass)) {
                 continue;
             }
@@ -711,7 +711,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
      * serializers will correspond to order of provided subclasses.
      */
     private static TypeSerializer<?>[] createRegisteredSubclassSerializers(
-            LinkedHashSet<Class<?>> registeredSubclasses, ExecutionConfig executionConfig) {
+            LinkedHashSet<Class<?>> registeredSubclasses, SerializerContext serializerContext) {
 
         final TypeSerializer<?>[] subclassSerializers =
                 new TypeSerializer[registeredSubclasses.size()];
@@ -719,7 +719,8 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
         int i = 0;
         for (Class<?> registeredClass : registeredSubclasses) {
             subclassSerializers[i] =
-                    TypeExtractor.createTypeInfo(registeredClass).createSerializer(executionConfig);
+                    TypeExtractor.createTypeInfo(registeredClass)
+                            .createSerializer(serializerContext);
             i++;
         }
 
@@ -743,7 +744,7 @@ public final class PojoSerializer<T> extends TypeSerializer<T> {
 
     private TypeSerializer<?> createSubclassSerializer(Class<?> subclass) {
         TypeSerializer<?> serializer =
-                TypeExtractor.createTypeInfo(subclass).createSerializer(executionConfig);
+                TypeExtractor.createTypeInfo(subclass).createSerializer(serializerContext);
 
         if (serializer instanceof PojoSerializer) {
             PojoSerializer<?> subclassSerializer = (PojoSerializer<?>) serializer;

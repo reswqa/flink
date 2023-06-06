@@ -23,8 +23,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.IntegerTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.mocks.MockSource;
 import org.apache.flink.api.dag.Transformation;
@@ -475,7 +474,7 @@ public class StreamGraphGeneratorBatchExecutionTest extends TestLogger {
                         "Bounded Source",
                         new MockSource(Boundedness.BOUNDED, 100),
                         WatermarkStrategy.noWatermarks(),
-                        IntegerTypeInfo.of(Integer.class),
+                        TypeInformationUtils.of(Integer.class),
                         1);
 
         final FeedbackTransformation<Integer> feedbackTransformation =
@@ -487,7 +486,7 @@ public class StreamGraphGeneratorBatchExecutionTest extends TestLogger {
     @Test
     public void testCoFeedbackThrowsExceptionInBatch() {
         final CoFeedbackTransformation<Integer> coFeedbackTransformation =
-                new CoFeedbackTransformation<>(2, TypeInformation.of(Integer.TYPE), 5L);
+                new CoFeedbackTransformation<>(2, TypeInformationUtils.of(Integer.TYPE), 5L);
         testNoSupportForIterationsInBatchHelper(coFeedbackTransformation);
     }
 

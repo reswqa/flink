@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils.runtime;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.SerializerTestInstance;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 
@@ -135,7 +136,7 @@ public class MultidimensionalArraySerializerTest {
                         };
 
         TypeInformation<MyGenericPojo<String>[][]> ti =
-                TypeInformation.of(new TypeHint<MyGenericPojo<String>[][]>() {});
+                TypeInformationUtils.of(new TypeHint<MyGenericPojo<String>[][]>() {});
 
         SerializerTestInstance testInstance =
                 new SerializerTestInstance(

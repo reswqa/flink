@@ -20,7 +20,7 @@ package org.apache.flink.table.formats.raw;
 
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.serialization.SerializationSchema;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.base.LocalDateTimeSerializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.formats.raw.RawFormatDeserializationSchema;
@@ -146,7 +146,7 @@ public class RawFormatSerDeSchemaTest {
         RawFormatDeserializationSchema deserializationSchema =
                 new RawFormatDeserializationSchema(
                         testSpec.type.getLogicalType(),
-                        TypeInformation.of(RowData.class),
+                        TypeInformationUtils.of(RowData.class),
                         testSpec.charsetName,
                         testSpec.isBigEndian);
         RawFormatSerializationSchema serializationSchema =

@@ -20,6 +20,7 @@ package org.apache.flink.formats.csv;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.file.src.reader.SimpleStreamFormat;
 import org.apache.flink.connector.file.src.reader.StreamFormat;
@@ -166,7 +167,7 @@ public class CsvReaderFormat<T> extends SimpleStreamFormat<T> {
         return forSchema(
                 JacksonMapperFactory::createCsvMapper,
                 mapper -> mapper.schemaFor(pojoType).withoutQuoteChar(),
-                TypeInformation.of(pojoType));
+                TypeInformationUtils.of(pojoType));
     }
 
     /**

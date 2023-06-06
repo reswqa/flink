@@ -23,7 +23,7 @@ import org.apache.flink.api.common.accumulators.ListAccumulator;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.operators.coordination.CoordinatorEventsExactlyOnceITCase;
@@ -163,9 +163,9 @@ public class CoordinatorEventsToStreamOperatorRecipientExactlyOnceITCase
         // The event receiving operator is not chained together with the source operator, so that
         // when checkpoint barriers are injected into sources, the event receiving operator has not
         // started checkpoint yet.
-        env.addSource(new ManuallyClosedSourceFunction<>(), TypeInformation.of(Long.class))
+        env.addSource(new ManuallyClosedSourceFunction<>(), TypeInformationUtils.of(Long.class))
                 .disableChaining()
-                .transform(factory.name, TypeInformation.of(Long.class), factory)
+                .transform(factory.name, TypeInformationUtils.of(Long.class), factory)
                 .addSink(new DiscardingSink<>());
 
         JobExecutionResult executionResult =

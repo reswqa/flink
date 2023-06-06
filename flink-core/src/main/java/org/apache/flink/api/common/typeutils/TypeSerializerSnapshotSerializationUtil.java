@@ -108,7 +108,7 @@ public class TypeSerializerSnapshotSerializationUtil {
             // write the format version of this utils format
             super.write(out);
 
-            TypeSerializerSnapshot.writeVersionedSnapshot(out, serializerSnapshot);
+            TypeSerializerSnapshotUtils.writeVersionedSnapshot(out, serializerSnapshot);
         }
 
         @SuppressWarnings("unchecked")
@@ -159,7 +159,7 @@ public class TypeSerializerSnapshotSerializationUtil {
         @VisibleForTesting
         static <T> TypeSerializerSnapshot<T> deserializeV2(DataInputView in, ClassLoader cl)
                 throws IOException {
-            return TypeSerializerSnapshot.readVersionedSnapshot(in, cl);
+            return TypeSerializerSnapshotUtils.readVersionedSnapshot(in, cl);
         }
     }
 }

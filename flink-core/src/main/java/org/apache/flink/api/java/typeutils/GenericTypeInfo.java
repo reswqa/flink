@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -80,15 +81,15 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
 
     @Override
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
-        if (config.hasGenericTypesDisabled()) {
+    public TypeSerializer<T> createSerializer(SerializerContext serializerContext) {
+        if (serializerContext.hasGenericTypesDisabled()) {
             throw new UnsupportedOperationException(
                     "Generic types have been disabled in the ExecutionConfig and type "
                             + this.typeClass.getName()
                             + " is treated as a generic type.");
         }
 
-        return new KryoSerializer<T>(this.typeClass, config);
+        return new KryoSerializer<T>(this.typeClass, serializerContext);
     }
 
     @SuppressWarnings("unchecked")

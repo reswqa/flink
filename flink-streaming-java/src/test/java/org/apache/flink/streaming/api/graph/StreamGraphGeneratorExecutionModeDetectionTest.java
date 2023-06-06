@@ -22,7 +22,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.IntegerTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.mocks.MockSource;
 import org.apache.flink.api.dag.Transformation;
@@ -278,7 +278,7 @@ public class StreamGraphGeneratorExecutionModeDetectionTest extends TestLogger {
                 name,
                 new MockSource(boundedness, 100),
                 WatermarkStrategy.noWatermarks(),
-                IntegerTypeInfo.of(Integer.class),
+                TypeInformationUtils.of(Integer.class),
                 1);
     }
 

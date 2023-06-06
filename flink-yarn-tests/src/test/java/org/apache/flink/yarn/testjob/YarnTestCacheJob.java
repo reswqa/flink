@@ -20,6 +20,7 @@ package org.apache.flink.yarn.testjob;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -54,9 +55,9 @@ public class YarnTestCacheJob {
         env.registerCachedFile(testDirectory.getAbsolutePath(), TEST_DIRECTORY_NAME);
         env.registerCachedFile(cacheFilePath, "cacheFile", false);
 
-        env.addSource(new GenericSourceFunction(LIST, TypeInformation.of(String.class)))
+        env.addSource(new GenericSourceFunction(LIST, TypeInformationUtils.of(String.class)))
                 .setParallelism(1)
-                .map(new MapperFunction(), TypeInformation.of(String.class))
+                .map(new MapperFunction(), TypeInformationUtils.of(String.class))
                 .setParallelism(1)
                 .addSink(new DiscardingSink<String>())
                 .setParallelism(1);

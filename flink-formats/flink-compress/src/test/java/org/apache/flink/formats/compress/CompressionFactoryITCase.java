@@ -18,7 +18,7 @@
 
 package org.apache.flink.formats.compress;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.compress.extractor.DefaultExtractor;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -68,7 +68,8 @@ class CompressionFactoryITCase {
         env.enableCheckpointing(100);
 
         DataStream<String> stream =
-                env.addSource(new FiniteTestSource<>(testData), TypeInformation.of(String.class));
+                env.addSource(
+                        new FiniteTestSource<>(testData), TypeInformationUtils.of(String.class));
 
         stream.map(str -> str)
                 .addSink(

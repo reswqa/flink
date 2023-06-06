@@ -18,7 +18,7 @@
 
 package org.apache.flink.formats.parquet.avro;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.avro.typeutils.GenericRecordAvroTypeInfo;
 import org.apache.flink.formats.parquet.generated.Address;
@@ -76,7 +76,7 @@ class AvroParquetStreamingFileSinkITCase {
         env.enableCheckpointing(100);
 
         DataStream<Address> stream =
-                env.addSource(new FiniteTestSource<>(data), TypeInformation.of(Address.class));
+                env.addSource(new FiniteTestSource<>(data), TypeInformationUtils.of(Address.class));
 
         stream.addSink(
                 StreamingFileSink.forBulkFormat(
@@ -132,7 +132,7 @@ class AvroParquetStreamingFileSinkITCase {
         env.enableCheckpointing(100);
 
         DataStream<Datum> stream =
-                env.addSource(new FiniteTestSource<>(data), TypeInformation.of(Datum.class));
+                env.addSource(new FiniteTestSource<>(data), TypeInformationUtils.of(Datum.class));
 
         stream.addSink(
                 StreamingFileSink.forBulkFormat(

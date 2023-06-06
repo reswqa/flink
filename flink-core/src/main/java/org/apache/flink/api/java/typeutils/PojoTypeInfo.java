@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
@@ -330,28 +331,28 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
     @Override
     @PublicEvolving
     @SuppressWarnings("unchecked")
-    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
-        if (config.isForceKryoEnabled()) {
-            return new KryoSerializer<>(getTypeClass(), config);
+    public TypeSerializer<T> createSerializer(SerializerContext serializerContext) {
+        if (serializerContext.isForceKryoEnabled()) {
+            return new KryoSerializer<>(getTypeClass(), serializerContext);
         }
 
-        if (config.isForceAvroEnabled()) {
+        if (serializerContext.isForceAvroEnabled()) {
             return AvroUtils.getAvroUtils().createAvroSerializer(getTypeClass());
         }
 
-        return createPojoSerializer(config);
+        return createPojoSerializer(serializerContext);
     }
 
-    public PojoSerializer<T> createPojoSerializer(ExecutionConfig config) {
+    public PojoSerializer<T> createPojoSerializer(SerializerContext context) {
         TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[fields.length];
         Field[] reflectiveFields = new Field[fields.length];
 
         for (int i = 0; i < fields.length; i++) {
-            fieldSerializers[i] = fields[i].getTypeInformation().createSerializer(config);
+            fieldSerializers[i] = fields[i].getTypeInformation().createSerializer(context);
             reflectiveFields[i] = fields[i].getField();
         }
 
-        return new PojoSerializer<T>(getTypeClass(), fieldSerializers, reflectiveFields, config);
+        return new PojoSerializer<T>(getTypeClass(), fieldSerializers, reflectiveFields, context);
     }
 
     @Override

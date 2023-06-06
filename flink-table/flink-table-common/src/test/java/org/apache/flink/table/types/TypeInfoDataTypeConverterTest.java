@@ -18,7 +18,7 @@
 
 package org.apache.flink.table.types;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -28,6 +28,7 @@ import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.types.utils.DataTypeFactoryMock;
 import org.apache.flink.table.types.utils.TypeInfoDataTypeConverter;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -117,6 +118,11 @@ class TypeInfoDataTypeConverterTest {
     void testConversion(TestSpec testSpec) {
         assertThat(TypeInfoDataTypeConverter.toDataType(testSpec.typeFactory, testSpec.typeInfo))
                 .isEqualTo(testSpec.expectedDataType);
+    }
+
+    @Test
+    void test1(){
+        Types.POJO(PojoWithFieldOrder.class);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -231,7 +237,7 @@ class TypeInfoDataTypeConverterTest {
         }
 
         @Override
-        public TypeSerializer<Object> createSerializer(ExecutionConfig config) {
+        public TypeSerializer<Object> createSerializer(SerializerContext serializerContext) {
             return null;
         }
 

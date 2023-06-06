@@ -19,6 +19,7 @@
 package org.apache.flink.yarn.testjob;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -109,7 +110,7 @@ public class YarnTestArchiveJob {
 
         env.addSource(
                         new SourceFunctionWithArchive<>(
-                                LIST, localizedPath, TypeInformation.of(String.class)))
+                                LIST, localizedPath, TypeInformationUtils.of(String.class)))
                 .addSink(new DiscardingSink<>());
 
         return env.getStreamGraph().getJobGraph();

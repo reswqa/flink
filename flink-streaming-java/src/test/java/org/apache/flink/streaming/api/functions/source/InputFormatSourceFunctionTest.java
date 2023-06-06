@@ -22,7 +22,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.accumulators.Accumulator;
 import org.apache.flink.api.common.io.RichInputFormat;
 import org.apache.flink.api.common.io.statistics.BaseStatistics;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.core.io.InputSplitAssigner;
@@ -64,7 +64,7 @@ public class InputFormatSourceFunctionTest {
 
         final LifeCycleTestInputFormat format = new LifeCycleTestInputFormat();
         final InputFormatSourceFunction<Integer> reader =
-                new InputFormatSourceFunction<>(format, TypeInformation.of(Integer.class));
+                new InputFormatSourceFunction<>(format, TypeInformationUtils.of(Integer.class));
 
         try (MockEnvironment environment =
                 new MockEnvironmentBuilder()

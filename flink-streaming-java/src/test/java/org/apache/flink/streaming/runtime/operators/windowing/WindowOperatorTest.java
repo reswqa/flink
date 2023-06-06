@@ -25,6 +25,7 @@ import org.apache.flink.api.common.state.ReducingStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -96,7 +97,7 @@ import static org.mockito.Mockito.when;
 public class WindowOperatorTest extends TestLogger {
 
     private static final TypeInformation<Tuple2<String, Integer>> STRING_INT_TUPLE =
-            TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {});
+            TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {});
 
     // For counting if close() is called the correct number of times on the SumReducer
     private static AtomicInteger closeCalled = new AtomicInteger(0);

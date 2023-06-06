@@ -20,12 +20,8 @@ package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.functions.InvalidTypesException;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.util.FlinkRuntimeException;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -82,8 +78,8 @@ public abstract class TypeInformation<T> implements Serializable {
     private static final long serialVersionUID = -7742311969684489493L;
 
     /**
-     * Checks if this type information represents a basic type. Basic types are defined in {@link
-     * BasicTypeInfo} and are primitives, their boxing types, Strings, Date, Void, ...
+     * Checks if this type information represents a basic type. Basic types are primitives, their
+     * boxing types, Strings, Date, Void, ...
      *
      * @return True, if this type information describes a basic type, false otherwise.
      */
@@ -132,7 +128,7 @@ public abstract class TypeInformation<T> implements Serializable {
      * generic type parameter to the type information of a subtype. This information is necessary in
      * cases where type information should be deduced from an input type.
      *
-     * <p>For instance, a method for a {@link Tuple2} would look like this: <code>
+     * <p>For instance, a method for a {@code Tuple2} would look like this: <code>
      * Map m = new HashMap();
      * m.put("T0", this.getTypeAt(0));
      * m.put("T1", this.getTypeAt(1));
@@ -170,11 +166,11 @@ public abstract class TypeInformation<T> implements Serializable {
      * Creates a serializer for the type. The serializer may use the ExecutionConfig for
      * parameterization.
      *
-     * @param config The config used to parameterize the serializer.
+     * @param serializerContext The config used to parameterize the serializer.
      * @return A serializer for this type.
      */
     @PublicEvolving
-    public abstract TypeSerializer<T> createSerializer(ExecutionConfig config);
+    public abstract TypeSerializer<T> createSerializer(SerializerContext serializerContext);
 
     @Override
     public abstract String toString();
@@ -192,44 +188,4 @@ public abstract class TypeInformation<T> implements Serializable {
      * @return true if obj can be equaled with this, otherwise false
      */
     public abstract boolean canEqual(Object obj);
-
-    // ------------------------------------------------------------------------
-
-    /**
-     * Creates a TypeInformation for the type described by the given class.
-     *
-     * <p>This method only works for non-generic types. For generic types, use the {@link
-     * #of(TypeHint)} method.
-     *
-     * @param typeClass The class of the type.
-     * @param <T> The generic type.
-     * @return The TypeInformation object for the type described by the hint.
-     */
-    public static <T> TypeInformation<T> of(Class<T> typeClass) {
-        try {
-            return TypeExtractor.createTypeInfo(typeClass);
-        } catch (InvalidTypesException e) {
-            throw new FlinkRuntimeException(
-                    "Cannot extract TypeInformation from Class alone, because generic parameters are missing. "
-                            + "Please use TypeInformation.of(TypeHint) instead, or another equivalent method in the API that "
-                            + "accepts a TypeHint instead of a Class. "
-                            + "For example for a Tuple2<Long, String> pass a 'new TypeHint<Tuple2<Long, String>>(){}'.");
-        }
-    }
-
-    /**
-     * Creates a TypeInformation for a generic type via a utility "type hint". This method can be
-     * used as follows:
-     *
-     * <pre>{@code
-     * TypeInformation<Tuple2<String, Long>> info = TypeInformation.of(new TypeHint<Tuple2<String, Long>>(){});
-     * }</pre>
-     *
-     * @param typeHint The hint for the generic type.
-     * @param <T> The generic type.
-     * @return The TypeInformation object for the type described by the hint.
-     */
-    public static <T> TypeInformation<T> of(TypeHint<T> typeHint) {
-        return typeHint.getTypeInfo();
-    }
 }

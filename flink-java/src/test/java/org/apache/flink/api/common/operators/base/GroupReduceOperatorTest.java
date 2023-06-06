@@ -27,6 +27,7 @@ import org.apache.flink.api.common.functions.util.RuntimeUDFContext;
 import org.apache.flink.api.common.operators.UnaryOperatorInformation;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
@@ -52,7 +53,7 @@ import static org.assertj.core.api.Assertions.fail;
 class GroupReduceOperatorTest implements Serializable {
 
     private static final TypeInformation<Tuple2<String, Integer>> STRING_INT_TUPLE =
-            TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {});
+            TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {});
 
     @Test
     void testGroupReduceCollection() {

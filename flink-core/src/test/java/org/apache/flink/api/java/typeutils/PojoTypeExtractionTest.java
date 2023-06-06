@@ -23,6 +23,7 @@ import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeutils.CompositeType.FlatFieldDescriptor;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -624,7 +625,7 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(new TypeHint<PojoWithGenerics<Long, String>>() {}));
+                        TypeInformationUtils.of(new TypeHint<PojoWithGenerics<Long, String>>() {}));
 
         Assert.assertTrue(ti instanceof PojoTypeInfo<?>);
         PojoTypeInfo<?> pti = (PojoTypeInfo<?>) ti;
@@ -666,7 +667,7 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(new TypeHint<Tuple2<Character, Boolean>>() {}));
+                        TypeInformationUtils.of(new TypeHint<Tuple2<Character, Boolean>>() {}));
 
         Assert.assertTrue(ti instanceof PojoTypeInfo<?>);
         PojoTypeInfo<?> pti = (PojoTypeInfo<?>) ti;
@@ -704,7 +705,7 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(
+                        TypeInformationUtils.of(
                                 new TypeHint<PojoTuple<Character, Boolean, Boolean>>() {}));
 
         Assert.assertTrue(ti instanceof TupleTypeInfo<?>);
@@ -734,7 +735,8 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(new TypeHint<PojoWithParameterizedFields1<Byte>>() {}));
+                        TypeInformationUtils.of(
+                                new TypeHint<PojoWithParameterizedFields1<Byte>>() {}));
         Assert.assertEquals(BasicTypeInfo.BYTE_TYPE_INFO, ti);
     }
 
@@ -759,7 +761,8 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(new TypeHint<PojoWithParameterizedFields2<Byte>>() {}));
+                        TypeInformationUtils.of(
+                                new TypeHint<PojoWithParameterizedFields2<Byte>>() {}));
         Assert.assertEquals(BasicTypeInfo.BYTE_TYPE_INFO, ti);
     }
 
@@ -784,7 +787,7 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(
+                        TypeInformationUtils.of(
                                 new TypeHint<PojoWithParameterizedFields3<Integer>>() {}));
         Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, ti);
     }
@@ -810,7 +813,7 @@ public class PojoTypeExtractionTest {
         TypeInformation<?> ti =
                 TypeExtractor.getMapReturnTypes(
                         function,
-                        TypeInformation.of(
+                        TypeInformationUtils.of(
                                 new TypeHint<PojoWithParameterizedFields4<Integer>>() {}));
 
         Assert.assertEquals(BasicTypeInfo.INT_TYPE_INFO, ti);

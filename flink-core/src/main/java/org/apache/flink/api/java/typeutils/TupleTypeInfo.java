@@ -21,12 +21,14 @@ package org.apache.flink.api.java.typeutils;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.java.tuple.*;
+import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple0;
 import org.apache.flink.api.java.typeutils.runtime.Tuple0Serializer;
 import org.apache.flink.api.java.typeutils.runtime.TupleComparator;
 import org.apache.flink.api.java.typeutils.runtime.TupleSerializer;
@@ -94,7 +96,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
     @SuppressWarnings("unchecked")
     @Override
     @PublicEvolving
-    public TupleSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TupleSerializer<T> createSerializer(SerializerContext executionConfig) {
         if (getTypeClass() == Tuple0.class) {
             return (TupleSerializer<T>) Tuple0Serializer.INSTANCE;
         }

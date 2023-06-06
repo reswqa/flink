@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.{ExecutionConfig, SerializerContext}
 import org.apache.flink.api.common.typeinfo.{TypeInfo, TypeInfoFactory, TypeInformation}
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo._
 import org.apache.flink.api.common.typeutils.TypeSerializer
@@ -26,7 +26,6 @@ import org.apache.flink.api.java.typeutils.TypeInfoFactoryTest._
 import org.apache.flink.api.scala._
 import org.apache.flink.api.scala.typeutils.TypeInfoFactoryTest._
 import org.apache.flink.util.TestLogger
-
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.junit.JUnitSuiteLike
@@ -143,7 +142,7 @@ object TypeInfoFactoryTest {
 
     override def isKeyType: Boolean = ???
 
-    override def createSerializer(config: ExecutionConfig): TypeSerializer[MyOption[_]] = ???
+    override def createSerializer(serializerContext: SerializerContext): TypeSerializer[MyOption[_]] = ???
 
     override def canEqual(obj: scala.Any): Boolean = ???
 

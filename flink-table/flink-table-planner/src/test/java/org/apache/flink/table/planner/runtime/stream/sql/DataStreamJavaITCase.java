@@ -24,6 +24,7 @@ import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -664,9 +665,10 @@ public class DataStreamJavaITCase extends AbstractTestBase {
                 tableEnvironment
                         .toDataStream(resultTable)
                         .map(row -> (String) row.getField("word"))
-                        .returns(TypeInformation.of(String.class))
+                        .returns(TypeInformationUtils.of(String.class))
                         .map(s -> new Tuple2<>(s, 1))
-                        .returns(TypeInformation.of(new TypeHint<Tuple2<String, Integer>>() {}))
+                        .returns(
+                                TypeInformationUtils.of(new TypeHint<Tuple2<String, Integer>>() {}))
                         .keyBy(tuple -> tuple.f0)
                         .sum(1);
 

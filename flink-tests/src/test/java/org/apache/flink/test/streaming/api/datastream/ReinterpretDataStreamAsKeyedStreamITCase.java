@@ -29,6 +29,7 @@ import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -110,7 +111,7 @@ public class ReinterpretDataStreamAsKeyedStreamITCase {
         DataStreamUtils.reinterpretAsKeyedStream(
                         source,
                         (KeySelector<Tuple2<Integer, Integer>, Integer>) value -> value.f0,
-                        TypeInformation.of(Integer.class))
+                        TypeInformationUtils.of(Integer.class))
                 .window(
                         TumblingEventTimeWindows.of(
                                 Time.seconds(

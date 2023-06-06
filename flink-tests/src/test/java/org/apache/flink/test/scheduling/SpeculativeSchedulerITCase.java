@@ -26,7 +26,7 @@ import org.apache.flink.api.common.io.FinalizeOnMaster;
 import org.apache.flink.api.common.io.GenericInputFormat;
 import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.connector.sink2.Committer;
 import org.apache.flink.api.connector.sink2.TwoPhaseCommittingSink;
 import org.apache.flink.api.connector.sink2.TwoPhaseCommittingSink.PrecommittingSinkWriter;
@@ -323,7 +323,7 @@ class SpeculativeSchedulerITCase {
                                 new StreamSource<>(
                                         new InputFormatSourceFunction<>(
                                                 new TestingInputFormat(),
-                                                TypeInformation.of(Long.class))),
+                                                TypeInformationUtils.of(Long.class))),
                                 true,
                                 "source",
                                 Boundedness.BOUNDED)

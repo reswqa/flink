@@ -18,7 +18,7 @@
 
 package org.apache.flink.formats.parquet.protobuf;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -67,7 +67,8 @@ class ParquetProtoStreamingFileSinkITCase {
 
         DataStream<SimpleProtoRecord> stream =
                 env.addSource(
-                        new FiniteTestSource<>(data), TypeInformation.of(SimpleProtoRecord.class));
+                        new FiniteTestSource<>(data),
+                        TypeInformationUtils.of(SimpleProtoRecord.class));
 
         stream.addSink(
                 StreamingFileSink.forBulkFormat(

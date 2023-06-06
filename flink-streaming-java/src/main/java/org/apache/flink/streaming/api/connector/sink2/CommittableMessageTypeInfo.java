@@ -19,7 +19,7 @@
 package org.apache.flink.streaming.api.connector.sink2;
 
 import org.apache.flink.annotation.Experimental;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
@@ -96,7 +96,7 @@ public class CommittableMessageTypeInfo<CommT> extends TypeInformation<Committab
     }
 
     @Override
-    public TypeSerializer<CommittableMessage<CommT>> createSerializer(ExecutionConfig config) {
+    public TypeSerializer<CommittableMessage<CommT>> createSerializer(SerializerContext serializerContext) {
         // no copy, so that data from writer is directly going into committer while chaining
         return new SimpleVersionedSerializerTypeSerializerProxy<CommittableMessage<CommT>>(
                 () -> new CommittableMessageSerializer<>(committableSerializerFactory.get())) {

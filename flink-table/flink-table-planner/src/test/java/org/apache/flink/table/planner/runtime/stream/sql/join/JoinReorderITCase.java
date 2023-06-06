@@ -18,7 +18,7 @@
 
 package org.apache.flink.table.planner.runtime.stream.sql.join;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -65,7 +65,7 @@ public class JoinReorderITCase extends JoinReorderITCaseBase {
         TestingRetractSink sink = new TestingRetractSink();
         streamTableEnvironment
                 .toRetractStream(table, Row.class)
-                .map(JavaScalaConversionUtil::toScala, TypeInformation.of(Tuple2.class))
+                .map(JavaScalaConversionUtil::toScala, TypeInformationUtils.of(Tuple2.class))
                 .addSink((SinkFunction) sink);
         try {
             env.execute();

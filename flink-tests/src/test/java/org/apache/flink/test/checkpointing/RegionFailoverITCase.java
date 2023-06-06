@@ -24,7 +24,7 @@ import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.client.program.ClusterClient;
@@ -186,7 +186,7 @@ public class RegionFailoverITCase extends TestLogger {
                                 .name(MULTI_REGION_SOURCE_NAME)
                                 .setParallelism(NUM_OF_REGIONS),
                         (KeySelector<Tuple2<Integer, Integer>, Integer>) value -> value.f0,
-                        TypeInformation.of(Integer.class))
+                        TypeInformationUtils.of(Integer.class))
                 .map(new FailingMapperFunction(NUM_OF_RESTARTS))
                 .setParallelism(NUM_OF_REGIONS)
                 .addSink(new ValidatingSink())

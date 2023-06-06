@@ -18,7 +18,7 @@
 package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.annotation.{Public, PublicEvolving}
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.{ExecutionConfig, SerializerContext}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
 
@@ -38,7 +38,7 @@ class UnitTypeInfo extends TypeInformation[Unit] {
   override def isKeyType(): Boolean = false
 
   @PublicEvolving
-  override def createSerializer(config: ExecutionConfig): TypeSerializer[Unit] =
+  override def createSerializer(serializerContext: SerializerContext): TypeSerializer[Unit] =
     (new UnitSerializer).asInstanceOf[TypeSerializer[Unit]]
 
   override def canEqual(obj: scala.Any): Boolean = {

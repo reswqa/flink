@@ -22,6 +22,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.TypeSerializerSnapshotUtils;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Animal;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Dog;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.DogKryoSerializer;
@@ -117,7 +118,7 @@ public class KryoSerializerSnapshotTest {
             throws IOException {
         DataInputView in = new DataInputDeserializer(unLoadableSnapshotBytes());
 
-        return TypeSerializerSnapshot.readVersionedSnapshot(
+        return TypeSerializerSnapshotUtils.readVersionedSnapshot(
                 in, KryoSerializerSnapshotTest.class.getClassLoader());
     }
 
@@ -142,7 +143,7 @@ public class KryoSerializerSnapshotTest {
                     previousSerializer.snapshotConfiguration();
 
             DataOutputSerializer out = new DataOutputSerializer(4096);
-            TypeSerializerSnapshot.writeVersionedSnapshot(out, previousSnapshot);
+            TypeSerializerSnapshotUtils.writeVersionedSnapshot(out, previousSnapshot);
             return out.getCopyOfBuffer();
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);

@@ -22,6 +22,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.operators.SlotSharingGroup;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
@@ -525,7 +526,7 @@ public class StreamExecutionEnvironmentTest {
 
         @Override
         public TypeInformation<Row> getProducedType() {
-            return TypeInformation.of(Row.class);
+            return TypeInformationUtils.of(Row.class);
         }
 
         @Override

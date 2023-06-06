@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils.runtime;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.TypeSerializerSnapshotUtils;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.util.InstantiationUtil;
@@ -190,17 +191,17 @@ final class PojoSerializerSnapshotData<T> {
                 out,
                 fieldSerializerSnapshots,
                 PojoFieldUtils::writeField,
-                TypeSerializerSnapshot::writeVersionedSnapshot);
+                TypeSerializerSnapshotUtils::writeVersionedSnapshot);
         writeOptionalMap(
                 out,
                 registeredSubclassSerializerSnapshots,
                 NoOpWriter.noopWriter(),
-                TypeSerializerSnapshot::writeVersionedSnapshot);
+                TypeSerializerSnapshotUtils::writeVersionedSnapshot);
         writeOptionalMap(
                 out,
                 nonRegisteredSubclassSerializerSnapshots,
                 NoOpWriter.noopWriter(),
-                TypeSerializerSnapshot::writeVersionedSnapshot);
+                TypeSerializerSnapshotUtils::writeVersionedSnapshot);
     }
 
     private static <T> PojoSerializerSnapshotData<T> readSnapshotData(
@@ -290,7 +291,7 @@ final class PojoSerializerSnapshotData<T> {
             snapshotReader(ClassLoader cl) {
         return (input, unused) -> {
             try {
-                return TypeSerializerSnapshot.readVersionedSnapshot(input, cl);
+                return TypeSerializerSnapshotUtils.readVersionedSnapshot(input, cl);
             } catch (Throwable t) {
                 LOG.warn("Exception while reading serializer snapshot.", t);
                 return null;

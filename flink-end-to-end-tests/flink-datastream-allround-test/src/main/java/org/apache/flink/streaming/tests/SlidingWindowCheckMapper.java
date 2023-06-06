@@ -22,7 +22,7 @@ import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.ListTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
@@ -65,7 +65,7 @@ public class SlidingWindowCheckMapper
                         "eventsSeenSoFar",
                         new ListTypeInfo<>(
                                 new TupleTypeInfo<>(
-                                        TypeInformation.of(Event.class),
+                                        TypeInformationUtils.of(Event.class),
                                         BasicTypeInfo.INT_TYPE_INFO)));
 
         eventsSeenSoFar = getRuntimeContext().getState(previousWindowDescriptor);

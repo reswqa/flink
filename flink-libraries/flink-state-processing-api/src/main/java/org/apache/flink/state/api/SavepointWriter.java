@@ -20,7 +20,7 @@ package org.apache.flink.state.api;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.Path;
@@ -334,7 +334,7 @@ public class SavepointWriter {
                         path)
                 .transform(
                         "reduce(OperatorState)",
-                        TypeInformation.of(CheckpointMetadata.class),
+                        TypeInformationUtils.of(CheckpointMetadata.class),
                         new GroupReduceOperator<>(
                                 new MergeOperatorStates(metadata.getMasterStates())))
                 .forceNonParallel()

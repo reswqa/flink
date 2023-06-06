@@ -20,7 +20,7 @@ package org.apache.flink.streaming.util;
 
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
@@ -124,7 +124,7 @@ public class ProcessFunctionTestHarnessesTest extends TestLogger {
 
         KeyedTwoInputStreamOperatorTestHarness<Integer, Integer, Integer, Integer> harness =
                 ProcessFunctionTestHarnesses.forKeyedCoProcessFunction(
-                        function, x -> x, x -> x, TypeInformation.of(Integer.class));
+                        function, x -> x, x -> x, TypeInformationUtils.of(Integer.class));
 
         harness.processElement1(0, 1);
         harness.processElement2(1, 10);
@@ -184,7 +184,7 @@ public class ProcessFunctionTestHarnessesTest extends TestLogger {
 
         KeyedBroadcastOperatorTestHarness<Integer, Integer, String, Integer> harness =
                 ProcessFunctionTestHarnesses.forKeyedBroadcastProcessFunction(
-                        function, x -> x, TypeInformation.of(Integer.class), stateDescriptor);
+                        function, x -> x, TypeInformationUtils.of(Integer.class), stateDescriptor);
 
         harness.processBroadcastElement("0", 1);
         harness.processElement(1, 10);

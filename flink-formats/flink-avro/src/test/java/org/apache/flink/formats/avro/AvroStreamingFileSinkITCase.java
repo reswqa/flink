@@ -18,7 +18,7 @@
 
 package org.apache.flink.formats.avro;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.formats.avro.generated.Address;
 import org.apache.flink.formats.avro.typeutils.GenericRecordAvroTypeInfo;
@@ -77,7 +77,7 @@ public class AvroStreamingFileSinkITCase extends AbstractTestBase {
 
         AvroWriterFactory<Address> avroWriterFactory = AvroWriters.forSpecificRecord(Address.class);
         DataStream<Address> stream =
-                env.addSource(new FiniteTestSource<>(data), TypeInformation.of(Address.class));
+                env.addSource(new FiniteTestSource<>(data), TypeInformationUtils.of(Address.class));
         stream.addSink(
                 StreamingFileSink.forBulkFormat(Path.fromLocalFile(folder), avroWriterFactory)
                         .withBucketAssigner(new UniqueBucketAssigner<>("test"))
@@ -122,7 +122,7 @@ public class AvroStreamingFileSinkITCase extends AbstractTestBase {
 
         AvroWriterFactory<Datum> avroWriterFactory = AvroWriters.forReflectRecord(Datum.class);
         DataStream<Datum> stream =
-                env.addSource(new FiniteTestSource<>(data), TypeInformation.of(Datum.class));
+                env.addSource(new FiniteTestSource<>(data), TypeInformationUtils.of(Datum.class));
         stream.addSink(
                 StreamingFileSink.forBulkFormat(Path.fromLocalFile(folder), avroWriterFactory)
                         .withBucketAssigner(new UniqueBucketAssigner<>("test"))

@@ -19,7 +19,7 @@
 package org.apache.flink.connector.file.table.stream;
 
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +32,7 @@ public class PartitionCommitInfoTest {
         ExecutionConfig executionConfig = new ExecutionConfig();
         executionConfig.disableGenericTypes();
         assertNotNull(
-                TypeInformation.of(PartitionCommitInfo.class).createSerializer(executionConfig));
+                TypeInformationUtils.of(PartitionCommitInfo.class)
+                        .createSerializer(executionConfig));
     }
 }

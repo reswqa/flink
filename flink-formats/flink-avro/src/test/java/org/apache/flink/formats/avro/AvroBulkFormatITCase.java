@@ -19,6 +19,7 @@
 package org.apache.flink.formats.avro;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.connector.file.src.FileSource;
@@ -150,7 +151,7 @@ class AvroBulkFormatITCase extends SourceTestSuiteBase<RowData> {
 
         @Override
         public TypeInformation<RowData> getProducedType() {
-            return TypeInformation.of(RowData.class);
+            return TypeInformationUtils.of(RowData.class);
         }
 
         @Override

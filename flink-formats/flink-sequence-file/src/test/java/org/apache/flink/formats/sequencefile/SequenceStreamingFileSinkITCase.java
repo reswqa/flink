@@ -20,7 +20,7 @@ package org.apache.flink.formats.sequencefile;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -69,7 +69,7 @@ class SequenceStreamingFileSinkITCase {
         DataStream<Tuple2<Long, String>> stream =
                 env.addSource(
                         new FiniteTestSource<>(testData),
-                        TypeInformation.of(new TypeHint<Tuple2<Long, String>>() {}));
+                        TypeInformationUtils.of(new TypeHint<Tuple2<Long, String>>() {}));
 
         stream.map(
                         new MapFunction<Tuple2<Long, String>, Tuple2<LongWritable, Text>>() {

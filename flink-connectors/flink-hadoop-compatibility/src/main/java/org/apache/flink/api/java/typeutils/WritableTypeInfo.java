@@ -21,6 +21,7 @@ package org.apache.flink.api.java.typeutils;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -112,7 +113,7 @@ public class WritableTypeInfo<T extends Writable> extends TypeInformation<T>
 
     @Override
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerContext executionConfig) {
         return new WritableSerializer<T>(typeClass);
     }
 

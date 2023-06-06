@@ -32,7 +32,7 @@ import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.common.operators.ResourceSpec;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.sink2.Committer;
 import org.apache.flink.api.connector.sink2.TwoPhaseCommittingSink;
@@ -678,9 +678,9 @@ class StreamingJobGraphGeneratorTest {
                 env.addSource(
                                 new InputFormatSourceFunction<>(
                                         new TypeSerializerInputFormat<>(
-                                                TypeInformation.of(Long.class)),
-                                        TypeInformation.of(Long.class)),
-                                TypeInformation.of(Long.class))
+                                                TypeInformationUtils.of(Long.class)),
+                                        TypeInformationUtils.of(Long.class)),
+                                TypeInformationUtils.of(Long.class))
                         .name("source");
 
         source.writeUsingOutputFormat(new DiscardingOutputFormat<>()).name("sink1");

@@ -19,7 +19,7 @@
 package org.apache.flink.table.dataview;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.MapSerializer;
@@ -113,12 +113,12 @@ public class MapViewTypeInfo<K, V> extends TypeInformation<MapView<K, V>> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public TypeSerializer<MapView<K, V>> createSerializer(ExecutionConfig config) {
+    public TypeSerializer<MapView<K, V>> createSerializer(SerializerContext serializerContext) {
         if (nullSerializer) {
             return (TypeSerializer<MapView<K, V>>) (TypeSerializer<?>) NullSerializer.INSTANCE;
         } else {
-            TypeSerializer<K> keySer = keyType.createSerializer(config);
-            TypeSerializer<V> valueSer = valueType.createSerializer(config);
+            TypeSerializer<K> keySer = keyType.createSerializer(serializerContext);
+            TypeSerializer<V> valueSer = valueType.createSerializer(serializerContext);
             if (nullAware) {
                 return new MapViewSerializer<>(new NullAwareMapSerializer<>(keySer, valueSer));
             } else {

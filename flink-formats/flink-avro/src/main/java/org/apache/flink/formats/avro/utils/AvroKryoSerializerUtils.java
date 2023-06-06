@@ -19,6 +19,7 @@
 package org.apache.flink.formats.avro.utils;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.SerializableSerializer;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.AvroUtils;
@@ -69,7 +70,7 @@ public class AvroKryoSerializerUtils extends AvroUtils {
                 GenericData.Array.class.getName(),
                 new KryoRegistration(
                         GenericData.Array.class,
-                        new ExecutionConfig.SerializableSerializer<>(
+                        new SerializableSerializer<>(
                                 new Serializers
                                         .SpecificInstanceCollectionSerializerForArrayList())));
     }
