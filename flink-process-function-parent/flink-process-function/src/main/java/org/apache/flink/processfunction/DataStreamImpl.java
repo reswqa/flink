@@ -18,15 +18,28 @@
 
 package org.apache.flink.processfunction;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.api.java.Utils;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.BroadcastStream;
+import org.apache.flink.processfunction.api.stream.GlobalStream;
+import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.connector.ConsumerSinkFunction;
+import org.apache.flink.processfunction.operators.ProcessOperator;
+import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
+import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.StreamSink;
 import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
+import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PhysicalTransformation;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.ConsumerFunction;
+
+import java.util.function.Function;
 
 public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
     private final ExecutionEnvironmentImpl environment;
@@ -43,7 +56,65 @@ public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
     @Override
     public <OUT> NonKeyedPartitionStream<OUT> process(
             SingleStreamProcessFunction<T, OUT> processFunction) {
-        // TODO: Add implementation that calls processFunction.processRecord() in runtime
+        TypeInformation<OUT> outType =
+                TypeExtractor.getUnaryOperatorReturnType(
+                        processFunction,
+                        SingleStreamProcessFunction.class,
+                        0,
+                        1,
+                        new int[] {1, 0},
+                        getType(),
+                        Utils.getCallLocationName(),
+                        true);
+        ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
+
+        return transform("Process", outType, operator);
+    }
+
+    @Override
+    public <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
+            TwoInputStreamProcessFunction<T, OUT1, OUT2> processFunction) {
+        // TODO Impl.
+        return null;
+    }
+
+    @Override
+    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            NonKeyedPartitionStream<T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
+        // TODO Impl.
+        return null;
+    }
+
+    @Override
+    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            BroadcastStream<T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
+        // TODO Impl.
+        return null;
+    }
+
+    @Override
+    public GlobalStream<T> coalesce() {
+        // TODO Impl.
+        return null;
+    }
+
+    @Override
+    public <K> KeyedPartitionStream<K, T> keyBy(Function<T, K> keySelector) {
+        // TODO Impl.
+        return null;
+    }
+
+    @Override
+    public NonKeyedPartitionStream<T> shuffle() {
+        // TODO Impl.
+        return null;
+    }
+
+    @Override
+    public BroadcastStream<T> broadcast() {
+        // TODO Impl.
         return null;
     }
 
@@ -67,5 +138,39 @@ public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
                         true);
 
         environment.addOperator(sinkTransformation);
+    }
+
+    /**
+     * Gets the type of the stream.
+     *
+     * @return The type of the DataStream.
+     */
+    private TypeInformation<T> getType() {
+        return transformation.getOutputType();
+    }
+
+    private <R> NonKeyedPartitionStream<R> transform(
+            String operatorName,
+            TypeInformation<R> outputTypeInfo,
+            OneInputStreamOperator<T, R> operator) {
+        // read the output type of the input Transform to coax out errors about MissingTypeInfo
+        transformation.getOutputType();
+
+        OneInputTransformation<T, R> resultTransform =
+                new OneInputTransformation<>(
+                        this.transformation,
+                        operatorName,
+                        SimpleUdfStreamOperatorFactory.of(operator),
+                        outputTypeInfo,
+                        // TODO Supports set parallelism.
+                        1,
+                        true);
+
+        NonKeyedPartitionStream<R> returnStream =
+                new DataStreamImpl<>(environment, resultTransform);
+
+        environment.addOperator(resultTransform);
+
+        return returnStream;
     }
 }
