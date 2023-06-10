@@ -16,15 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.processfunction.api.function;
 
-import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-import org.apache.flink.util.function.ConsumerFunction;
+import org.apache.flink.processfunction.api.RuntimeContext;
 
-public interface DataStream<T> {
+import java.util.function.Consumer;
 
-    <OUT> DataStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
-
-    /** TODO: Temporal method. Will revisit sink functions later. */
-    void tmpToConsumerSink(ConsumerFunction<T> consumer);
+public interface SingleStreamProcessFunction<IN, OUT> extends ProcessFunction {
+    void processRecord(IN record, Consumer<OUT> output, RuntimeContext ctx);
 }

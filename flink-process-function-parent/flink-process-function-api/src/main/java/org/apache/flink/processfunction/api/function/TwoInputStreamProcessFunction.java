@@ -16,18 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.processfunction.api.function;
 
-import java.util.Collections;
-import java.util.Map;
+import org.apache.flink.processfunction.api.RuntimeContext;
+
 import java.util.function.Consumer;
 
-@FunctionalInterface
-public interface ProcessFunction<IN, OUT> {
-    void processRecord(IN record, Consumer<OUT> output, RuntimeContext ctx);
+public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFunction {
+    void processFirstInputRecord(IN1 record, Consumer<OUT> output, RuntimeContext ctx);
 
-    // Explicitly declares states upfront. See FLIP-22.
-    default Map<String, StateDescriptor> usesStates() { // stateId -> stateDescriptor
-        return Collections.emptyMap();
-    }
+    void processSecondInputRecord(IN2 record, Consumer<OUT> output, RuntimeContext ctx);
 }

@@ -19,10 +19,10 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
-import org.apache.flink.processfunction.api.ProcessFunction;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.State;
 import org.apache.flink.processfunction.api.StateDescriptor;
+import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 
 import java.util.Collections;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class SimpleStatefulMap {
         env.execute();
     }
 
-    private static class CalcTimeDiffFunc implements ProcessFunction<Long, Long> {
+    private static class CalcTimeDiffFunc implements SingleStreamProcessFunction<Long, Long> {
         static final String STATE_ID = "lastTimestamp";
 
         @Override

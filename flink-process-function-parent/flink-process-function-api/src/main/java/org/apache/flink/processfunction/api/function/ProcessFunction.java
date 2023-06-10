@@ -16,15 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.processfunction.api.function;
 
-import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-import org.apache.flink.util.function.ConsumerFunction;
+import org.apache.flink.processfunction.api.StateDescriptor;
 
-public interface DataStream<T> {
+import java.util.Collections;
+import java.util.Map;
 
-    <OUT> DataStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
-
-    /** TODO: Temporal method. Will revisit sink functions later. */
-    void tmpToConsumerSink(ConsumerFunction<T> consumer);
+public interface ProcessFunction extends java.io.Serializable {
+    // Explicitly declares states upfront. See FLIP-22.
+    default Map<String, StateDescriptor> usesStates() { // stateId -> stateDescriptor
+        return Collections.emptyMap();
+    }
 }
