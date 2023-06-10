@@ -22,6 +22,8 @@ import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.util.function.ConsumerFunction;
 
+import java.util.function.Function;
+
 public interface NonKeyedPartitionStream<T> {
 
     <OUT> NonKeyedPartitionStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
@@ -36,6 +38,14 @@ public interface NonKeyedPartitionStream<T> {
     <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
+
+    GlobalStream<T> coalesce();
+
+    <K> KeyedPartitionStream<K, T> keyBy(Function<T, K> keySelector);
+
+    NonKeyedPartitionStream<T> shuffle();
+
+    BroadcastStream<T> broadcast();
 
     /** TODO: Temporal method. Will revisit sink functions later. */
     void tmpToConsumerSink(ConsumerFunction<T> consumer);
