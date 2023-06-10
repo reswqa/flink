@@ -16,15 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.processfunction.api.stream;
 
-import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-import org.apache.flink.util.function.ConsumerFunction;
+import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 
-public interface DataStream<T> {
+public interface BroadcastStream<T> {
+    <K_OTHER, T_OTHER, OUT> KeyedPartitionStream<K_OTHER, OUT> connectAndProcess(
+            KeyedPartitionStream<K_OTHER, T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
-    <OUT> DataStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
-
-    /** TODO: Temporal method. Will revisit sink functions later. */
-    void tmpToConsumerSink(ConsumerFunction<T> consumer);
+    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            NonKeyedPartitionStream<T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 }

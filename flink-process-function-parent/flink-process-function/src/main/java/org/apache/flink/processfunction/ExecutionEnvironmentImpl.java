@@ -29,8 +29,8 @@ import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.PipelineExecutor;
 import org.apache.flink.core.execution.PipelineExecutorFactory;
-import org.apache.flink.processfunction.api.DataStream;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.connector.SupplierSourceFunction;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.graph.StreamGraph;
@@ -70,7 +70,8 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     }
 
     @Override
-    public <OUT> DataStream<OUT> tmpFromSupplierSource(SupplierFunction<OUT> supplier) {
+    public <OUT> NonKeyedPartitionStream<OUT> tmpFromSupplierSource(
+            SupplierFunction<OUT> supplier) {
         final String sourceName = "Supplier Source";
         // TODO Supports clean closure
         final SupplierSourceFunction<OUT> sourceFunction = new SupplierSourceFunction<>(supplier);

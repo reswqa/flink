@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.api;
 
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.util.function.SupplierFunction;
 
 public abstract class ExecutionEnvironment {
@@ -35,5 +36,6 @@ public abstract class ExecutionEnvironment {
      * TODO: 1. Temporal method. Will revisit source functions later. 2. Refactor and move the type
      * information related code to core-api module.
      */
-    public abstract <OUT> DataStream<OUT> tmpFromSupplierSource(SupplierFunction<OUT> supplier);
+    public abstract <OUT> NonKeyedPartitionStream<OUT> tmpFromSupplierSource(
+            SupplierFunction<OUT> supplier);
 }
