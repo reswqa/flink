@@ -18,12 +18,11 @@
 
 package org.apache.flink.processfunction.api.stream;
 
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.util.function.ConsumerFunction;
-
-import java.util.function.Function;
 
 public interface KeyedPartitionStream<K, T> {
     <OUT> KeyedPartitionStream<K, OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
@@ -41,7 +40,7 @@ public interface KeyedPartitionStream<K, T> {
 
     GlobalStream<T> coalesce();
 
-    <NEW_KEY> KeyedPartitionStream<NEW_KEY, T> keyBy(Function<T, NEW_KEY> keySelector);
+    <NEW_KEY> KeyedPartitionStream<NEW_KEY, T> keyBy(KeySelector<T, NEW_KEY> keySelector);
 
     NonKeyedPartitionStream<T> shuffle();
 

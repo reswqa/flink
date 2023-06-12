@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.stream;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.Utils;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
@@ -40,8 +41,6 @@ import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PhysicalTransformation;
 import org.apache.flink.util.function.ConsumerFunction;
-
-import java.util.function.Function;
 
 public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
         implements NonKeyedPartitionStream<T> {
@@ -99,9 +98,8 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
     }
 
     @Override
-    public <K> KeyedPartitionStream<K, T> keyBy(Function<T, K> keySelector) {
-        // TODO Impl.
-        return null;
+    public <K> KeyedPartitionStream<K, T> keyBy(KeySelector<T, K> keySelector) {
+        return new KeyedPartitionStreamImpl<>(this, keySelector);
     }
 
     @Override
