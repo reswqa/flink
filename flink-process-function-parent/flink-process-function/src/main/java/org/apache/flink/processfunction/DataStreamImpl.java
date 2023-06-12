@@ -24,6 +24,7 @@ import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
@@ -73,7 +74,7 @@ public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
 
     @Override
     public <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
-            TwoInputStreamProcessFunction<T, OUT1, OUT2> processFunction) {
+            TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction) {
         // TODO Impl.
         return null;
     }
