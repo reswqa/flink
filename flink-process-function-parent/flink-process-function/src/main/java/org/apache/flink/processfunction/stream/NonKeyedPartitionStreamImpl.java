@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction;
+package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.processfunction.DataStream;
+import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -37,21 +39,16 @@ import org.apache.flink.streaming.api.operators.StreamSink;
 import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PhysicalTransformation;
-import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.function.ConsumerFunction;
 
 import java.util.function.Function;
 
-public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
-    private final ExecutionEnvironmentImpl environment;
-    private final Transformation<T> transformation;
+public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
+        implements NonKeyedPartitionStream<T> {
 
-    public DataStreamImpl(ExecutionEnvironmentImpl environment, Transformation<T> transformation) {
-        this.environment =
-                Preconditions.checkNotNull(environment, "Execution Environment must not be null.");
-        this.transformation =
-                Preconditions.checkNotNull(
-                        transformation, "Stream Transformation must not be null.");
+    public NonKeyedPartitionStreamImpl(
+            ExecutionEnvironmentImpl environment, Transformation<T> transformation) {
+        super(environment, transformation);
     }
 
     @Override
@@ -141,15 +138,6 @@ public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
         environment.addOperator(sinkTransformation);
     }
 
-    /**
-     * Gets the type of the stream.
-     *
-     * @return The type of the DataStream.
-     */
-    private TypeInformation<T> getType() {
-        return transformation.getOutputType();
-    }
-
     private <R> NonKeyedPartitionStream<R> transform(
             String operatorName,
             TypeInformation<R> outputTypeInfo,
@@ -168,7 +156,7 @@ public class DataStreamImpl<T> implements NonKeyedPartitionStream<T> {
                         true);
 
         NonKeyedPartitionStream<R> returnStream =
-                new DataStreamImpl<>(environment, resultTransform);
+                new NonKeyedPartitionStreamImpl<>(environment, resultTransform);
 
         environment.addOperator(resultTransform);
 

@@ -32,6 +32,7 @@ import org.apache.flink.core.execution.PipelineExecutorFactory;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.connector.SupplierSourceFunction;
+import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
@@ -87,7 +88,7 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
                         false);
 
         final StreamSource<OUT, ?> sourceOperator = new StreamSource<>(sourceFunction);
-        return new DataStreamImpl<>(
+        return new NonKeyedPartitionStreamImpl<>(
                 this,
                 new LegacySourceTransformation<>(
                         sourceName,
