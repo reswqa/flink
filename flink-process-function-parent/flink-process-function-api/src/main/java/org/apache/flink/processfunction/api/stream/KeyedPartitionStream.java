@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.api.stream;
 
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.util.function.ConsumerFunction;
 
 import java.util.function.Function;
@@ -28,7 +29,7 @@ public interface KeyedPartitionStream<K, T> {
     <OUT> KeyedPartitionStream<K, OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
 
     <OUT1, OUT2> KeyedPartitionStream.TwoOutputStreams<K, OUT1, OUT2> process(
-            TwoInputStreamProcessFunction<T, OUT1, OUT2> processFunction);
+            TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
     <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
