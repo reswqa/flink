@@ -77,8 +77,15 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <OUT> KeyedPartitionStream<K, OUT> process(
+    public <OUT> NonKeyedPartitionStream<OUT> process(
             SingleStreamProcessFunction<V, OUT> processFunction) {
+        return null;
+    }
+
+    @Override
+    public <OUT> KeyedPartitionStream<K, OUT> process(
+            SingleStreamProcessFunction<V, OUT> processFunction,
+            KeySelector<OUT, K> newKeySelector) {
         return null;
     }
 
@@ -89,7 +96,14 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            NonKeyedPartitionStream<T_OTHER> other,
+            TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
+        return null;
+    }
+
+    @Override
+    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
         return null;
@@ -97,6 +111,14 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
 
     @Override
     public <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+            KeyedPartitionStream<K, T_OTHER> other,
+            TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction,
+            KeySelector<OUT, K> newKeySelector) {
+        return null;
+    }
+
+    @Override
+    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
         return null;

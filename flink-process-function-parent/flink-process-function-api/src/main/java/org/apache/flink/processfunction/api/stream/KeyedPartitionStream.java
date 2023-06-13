@@ -25,16 +25,42 @@ import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunct
 import org.apache.flink.util.function.ConsumerFunction;
 
 public interface KeyedPartitionStream<K, T> {
-    <OUT> KeyedPartitionStream<K, OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
+    /**
+     * This method is used to avoid shuffle after applying the process function. It is required that
+     * for the same record, the new {@link KeySelector} must extract the same key as the {@link
+     * KeySelector} on this {@link KeyedPartitionStream}.
+     */
+    <OUT> KeyedPartitionStream<K, OUT> process(
+            SingleStreamProcessFunction<T, OUT> processFunction,
+            KeySelector<OUT, K> newKeySelector);
+
+    <OUT> NonKeyedPartitionStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
 
     <OUT1, OUT2> KeyedPartitionStream.TwoOutputStreams<K, OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
-    <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+    /** Keyed connect to Non-Keyed. */
+    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            NonKeyedPartitionStream<T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
+
+    /** Keyed connect to Non-Keyed. */
+    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
+    /**
+     * Keyed connect to Non-Keyed. This method is used to avoid shuffle after applying the process
+     * function. It is required that for the same record, the new {@link KeySelector} must extract
+     * the same key as the {@link KeySelector} on these two {@link KeyedPartitionStream}s.
+     */
     <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+            KeyedPartitionStream<K, T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction,
+            KeySelector<OUT, K> newKeySelector);
+
+    /** Keyed connect to Broadcast. */
+    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 

@@ -31,6 +31,10 @@ public interface NonKeyedPartitionStream<T> {
     <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
+    <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            KeyedPartitionStream<K, T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
+
     <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
