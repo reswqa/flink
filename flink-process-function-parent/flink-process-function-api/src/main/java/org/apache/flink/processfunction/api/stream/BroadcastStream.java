@@ -21,8 +21,8 @@ package org.apache.flink.processfunction.api.stream;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 
 public interface BroadcastStream<T> {
-    <K_OTHER, T_OTHER, OUT> KeyedPartitionStream<K_OTHER, OUT> connectAndProcess(
-            KeyedPartitionStream<K_OTHER, T_OTHER> other,
+    <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
     <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(

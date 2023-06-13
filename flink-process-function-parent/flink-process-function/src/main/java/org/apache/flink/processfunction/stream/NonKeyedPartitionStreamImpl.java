@@ -76,6 +76,13 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
     }
 
     @Override
+    public <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+            KeyedPartitionStream<K, T_OTHER> other,
+            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
+        return null;
+    }
+
+    @Override
     public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
