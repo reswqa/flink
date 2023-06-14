@@ -18,11 +18,13 @@
 
 package org.apache.flink.processfunction.stream;
 
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.Utils;
+import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
+import org.apache.flink.processfunction.api.function.Functions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -30,12 +32,14 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
+import org.apache.flink.streaming.api.transformations.ReduceTransformation;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
 import org.apache.flink.util.function.ConsumerFunction;
 
@@ -84,19 +88,42 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     @Override
     public <OUT> NonKeyedPartitionStream<OUT> process(
             SingleStreamProcessFunction<V, OUT> processFunction) {
-        TypeInformation<OUT> outType =
-                TypeExtractor.getUnaryOperatorReturnType(
-                        processFunction,
-                        SingleStreamProcessFunction.class,
-                        0,
-                        1,
-                        new int[] {1, 0},
-                        getType(),
-                        Utils.getCallLocationName(),
-                        true);
-        ProcessOperator<V, OUT> operator = new ProcessOperator<>(processFunction);
+        TypeInformation<OUT> outType;
+        outType = StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
 
-        return transform("KeyedProcess", outType, operator);
+        Transformation<OUT> transform;
+        if (processFunction instanceof SingleStreamReduceFunction) {
+            // reduce process
+            //noinspection unchecked
+            transform =
+                    (Transformation<OUT>)
+                            transformReduce((SingleStreamReduceFunction<V>) processFunction);
+        } else {
+            // universal process
+            ProcessOperator<V, OUT> operator = new ProcessOperator<>(processFunction);
+            transform = transformWithOperator("KeyedProcess", outType, operator);
+        }
+
+        return new NonKeyedPartitionStreamImpl<>(environment, transform);
+    }
+
+    private Transformation<V> transformReduce(SingleStreamReduceFunction<V> processFunction) {
+        Functions.ReduceFunction<V> reduceFunction = processFunction.getReduceFunction();
+        ReduceTransformation<V, K> reduce =
+                new ReduceTransformation<>(
+                        "Keyed Reduce",
+                        // TODO Supports set parallelism.
+                        1,
+                        transformation,
+                        // TODO Supports clean closure.
+                        // We can directly pass Functions.ReduceFunction after remove old datastream
+                        // api.
+                        (ReduceFunction<V>) reduceFunction::reduce,
+                        keySelector,
+                        keyType,
+                        true);
+        environment.addOperator(reduce);
+        return reduce;
     }
 
     @Override
@@ -165,7 +192,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     @Override
     public void tmpToConsumerSink(ConsumerFunction<V> consumer) {}
 
-    private <R> NonKeyedPartitionStream<R> transform(
+    private <R> Transformation<R> transformWithOperator(
             String operatorName,
             TypeInformation<R> outputTypeInfo,
             OneInputStreamOperator<V, R> operator) {
@@ -182,14 +209,12 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
                         1,
                         true);
 
-        NonKeyedPartitionStreamImpl<R> returnStream =
-                new NonKeyedPartitionStreamImpl<>(environment, resultTransform);
         environment.addOperator(resultTransform);
 
         // inject the key selector and key type
         resultTransform.setStateKeySelector(keySelector);
         resultTransform.setStateKeyType(keyType);
 
-        return returnStream;
+        return resultTransform;
     }
 }

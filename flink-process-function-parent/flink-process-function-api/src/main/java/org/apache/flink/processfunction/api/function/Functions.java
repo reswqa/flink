@@ -18,66 +18,54 @@
 
 package org.apache.flink.processfunction.api.function;
 
-import org.apache.flink.api.common.state.States.StateDeclaration;
+import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.processfunction.api.RuntimeContext;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.function.BiFunction;
+import java.io.Serializable;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-// TODO: consider moving implementations to outside api module
+/** This class provides some built-in functions for convenience. */
 public final class Functions {
-    public static <IN, OUT> SingleStreamProcessFunction<IN, OUT> map(Function<IN, OUT> mapFunc) {
-        return new SingleStreamProcessFunction<IN, OUT>() {
-            @Override
-            public void processRecord(IN record, Consumer<OUT> output, RuntimeContext ctx) {
-                output.accept(mapFunc.apply(record));
-            }
-        };
+
+    private static final Class<?> INSTANCE;
+
+    static {
+        try {
+            INSTANCE = Class.forName("org.apache.flink.processfunction.FunctionImpl");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(
+                    "Please ensure that flink-process-function in your class path");
+        }
     }
 
-    public static <T> SingleStreamProcessFunction<T, T> filter(Function<T, Boolean> filterFunc) {
-        return new SingleStreamProcessFunction<T, T>() {
-            @Override
-            public void processRecord(T record, Consumer<T> output, RuntimeContext ctx) {
-                if (filterFunc.apply(record)) {
-                    output.accept(record);
-                }
-            }
-        };
+    @SuppressWarnings("unchecked")
+    public static <IN, OUT> SingleStreamProcessFunction<IN, OUT> map(MapFunction<IN, OUT> mapFunc) {
+        try {
+            return (SingleStreamProcessFunction<IN, OUT>)
+                    INSTANCE.getMethod("map", MapFunction.class).invoke(null, mapFunc);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static <T> SingleStreamProcessFunction<T, T> reduce(BiFunction<T, T, T> reduceFunc) {
-        return new SingleStreamProcessFunction<T, T>() {
-            // TODO Supports and initialize the value state declaration.
-            private final StateDeclaration stateDeclaration = null;
+    @SuppressWarnings("unchecked")
+    public static <T> SingleStreamProcessFunction<T, T> filter(FilterFunction<T> filterFunc) {
+        try {
+            return (SingleStreamProcessFunction<T, T>)
+                    INSTANCE.getMethod("filter", FilterFunction.class).invoke(null, filterFunc);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-            @Override
-            public Set<StateDeclaration> usesStates() {
-                return Collections.singleton(stateDeclaration);
-            }
-
-            @Override
-            public void processRecord(T record, Consumer<T> output, RuntimeContext ctx) {
-                // TODO:
-                // State state = ctx.getValueState("reduceState");
-                //  T result = reduceFunc.apply(state.getValue(), record);
-                //  state.setValue(result);
-                //  if (ctx.getExecutionMode() == STREAM) {
-                //      output.accept(result);
-                //  }
-            }
-
-            // TODO:
-            //  public void endOfInput(Consumer<T> output, RuntimeContext ctx) {
-            //      if (ctx.getExecutionMode() == BATCH) {
-            //          State state = ctx.getState("reduceState");
-            //          output.accept(state.getValue());
-            //      }
-            //  }
-        };
+    @SuppressWarnings("unchecked")
+    public static <T> SingleStreamProcessFunction<T, T> reduce(ReduceFunction<T> reduceFunc) {
+        try {
+            return (SingleStreamProcessFunction<T, T>)
+                    INSTANCE.getMethod("reduce", ReduceFunction.class).invoke(null, reduceFunc);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static <T> TwoInputStreamProcessFunction<T, T, T> union() {
@@ -92,5 +80,55 @@ public final class Functions {
                 output.accept(record);
             }
         };
+    }
+
+    @FunctionalInterface
+    public interface MapFunction<T, O> extends Function {
+
+        /**
+         * The mapping method. Takes an element from the input data set and transforms it into
+         * exactly one element.
+         *
+         * @param value The input value.
+         * @return The transformed value
+         * @throws Exception This method may throw exceptions. Throwing an exception will cause the
+         *     operation to fail and may trigger recovery.
+         */
+        O map(T value) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface FilterFunction<T> extends Function, Serializable {
+
+        /**
+         * The filter function that evaluates the predicate.
+         *
+         * <p><strong>IMPORTANT:</strong> The system assumes that the function does not modify the
+         * elements on which the predicate is applied. Violating this assumption can lead to
+         * incorrect results.
+         *
+         * @param value The value to be filtered.
+         * @return True for values that should be retained, false for values to be filtered out.
+         * @throws Exception This method may throw exceptions. Throwing an exception will cause the
+         *     operation to fail and may trigger recovery.
+         */
+        boolean filter(T value) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ReduceFunction<T> extends Function, Serializable {
+
+        /**
+         * The core method of ReduceFunction, combining two values into one value of the same type.
+         * The reduce function is consecutively applied to all values of a group until only a single
+         * value remains.
+         *
+         * @param value1 The first value to combine.
+         * @param value2 The second value to combine.
+         * @return The combined value of both input values.
+         * @throws Exception This method may throw exceptions. Throwing an exception will cause the
+         *     operation to fail and may trigger recovery.
+         */
+        T reduce(T value1, T value2) throws Exception;
     }
 }

@@ -20,9 +20,7 @@ package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -54,15 +52,7 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
     public <OUT> NonKeyedPartitionStream<OUT> process(
             SingleStreamProcessFunction<T, OUT> processFunction) {
         TypeInformation<OUT> outType =
-                TypeExtractor.getUnaryOperatorReturnType(
-                        processFunction,
-                        SingleStreamProcessFunction.class,
-                        0,
-                        1,
-                        new int[] {1, 0},
-                        getType(),
-                        Utils.getCallLocationName(),
-                        true);
+                StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
         ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
 
         return transform("Process", outType, operator);

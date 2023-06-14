@@ -19,12 +19,10 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
-import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.Functions;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.function.Consumer;
 
 /** Usage: Must be executed with flink-process-function and flink-dist jar in classpath. */
 public class SimpleMap {
@@ -32,17 +30,10 @@ public class SimpleMap {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.tmpFromSupplierSource(System::currentTimeMillis)
                 .process(
-                        // Lambda expression can not work here. Due to generic erasure, we cannot
-                        // infer the type of Consumer<T> from it.
-                        new SingleStreamProcessFunction<Long, String>() {
-                            @Override
-                            public void processRecord(
-                                    Long record, Consumer<String> output, RuntimeContext ctx) {
-                                output.accept(
+                        Functions.map(
+                                record ->
                                         new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS")
-                                                .format(new Date(record)));
-                            }
-                        })
+                                                .format(new Date(record))))
                 // Don't use Lambda reference as PrintStream is not serializable.
                 .tmpToConsumerSink((tsStr) -> System.out.println(tsStr));
         env.execute();
