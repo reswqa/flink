@@ -18,28 +18,40 @@
 
 package org.apache.flink.processfunction.examples;
 
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.Functions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.function.Consumer;
 
 public class WordCount {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.tmpFromSupplierSource(
-                        () -> {
-                            // generate lines of text, each line contains 5 words (letter)
-                            Random random = new Random();
-                            StringBuilder sb = new StringBuilder();
-                            for (int i = 0; i < 5; ++i) {
-                                sb.append((char) ('A' + random.nextInt(26))).append(' ');
-                            }
-                            return sb.toString();
-                        })
-                .process(new Tokenizer())
+        boolean isStreamingMode = false;
+        NonKeyedPartitionStream<String> source;
+        if (isStreamingMode) {
+            env.setRuntimeMode(RuntimeExecutionMode.STREAMING);
+            source =
+                    env.tmpFromSupplierSource(
+                            () -> {
+                                // generate lines of text, each line contains 5 words (letter)
+                                Random random = new Random();
+                                StringBuilder sb = new StringBuilder();
+                                for (int i = 0; i < 5; ++i) {
+                                    sb.append((char) ('A' + random.nextInt(26))).append(' ');
+                                }
+                                return sb.toString();
+                            });
+        } else {
+            env.setRuntimeMode(RuntimeExecutionMode.BATCH);
+            source = env.fromCollection(Arrays.asList("A", "B", "A", "C"));
+        }
+        source.process(new Tokenizer())
                 .keyBy(WordAndCount::getWord)
                 .process(
                         Functions.reduce(

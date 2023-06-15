@@ -18,8 +18,11 @@
 
 package org.apache.flink.processfunction.api;
 
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.util.function.SupplierFunction;
+
+import java.util.Collection;
 
 public abstract class ExecutionEnvironment {
     public static ExecutionEnvironment getExecutionEnvironment()
@@ -38,4 +41,9 @@ public abstract class ExecutionEnvironment {
      */
     public abstract <OUT> NonKeyedPartitionStream<OUT> tmpFromSupplierSource(
             SupplierFunction<OUT> supplier);
+
+    public abstract <OUT> NonKeyedPartitionStream<OUT> fromCollection(Collection<OUT> collection);
+
+    // Temporal method for testing. We should consider how to set the execution mode later.
+    public abstract ExecutionEnvironment setRuntimeMode(RuntimeExecutionMode runtimeMode);
 }
