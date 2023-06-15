@@ -19,6 +19,8 @@
 package org.apache.flink.api.common.state;
 
 import org.apache.flink.api.common.state.States.ListStateDeclaration;
+import org.apache.flink.api.common.state.States.StateDeclaration;
+import org.apache.flink.api.common.state.States.ValueStateDeclaration;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
 
@@ -32,5 +34,15 @@ public class StateDeclarationConverter {
                 (TypeInformation<T>)
                         TypeInformationUtils.fromTypeDescriptor(
                                 stateDeclaration.getElementTypeDescriptor()));
+    }
+
+    public static <T> ValueStateDescriptor<T> getValueStateDescriptor(
+            ValueStateDeclaration<T> stateDeclaration) {
+        //noinspection unchecked
+        return new ValueStateDescriptor<>(
+                stateDeclaration.getName(),
+                (TypeInformation<T>)
+                        TypeInformationUtils.fromTypeDescriptor(
+                                stateDeclaration.getTypeDescriptor()));
     }
 }

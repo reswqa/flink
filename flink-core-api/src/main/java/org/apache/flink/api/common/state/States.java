@@ -29,6 +29,11 @@ public class States {
         return new ListStateDeclaration<>(name, elementTypeDescriptor);
     }
 
+    public static <T> ValueStateDeclaration<T> ofValue(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return new ValueStateDeclaration<>(name, typeDescriptor);
+    }
+
     /** Declaration for state. */
     public abstract static class StateDeclaration {
         private final String name;
@@ -90,6 +95,40 @@ public class States {
         @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), getElementTypeDescriptor());
+        }
+    }
+
+    public static class ValueStateDeclaration<T> extends StateDeclaration {
+
+        private final TypeDescriptor<T> typeDescriptor;
+
+        private ValueStateDeclaration(String name, TypeDescriptor<T> typeDescriptor) {
+            super(name);
+            this.typeDescriptor = typeDescriptor;
+        }
+
+        public TypeDescriptor<T> getTypeDescriptor() {
+            return typeDescriptor;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            ValueStateDeclaration<?> that = (ValueStateDeclaration<?>) o;
+            return Objects.equals(typeDescriptor, that.typeDescriptor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), typeDescriptor);
         }
     }
 }

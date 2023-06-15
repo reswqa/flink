@@ -20,9 +20,11 @@ package org.apache.flink.processfunction.api;
 
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.States.ListStateDeclaration;
+import org.apache.flink.api.common.state.States.ValueStateDeclaration;
+import org.apache.flink.api.common.state.ValueState;
 
 public interface RuntimeContext {
     <T> ListState<T> getState(ListStateDeclaration<T> stateDeclaration) throws Exception;
 
-    // TODO introduce overload methods for keyed states.
+    <T> ValueState<T> getState(ValueStateDeclaration<T> stateDeclaration) throws Exception;
 }

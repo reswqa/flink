@@ -22,42 +22,36 @@ import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.StateDeclarationConverter;
 import org.apache.flink.api.common.state.States;
-import org.apache.flink.api.common.state.States.ListStateDeclaration;
-import org.apache.flink.api.common.state.States.StateDeclaration;
 import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.common.state.ValueStateDescriptor;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
-import org.apache.flink.streaming.api.operators.ChainingStrategy;
-import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.util.ExceptionUtils;
 
-import java.util.Set;
+import javax.annotation.Nullable;
+
 import java.util.function.Consumer;
 
-/** Operator for {@link SingleStreamProcessFunction}. */
-public class ProcessOperator<IN, OUT>
-        extends AbstractUdfStreamOperator<OUT, SingleStreamProcessFunction<IN, OUT>>
-        implements OneInputStreamOperator<IN, OUT> {
+public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT> {
 
-    protected transient RuntimeContext context;
+    @Nullable private final KeySelector<OUT, KEY> outKeySelector;
 
-    protected transient Consumer<OUT> outputCollector;
+    public KeyedProcessOperator(SingleStreamProcessFunction<IN, OUT> userFunction) {
+        this(userFunction, null);
+    }
 
-    protected transient Set<StateDeclaration> usedStates;
-
-    public ProcessOperator(SingleStreamProcessFunction<IN, OUT> userFunction) {
+    public KeyedProcessOperator(
+            SingleStreamProcessFunction<IN, OUT> userFunction,
+            KeySelector<OUT, KEY> outKeySelector) {
         super(userFunction);
-
-        chainingStrategy = ChainingStrategy.ALWAYS;
+        this.outKeySelector = outKeySelector;
     }
 
     @Override
     public void open() throws Exception {
         super.open();
-        context = getContext();
-        outputCollector = getOutputCollector();
-        usedStates = userFunction.usesStates();
     }
 
     @Override
@@ -65,12 +59,34 @@ public class ProcessOperator<IN, OUT>
         userFunction.processRecord(element.getValue(), outputCollector, context);
     }
 
+    @Override
     protected RuntimeContext getContext() {
-        return new ContextImpl();
+        return new KeyedContextImpl();
     }
 
+    @Override
     protected Consumer<OUT> getOutputCollector() {
-        return new OutputCollector();
+        return outKeySelector != null ? new KeyCheckedCollector() : new OutputCollector();
+    }
+
+    private class KeyCheckedCollector extends OutputCollector {
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void accept(OUT outputRecord) {
+            try {
+                KEY currentKey = (KEY) getCurrentKey();
+                KEY outputKey = outKeySelector.getKey(outputRecord);
+                if (!outputKey.equals(currentKey)) {
+                    throw new IllegalStateException(
+                            "Output key must equals to input key if you want the produced stream is keyed. ");
+                }
+            } catch (Exception e) {
+                // TODO Change Consumer to ThrowingConsumer.
+                ExceptionUtils.rethrow(e);
+            }
+            super.accept(outputRecord);
+        }
     }
 
     private class OutputCollector implements Consumer<OUT> {
@@ -83,12 +99,12 @@ public class ProcessOperator<IN, OUT>
         }
     }
 
-    private class ContextImpl implements RuntimeContext {
+    private class KeyedContextImpl implements RuntimeContext {
 
-        private ContextImpl() {}
+        private KeyedContextImpl() {}
 
         @Override
-        public <T> ListState<T> getState(ListStateDeclaration<T> stateDeclaration)
+        public <T> ListState<T> getState(States.ListStateDeclaration<T> stateDeclaration)
                 throws Exception {
             if (!usedStates.contains(stateDeclaration)) {
                 throw new IllegalArgumentException("This state is not registered.");
@@ -102,8 +118,13 @@ public class ProcessOperator<IN, OUT>
         @Override
         public <T> ValueState<T> getState(States.ValueStateDeclaration<T> stateDeclaration)
                 throws Exception {
-            throw new UnsupportedOperationException(
-                    "Only keyed operator supports access keyed state.");
+            if (!usedStates.contains(stateDeclaration)) {
+                throw new IllegalArgumentException("This state is not registered.");
+            }
+
+            ValueStateDescriptor<T> valueStateDescriptor =
+                    StateDeclarationConverter.getValueStateDescriptor(stateDeclaration);
+            return getKeyedStateStore().getState(valueStateDescriptor);
         }
     }
 }

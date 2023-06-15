@@ -33,7 +33,7 @@ import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
-import org.apache.flink.processfunction.operators.ProcessOperator;
+import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
@@ -42,6 +42,8 @@ import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.ReduceTransformation;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
 import org.apache.flink.util.function.ConsumerFunction;
+
+import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Implementation for {@link KeyedPartitionStream}. */
 public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
@@ -77,7 +79,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
 
     public KeyedPartitionStreamImpl(
             DataStream<V> dataStream,
-            PartitionTransformation<V> partitionTransformation,
+            Transformation<V> partitionTransformation,
             KeySelector<V, K> keySelector,
             TypeInformation<K> keyType) {
         super(dataStream.getEnvironment(), partitionTransformation);
@@ -100,7 +102,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
                             transformReduce((SingleStreamReduceFunction<V>) processFunction);
         } else {
             // universal process
-            ProcessOperator<V, OUT> operator = new ProcessOperator<>(processFunction);
+            KeyedProcessOperator<K, V, OUT> operator = new KeyedProcessOperator<>(processFunction);
             transform = transformWithOperator("KeyedProcess", outType, operator);
         }
 
@@ -130,7 +132,21 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     public <OUT> KeyedPartitionStream<K, OUT> process(
             SingleStreamProcessFunction<V, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector) {
-        return null;
+        TypeInformation<OUT> outType =
+                StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
+        // TODO Supports checking key for non-process operator(i.e. ReduceOperator).
+        KeyedProcessOperator<K, V, OUT> operator =
+                new KeyedProcessOperator<>(processFunction, checkNotNull(newKeySelector));
+        Transformation<OUT> transform = transformWithOperator("KeyedProcess", outType, operator);
+        NonKeyedPartitionStreamImpl<OUT> outputStream =
+                new NonKeyedPartitionStreamImpl<>(environment, transform);
+        // Note: Construct a keyed stream directly without partitionTransformation to avoid
+        // shuffle.
+        return new KeyedPartitionStreamImpl<>(
+                outputStream,
+                transform,
+                newKeySelector,
+                TypeExtractor.getKeySelectorTypes(newKeySelector, outputStream.getType()));
     }
 
     @Override
@@ -190,7 +206,11 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public void tmpToConsumerSink(ConsumerFunction<V> consumer) {}
+    public void tmpToConsumerSink(ConsumerFunction<V> consumer) {
+        Transformation<V> sinkTransformation =
+                StreamUtils.getConsumerSinkTransform(transformation, consumer);
+        environment.addOperator(sinkTransformation);
+    }
 
     private <R> Transformation<R> transformWithOperator(
             String operatorName,

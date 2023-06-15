@@ -30,14 +30,10 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
-import org.apache.flink.processfunction.connector.ConsumerSinkFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
-import org.apache.flink.streaming.api.operators.StreamSink;
-import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
-import org.apache.flink.streaming.api.transformations.PhysicalTransformation;
 import org.apache.flink.util.function.ConsumerFunction;
 
 public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
@@ -113,23 +109,8 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
 
     @Override
     public void tmpToConsumerSink(ConsumerFunction<T> consumer) {
-        // read the output type of the input Transform to coax out errors about MissingTypeInfo
-        transformation.getOutputType();
-
-        ConsumerSinkFunction<T> sinkFunction = new ConsumerSinkFunction<>(consumer);
-
-        // TODO Supports clean closure
-        StreamSink<T> sinkOperator = new StreamSink<>(sinkFunction);
-
-        PhysicalTransformation<T> sinkTransformation =
-                new LegacySinkTransformation<>(
-                        transformation,
-                        "Consumer Sink",
-                        sinkOperator,
-                        // TODO Supports configure parallelism
-                        1,
-                        true);
-
+        Transformation<T> sinkTransformation =
+                StreamUtils.getConsumerSinkTransform(transformation, consumer);
         environment.addOperator(sinkTransformation);
     }
 

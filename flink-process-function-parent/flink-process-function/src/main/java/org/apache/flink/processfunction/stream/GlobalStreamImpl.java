@@ -73,5 +73,10 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
     }
 
     @Override
-    public void tmpToConsumerSink(ConsumerFunction<T> consumer) {}
+    public void tmpToConsumerSink(ConsumerFunction<T> consumer) {
+        Transformation<T> sinkTransformation =
+                StreamUtils.getConsumerSinkTransform(transformation, consumer);
+        sinkTransformation.setParallelism(1, true);
+        environment.addOperator(sinkTransformation);
+    }
 }
