@@ -27,4 +27,7 @@ public interface RuntimeContext {
     <T> ListState<T> getState(ListStateDeclaration<T> stateDeclaration) throws Exception;
 
     <T> ValueState<T> getState(ValueStateDeclaration<T> stateDeclaration) throws Exception;
+
+    // TODO provide some method related to keyContext. For example: getCurrentKey. I'm not sure if
+    // these methods should be placed here?
 }

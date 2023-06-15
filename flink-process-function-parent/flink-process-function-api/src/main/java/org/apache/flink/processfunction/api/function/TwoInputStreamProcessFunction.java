@@ -23,7 +23,9 @@ import org.apache.flink.processfunction.api.RuntimeContext;
 import java.util.function.Consumer;
 
 public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFunction {
-    void processFirstInputRecord(IN1 record, Consumer<OUT> output, RuntimeContext ctx);
+    void processFirstInputRecord(IN1 record, Consumer<OUT> output, RuntimeContext ctx)
+            throws Exception;
 
-    void processSecondInputRecord(IN2 record, Consumer<OUT> output, RuntimeContext ctx);
+    void processSecondInputRecord(IN2 record, Consumer<OUT> output, RuntimeContext ctx)
+            throws Exception;
 }

@@ -34,6 +34,7 @@ import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
+import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
@@ -103,7 +104,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
         } else {
             // universal process
             KeyedProcessOperator<K, V, OUT> operator = new KeyedProcessOperator<>(processFunction);
-            transform = transformWithOperator("KeyedProcess", outType, operator);
+            transform = oneInputTransformWithOperator("KeyedProcess", outType, operator);
         }
 
         return new NonKeyedPartitionStreamImpl<>(environment, transform);
@@ -137,7 +138,8 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
         // TODO Supports checking key for non-process operator(i.e. ReduceOperator).
         KeyedProcessOperator<K, V, OUT> operator =
                 new KeyedProcessOperator<>(processFunction, checkNotNull(newKeySelector));
-        Transformation<OUT> transform = transformWithOperator("KeyedProcess", outType, operator);
+        Transformation<OUT> transform =
+                oneInputTransformWithOperator("KeyedProcess", outType, operator);
         NonKeyedPartitionStreamImpl<OUT> outputStream =
                 new NonKeyedPartitionStreamImpl<>(environment, transform);
         // Note: Construct a keyed stream directly without partitionTransformation to avoid
@@ -159,14 +161,42 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
-        return null;
+        TypeInformation<OUT> outTypeInfo =
+                StreamUtils.getOutputTypeForTwoInputProcessFunction(
+                        processFunction,
+                        getType(),
+                        ((NonKeyedPartitionStreamImpl<T_OTHER>) other).getType());
+        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                new KeyedTwoInputProcessOperator<>(processFunction);
+        Transformation<OUT> outTransformation =
+                StreamUtils.getTwoInputTransform(
+                        "Keyed-TwoInput-Process",
+                        this,
+                        (NonKeyedPartitionStreamImpl<T_OTHER>) other,
+                        outTypeInfo,
+                        processOperator);
+        return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
     }
 
     @Override
     public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
-        return null;
+        TypeInformation<OUT> outTypeInfo =
+                StreamUtils.getOutputTypeForTwoInputProcessFunction(
+                        processFunction,
+                        getType(),
+                        ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                new KeyedTwoInputProcessOperator<>(processFunction);
+        Transformation<OUT> outTransformation =
+                StreamUtils.getTwoInputTransform(
+                        "Keyed-TwoInput-Process",
+                        this,
+                        (KeyedPartitionStreamImpl<K, T_OTHER>) other,
+                        outTypeInfo,
+                        processOperator);
+        return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
     }
 
     @Override
@@ -174,7 +204,29 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector) {
-        return null;
+        TypeInformation<OUT> outTypeInfo =
+                StreamUtils.getOutputTypeForTwoInputProcessFunction(
+                        processFunction,
+                        getType(),
+                        ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                new KeyedTwoInputProcessOperator<>(processFunction, newKeySelector);
+        Transformation<OUT> outTransformation =
+                StreamUtils.getTwoInputTransform(
+                        "Keyed-TwoInput-Process",
+                        this,
+                        (KeyedPartitionStreamImpl<K, T_OTHER>) other,
+                        outTypeInfo,
+                        processOperator);
+        NonKeyedPartitionStreamImpl<OUT> nonKeyedOutputStream =
+                new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
+        // Note: Construct a keyed stream directly without partitionTransformation to avoid
+        // shuffle.
+        return new KeyedPartitionStreamImpl<>(
+                nonKeyedOutputStream,
+                outTransformation,
+                newKeySelector,
+                TypeExtractor.getKeySelectorTypes(newKeySelector, nonKeyedOutputStream.getType()));
     }
 
     @Override
@@ -212,7 +264,15 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
         environment.addOperator(sinkTransformation);
     }
 
-    private <R> Transformation<R> transformWithOperator(
+    public TypeInformation<K> getKeyType() {
+        return keyType;
+    }
+
+    public KeySelector<V, K> getKeySelector() {
+        return keySelector;
+    }
+
+    private <R> Transformation<R> oneInputTransformWithOperator(
             String operatorName,
             TypeInformation<R> outputTypeInfo,
             OneInputStreamOperator<V, R> operator) {

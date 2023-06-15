@@ -30,7 +30,9 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.ProcessOperator;
+import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
@@ -65,15 +67,42 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
     public <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
-        return null;
+        TypeInformation<OUT> outTypeInfo =
+                StreamUtils.getOutputTypeForTwoInputProcessFunction(
+                        processFunction,
+                        getType(),
+                        ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+        KeyedTwoInputProcessOperator<K, T, T_OTHER, OUT> processOperator =
+                new KeyedTwoInputProcessOperator<>(processFunction);
+        Transformation<OUT> outTransformation =
+                StreamUtils.getTwoInputTransform(
+                        "Keyed-TwoInput-Process",
+                        this,
+                        (KeyedPartitionStreamImpl<K, T_OTHER>) other,
+                        outTypeInfo,
+                        processOperator);
+        return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
     }
 
     @Override
     public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
-        // TODO Impl.
-        return null;
+        TypeInformation<OUT> outTypeInfo =
+                StreamUtils.getOutputTypeForTwoInputProcessFunction(
+                        processFunction,
+                        getType(),
+                        ((NonKeyedPartitionStreamImpl<T_OTHER>) other).getType());
+        TwoInputProcessOperator<T, T_OTHER, OUT> processOperator =
+                new TwoInputProcessOperator<>(processFunction);
+        Transformation<OUT> outTransformation =
+                StreamUtils.getTwoInputTransform(
+                        "TwoInput-Process",
+                        this,
+                        (NonKeyedPartitionStreamImpl<T_OTHER>) other,
+                        outTypeInfo,
+                        processOperator);
+        return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
     }
 
     @Override

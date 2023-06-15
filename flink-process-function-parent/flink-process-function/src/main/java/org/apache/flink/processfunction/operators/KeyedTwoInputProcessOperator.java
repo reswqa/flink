@@ -26,7 +26,7 @@ import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.ExceptionUtils;
@@ -35,40 +35,31 @@ import javax.annotation.Nullable;
 
 import java.util.function.Consumer;
 
-/** Operator for {@link SingleStreamProcessFunction} in {@link KeyedPartitionStream}. */
-public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT> {
+/** Operator for {@link TwoInputStreamProcessFunction} in {@link KeyedPartitionStream}. */
+public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
+        extends TwoInputProcessOperator<IN1, IN2, OUT> {
 
     @Nullable private final KeySelector<OUT, KEY> outKeySelector;
 
-    public KeyedProcessOperator(SingleStreamProcessFunction<IN, OUT> userFunction) {
+    public KeyedTwoInputProcessOperator(TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction) {
         this(userFunction, null);
     }
 
-    public KeyedProcessOperator(
-            SingleStreamProcessFunction<IN, OUT> userFunction,
+    public KeyedTwoInputProcessOperator(
+            TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction,
             KeySelector<OUT, KEY> outKeySelector) {
         super(userFunction);
         this.outKeySelector = outKeySelector;
     }
 
     @Override
-    public void open() throws Exception {
-        super.open();
-    }
-
-    @Override
-    public void processElement(StreamRecord<IN> element) throws Exception {
-        userFunction.processRecord(element.getValue(), outputCollector, context);
+    protected Consumer<OUT> getOutputCollector() {
+        return outKeySelector == null ? new OutputCollector() : new KeyCheckedCollector();
     }
 
     @Override
     protected RuntimeContext getContext() {
         return new KeyedContextImpl();
-    }
-
-    @Override
-    protected Consumer<OUT> getOutputCollector() {
-        return outKeySelector != null ? new KeyCheckedCollector() : new OutputCollector();
     }
 
     private class KeyCheckedCollector extends OutputCollector {
@@ -101,6 +92,7 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
         }
     }
 
+    // TODO Refactor runtime context for all process operators as there are some duplicate codes.
     private class KeyedContextImpl implements RuntimeContext {
 
         private KeyedContextImpl() {}
