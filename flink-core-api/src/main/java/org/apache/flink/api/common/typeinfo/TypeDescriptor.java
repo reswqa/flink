@@ -18,8 +18,10 @@
 
 package org.apache.flink.api.common.typeinfo;
 
+import java.io.Serializable;
+
 /** Descriptor for type information. */
-public interface TypeDescriptor<T> {
+public interface TypeDescriptor<T> extends Serializable {
     /**
      * Gets the class of the type represented by this type descriptor.
      *

@@ -20,6 +20,7 @@ package org.apache.flink.api.common.state;
 
 import org.apache.flink.api.common.typeinfo.TypeDescriptor;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /** All related classes of state declaration. */
@@ -35,7 +36,7 @@ public class States {
     }
 
     /** Declaration for state. */
-    public abstract static class StateDeclaration {
+    public abstract static class StateDeclaration implements Serializable {
         private final String name;
 
         public StateDeclaration(String name) {
