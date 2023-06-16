@@ -41,7 +41,9 @@ import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.ReduceTransformation;
+import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
+import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.function.ConsumerFunction;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -238,7 +240,9 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
 
     @Override
     public GlobalStream<V> coalesce() {
-        return null;
+        return new GlobalStreamImpl<>(
+                environment,
+                new PartitionTransformation<>(transformation, new GlobalPartitioner<>()));
     }
 
     @Override
@@ -249,12 +253,14 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
 
     @Override
     public NonKeyedPartitionStream<V> shuffle() {
-        return null;
+        return new NonKeyedPartitionStreamImpl<>(
+                environment,
+                new PartitionTransformation<>(getTransformation(), new ShufflePartitioner<>()));
     }
 
     @Override
     public BroadcastStream<V> broadcast() {
-        return null;
+        return new BroadcastStreamImpl<>(environment, getTransformation());
     }
 
     @Override

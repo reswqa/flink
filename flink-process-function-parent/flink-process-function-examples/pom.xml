@@ -35,6 +35,7 @@
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<log4j.version>2.17.1</log4j.version>
 	</properties>
 
 	<dependencies>
@@ -42,6 +43,30 @@
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-process-function-api</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<!-- Add a logging Framework, to make the examples produce -->
+		<!--             logs when executing in the IDE            -->
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-slf4j-impl</artifactId>
+			<scope>compile</scope>
+			<version>${log4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<scope>compile</scope>
+			<version>${log4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<scope>compile</scope>
+			<version>${log4j.version}</version>
 		</dependency>
 	</dependencies>
 </project>

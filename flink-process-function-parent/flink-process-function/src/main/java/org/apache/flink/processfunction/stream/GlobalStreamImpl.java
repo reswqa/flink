@@ -29,6 +29,8 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.streaming.api.transformations.PartitionTransformation;
+import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.function.ConsumerFunction;
 
 /** Implementation for {@link GlobalStream}. */
@@ -64,12 +66,14 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
 
     @Override
     public NonKeyedPartitionStream<T> shuffle() {
-        return null;
+        return new NonKeyedPartitionStreamImpl<>(
+                environment,
+                new PartitionTransformation<>(getTransformation(), new ShufflePartitioner<>()));
     }
 
     @Override
     public BroadcastStream<T> broadcast() {
-        return null;
+        return new BroadcastStreamImpl<>(environment, getTransformation());
     }
 
     @Override

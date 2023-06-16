@@ -25,12 +25,21 @@ import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFuncti
 import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.streaming.api.transformations.PartitionTransformation;
+import org.apache.flink.streaming.runtime.partitioner.BroadcastPartitioner;
 
 /** Implementation for {@link BroadcastStream}. */
 public class BroadcastStreamImpl<T> extends DataStream<T> implements BroadcastStream<T> {
 
     public BroadcastStreamImpl(
             ExecutionEnvironmentImpl environment, Transformation<T> transformation) {
+        this(
+                environment,
+                new PartitionTransformation<>(transformation, new BroadcastPartitioner<>()));
+    }
+
+    private BroadcastStreamImpl(
+            ExecutionEnvironmentImpl environment, PartitionTransformation<T> transformation) {
         super(environment, transformation);
     }
 

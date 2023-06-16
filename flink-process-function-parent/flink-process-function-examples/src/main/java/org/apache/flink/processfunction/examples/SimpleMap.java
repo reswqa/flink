@@ -34,6 +34,7 @@ public class SimpleMap {
                                 record ->
                                         new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS")
                                                 .format(new Date(record))))
+                .coalesce()
                 // Don't use Lambda reference as PrintStream is not serializable.
                 .tmpToConsumerSink((tsStr) -> System.out.println(tsStr));
         env.execute();

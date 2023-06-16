@@ -36,6 +36,9 @@ import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
+import org.apache.flink.streaming.api.transformations.PartitionTransformation;
+import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
+import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.function.ConsumerFunction;
 
 public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
@@ -115,8 +118,9 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
 
     @Override
     public GlobalStream<T> coalesce() {
-        // TODO Impl.
-        return null;
+        return new GlobalStreamImpl<>(
+                environment,
+                new PartitionTransformation<>(transformation, new GlobalPartitioner<>()));
     }
 
     @Override
@@ -126,14 +130,14 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
 
     @Override
     public NonKeyedPartitionStream<T> shuffle() {
-        // TODO Impl.
-        return null;
+        return new NonKeyedPartitionStreamImpl<>(
+                environment,
+                new PartitionTransformation<>(getTransformation(), new ShufflePartitioner<>()));
     }
 
     @Override
     public BroadcastStream<T> broadcast() {
-        // TODO Impl.
-        return null;
+        return new BroadcastStreamImpl<>(environment, getTransformation());
     }
 
     @Override
