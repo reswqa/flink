@@ -36,7 +36,7 @@ public interface KeyedPartitionStream<K, T> {
 
     <OUT> NonKeyedPartitionStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
 
-    <OUT1, OUT2> KeyedPartitionStream.TwoOutputStreams<K, OUT1, OUT2> process(
+    <OUT1, OUT2> NonKeyedPartitionStream.TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
     /** Keyed connect to Non-Keyed. */
@@ -74,6 +74,7 @@ public interface KeyedPartitionStream<K, T> {
 
     void tmpToConsumerSink(ConsumerFunction<T> consumer);
 
+    // TODO implements two output process return keyed stream.
     interface TwoOutputStreams<K, T1, T2> {
         KeyedPartitionStream<K, T1> getFirst();
 

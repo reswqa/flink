@@ -20,7 +20,12 @@ package org.apache.flink.processfunction;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.streaming.api.transformations.SideOutputTransformation;
+import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.Preconditions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base class for all streams.
@@ -31,6 +36,13 @@ public abstract class DataStream<T> {
     protected final ExecutionEnvironmentImpl environment;
 
     protected final Transformation<T> transformation;
+
+    /**
+     * We keep track of the side outputs that were already requested and their types. With this, we
+     * can catch the case when a side output with a matching id is requested for a different type
+     * because this would lead to problems at runtime.
+     */
+    protected final Map<OutputTag<?>, TypeInformation<?>> requestedSideOutputs = new HashMap<>();
 
     public DataStream(ExecutionEnvironmentImpl environment, Transformation<T> transformation) {
         this.environment =
@@ -56,5 +68,20 @@ public abstract class DataStream<T> {
 
     public ExecutionEnvironmentImpl getEnvironment() {
         return environment;
+    }
+
+    // TODO maybe we should force ban this from broadcastStreamImpl via abstract sideOutput related
+    // codes to a new subclass of DataStream called DataStreamWithSideOutput?
+    protected <X> Transformation<X> getSideOutputTransform(OutputTag<X> outputTag) {
+        TypeInformation<?> type = requestedSideOutputs.get(outputTag);
+        if (type != null && !type.equals(outputTag.getTypeInfo())) {
+            throw new UnsupportedOperationException(
+                    "A side output with a matching id was "
+                            + "already requested with a different type. This is not allowed, side output "
+                            + "ids need to be unique.");
+        }
+        requestedSideOutputs.put(outputTag, outputTag.getTypeInfo());
+
+        return new SideOutputTransformation<>(getTransformation(), outputTag);
     }
 }

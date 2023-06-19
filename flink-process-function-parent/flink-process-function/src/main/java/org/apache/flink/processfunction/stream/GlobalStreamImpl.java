@@ -32,11 +32,13 @@ import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
+import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
+import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.function.ConsumerFunction;
 
 /** Implementation for {@link GlobalStream}. */
@@ -59,7 +61,17 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
     @Override
     public <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction) {
-        return null;
+        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output") {};
+
+        TypeInformation<OUT1> firstOutputType =
+                StreamUtils.getFirstOutputType(processFunction, getType());
+        TwoOutputProcessOperator<T, OUT1, OUT2> operator =
+                new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
+        GlobalStream<OUT1> firstStream =
+                transform("Two-Output-Operator", firstOutputType, operator);
+        GlobalStream<OUT2> secondStream =
+                new GlobalStreamImpl<>(environment, getSideOutputTransform(secondOutputTag));
+        return GlobalTwoOutputStream.of(firstStream, secondStream);
     }
 
     @Override
@@ -135,5 +147,33 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
         environment.addOperator(resultTransform);
 
         return returnStream;
+    }
+
+    private static class GlobalTwoOutputStream<OUT1, OUT2> implements TwoOutputStreams<OUT1, OUT2> {
+
+        private final GlobalStream<OUT1> firstStream;
+
+        private final GlobalStream<OUT2> secondStream;
+
+        public static <OUT1, OUT2> GlobalTwoOutputStream<OUT1, OUT2> of(
+                GlobalStream<OUT1> firstStream, GlobalStream<OUT2> secondStream) {
+            return new GlobalTwoOutputStream<>(firstStream, secondStream);
+        }
+
+        private GlobalTwoOutputStream(
+                GlobalStream<OUT1> firstStream, GlobalStream<OUT2> secondStream) {
+            this.firstStream = firstStream;
+            this.secondStream = secondStream;
+        }
+
+        @Override
+        public GlobalStream<OUT1> getFirst() {
+            return firstStream;
+        }
+
+        @Override
+        public GlobalStream<OUT2> getSecond() {
+            return secondStream;
+        }
     }
 }

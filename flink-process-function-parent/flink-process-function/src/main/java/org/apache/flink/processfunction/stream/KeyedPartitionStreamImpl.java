@@ -35,6 +35,7 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
+import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
@@ -44,6 +45,7 @@ import org.apache.flink.streaming.api.transformations.ReduceTransformation;
 import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
+import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.function.ConsumerFunction;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -154,9 +156,22 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <OUT1, OUT2> TwoOutputStreams<K, OUT1, OUT2> process(
+    public <OUT1, OUT2> NonKeyedPartitionStream.TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<V, OUT1, OUT2> processFunction) {
-        return null;
+        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output") {};
+
+        TypeInformation<OUT1> firstOutputType =
+                StreamUtils.getFirstOutputType(processFunction, getType());
+        TwoOutputProcessOperator<V, OUT1, OUT2> operator =
+                new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
+        Transformation<OUT1> firstTransformation =
+                oneInputTransformWithOperator("Two-Output-Operator", firstOutputType, operator);
+        NonKeyedPartitionStreamImpl<OUT1> firstStream =
+                new NonKeyedPartitionStreamImpl<>(environment, firstTransformation);
+        NonKeyedPartitionStreamImpl<OUT2> secondStream =
+                new NonKeyedPartitionStreamImpl<>(
+                        environment, getSideOutputTransform(secondOutputTag));
+        return NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream.of(firstStream, secondStream);
     }
 
     @Override

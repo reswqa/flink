@@ -8,6 +8,7 @@ import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.api.function.Functions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.processfunction.connector.ConsumerSinkFunction;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
@@ -142,5 +143,19 @@ public class StreamUtils {
         }
 
         return transform;
+    }
+
+    public static <IN, OUT1, OUT2> TypeInformation<OUT1> getFirstOutputType(
+            TwoOutputStreamProcessFunction<IN, OUT1, OUT2> twoOutputStreamProcessFunction,
+            TypeInformation<IN> inTypeInformation) {
+        return TypeExtractor.getUnaryOperatorReturnType(
+                twoOutputStreamProcessFunction,
+                TwoOutputStreamProcessFunction.class,
+                0,
+                1,
+                new int[] {1, 0},
+                inTypeInformation,
+                Utils.getCallLocationName(),
+                true);
     }
 }
