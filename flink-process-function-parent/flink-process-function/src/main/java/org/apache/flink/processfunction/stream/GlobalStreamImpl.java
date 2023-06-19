@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.stream;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.DataStream;
@@ -29,6 +30,10 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.operators.ProcessOperator;
+import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
+import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
+import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.function.ConsumerFunction;
@@ -43,7 +48,11 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
 
     @Override
     public <OUT> GlobalStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction) {
-        return null;
+        TypeInformation<OUT> outType =
+                StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
+        ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
+
+        return transform("Global Process", outType, operator);
     }
 
     @Override
@@ -82,5 +91,29 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
                 StreamUtils.getConsumerSinkTransform(transformation, consumer);
         sinkTransformation.setParallelism(1, true);
         environment.addOperator(sinkTransformation);
+    }
+
+    private <R> GlobalStream<R> transform(
+            String operatorName,
+            TypeInformation<R> outputTypeInfo,
+            OneInputStreamOperator<T, R> operator) {
+        // read the output type of the input Transform to coax out errors about MissingTypeInfo
+        transformation.getOutputType();
+
+        OneInputTransformation<T, R> resultTransform =
+                new OneInputTransformation<>(
+                        this.transformation,
+                        operatorName,
+                        SimpleUdfStreamOperatorFactory.of(operator),
+                        outputTypeInfo,
+                        // Operator parallelism should always be 1 for global stream.
+                        1,
+                        true);
+
+        GlobalStream<R> returnStream = new GlobalStreamImpl<>(environment, resultTransform);
+
+        environment.addOperator(resultTransform);
+
+        return returnStream;
     }
 }
