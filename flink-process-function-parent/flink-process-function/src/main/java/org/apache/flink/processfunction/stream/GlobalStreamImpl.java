@@ -31,6 +31,7 @@ import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.operators.ProcessOperator;
+import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
@@ -65,7 +66,24 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
     public <T_OTHER, OUT> GlobalStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
-        return null;
+        TypeInformation<OUT> outTypeInfo =
+                StreamUtils.getOutputTypeForTwoInputProcessFunction(
+                        processFunction,
+                        getType(),
+                        ((BroadcastStreamImpl<T_OTHER>) other).getType());
+        TwoInputProcessOperator<T, T_OTHER, OUT> processOperator =
+                new TwoInputProcessOperator<>(processFunction);
+        Transformation<OUT> outTransformation =
+                StreamUtils.getTwoInputTransform(
+                        "Broadcast-Global-TwoInput-Process",
+                        this,
+                        (BroadcastStreamImpl<T_OTHER>) other,
+                        outTypeInfo,
+                        processOperator);
+        // Operator parallelism should always be 1 for global stream.
+        // parallelismConfigured should be true to avoid overwritten by AdaptiveBatchScheduler.
+        outTransformation.setParallelism(1, true);
+        return new GlobalStreamImpl<>(environment, outTransformation);
     }
 
     @Override
@@ -108,6 +126,8 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
                         outputTypeInfo,
                         // Operator parallelism should always be 1 for global stream.
                         1,
+                        // parallelismConfigured should be true to avoid overwritten by
+                        // AdaptiveBatchScheduler.
                         true);
 
         GlobalStream<R> returnStream = new GlobalStreamImpl<>(environment, resultTransform);
