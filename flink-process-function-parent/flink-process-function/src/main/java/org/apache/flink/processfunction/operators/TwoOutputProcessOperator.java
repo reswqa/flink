@@ -18,11 +18,7 @@
 
 package org.apache.flink.processfunction.operators;
 
-import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.state.ListStateDescriptor;
-import org.apache.flink.api.common.state.StateDeclarationConverter;
-import org.apache.flink.api.common.state.States;
-import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
@@ -31,7 +27,6 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
 
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -50,8 +45,6 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     protected transient RuntimeContext context;
 
-    protected transient Set<States.StateDeclaration> usedStates;
-
     protected OutputTag<OUT_SIDE> outputTag;
 
     public TwoOutputProcessOperator(
@@ -65,23 +58,16 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     @Override
     public void open() throws Exception {
-        this.usedStates = userFunction.usesStates();
         this.mainCollector = new MainOutputCollector();
         this.sideCollector = new SideOutputCollector();
-        this.context = new ContextImpl();
+        this.context =
+                new DefaultRuntimeContext(
+                        userFunction.usesStates(), getOperatorStateBackend(), getKeyedStateStore());
     }
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
         userFunction.processRecord(element.getValue(), mainCollector, sideCollector, context);
-    }
-
-    protected RuntimeContext getContext() {
-        return new ContextImpl();
-    }
-
-    protected Consumer<OUT_MAIN> getMainOutputCollector() {
-        return new MainOutputCollector();
     }
 
     private class MainOutputCollector implements Consumer<OUT_MAIN> {
@@ -100,30 +86,6 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         @Override
         public void accept(OUT_SIDE outputRecord) {
             output.collect(outputTag, reuse.replace(outputRecord));
-        }
-    }
-
-    private class ContextImpl implements RuntimeContext {
-
-        private ContextImpl() {}
-
-        @Override
-        public <T> ListState<T> getState(States.ListStateDeclaration<T> stateDeclaration)
-                throws Exception {
-            if (!usedStates.contains(stateDeclaration)) {
-                throw new IllegalArgumentException("This state is not registered.");
-            }
-
-            ListStateDescriptor<T> listStateDescriptor =
-                    StateDeclarationConverter.getListStateDescriptor(stateDeclaration);
-            return getOperatorStateBackend().getListState(listStateDescriptor);
-        }
-
-        @Override
-        public <T> ValueState<T> getState(States.ValueStateDeclaration<T> stateDeclaration)
-                throws Exception {
-            throw new UnsupportedOperationException(
-                    "Only keyed operator supports access keyed state.");
         }
     }
 }

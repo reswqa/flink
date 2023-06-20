@@ -18,14 +18,7 @@
 
 package org.apache.flink.processfunction.operators;
 
-import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.state.ListStateDescriptor;
-import org.apache.flink.api.common.state.StateDeclarationConverter;
-import org.apache.flink.api.common.state.States;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -62,11 +55,6 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
     }
 
     @Override
-    protected RuntimeContext getContext() {
-        return new KeyedContextImpl();
-    }
-
-    @Override
     protected Consumer<OUT> getOutputCollector() {
         return outKeySelector != null ? new KeyCheckedCollector() : new OutputCollector();
     }
@@ -98,35 +86,6 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
         @Override
         public void accept(OUT outputRecord) {
             output.collect(reuse.replace(outputRecord));
-        }
-    }
-
-    private class KeyedContextImpl implements RuntimeContext {
-
-        private KeyedContextImpl() {}
-
-        @Override
-        public <T> ListState<T> getState(States.ListStateDeclaration<T> stateDeclaration)
-                throws Exception {
-            if (!usedStates.contains(stateDeclaration)) {
-                throw new IllegalArgumentException("This state is not registered.");
-            }
-
-            ListStateDescriptor<T> listStateDescriptor =
-                    StateDeclarationConverter.getListStateDescriptor(stateDeclaration);
-            return getOperatorStateBackend().getListState(listStateDescriptor);
-        }
-
-        @Override
-        public <T> ValueState<T> getState(States.ValueStateDeclaration<T> stateDeclaration)
-                throws Exception {
-            if (!usedStates.contains(stateDeclaration)) {
-                throw new IllegalArgumentException("This state is not registered.");
-            }
-
-            ValueStateDescriptor<T> valueStateDescriptor =
-                    StateDeclarationConverter.getValueStateDescriptor(stateDeclaration);
-            return getKeyedStateStore().getState(valueStateDescriptor);
         }
     }
 }

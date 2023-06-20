@@ -18,18 +18,13 @@
 
 package org.apache.flink.processfunction.operators;
 
-import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.state.ListStateDescriptor;
-import org.apache.flink.api.common.state.StateDeclarationConverter;
-import org.apache.flink.api.common.state.States;
-import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
-import java.util.Set;
 import java.util.function.Consumer;
 
 /** Operator for {@link TwoInputStreamProcessFunction}. */
@@ -41,8 +36,6 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
 
     private transient RuntimeContext context;
 
-    protected transient Set<States.StateDeclaration> usedStates;
-
     public TwoInputProcessOperator(TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction) {
         super(userFunction);
     }
@@ -51,8 +44,9 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
     public void open() throws Exception {
         super.open();
         this.collector = getOutputCollector();
-        this.context = getContext();
-        this.usedStates = userFunction.usesStates();
+        this.context =
+                new DefaultRuntimeContext(
+                        userFunction.usesStates(), getOperatorStateBackend(), getKeyedStateStore());
     }
 
     @Override
@@ -69,10 +63,6 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
         return new OutputCollector();
     }
 
-    protected RuntimeContext getContext() {
-        return new ContextImpl();
-    }
-
     private class OutputCollector implements Consumer<OUT> {
 
         private final StreamRecord<OUT> reuse = new StreamRecord<>(null);
@@ -80,30 +70,6 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
         @Override
         public void accept(OUT outputRecord) {
             output.collect(reuse.replace(outputRecord));
-        }
-    }
-
-    // TODO Refactor runtime context for all process operators as there are some duplicate codes.
-    private class ContextImpl implements RuntimeContext {
-
-        private ContextImpl() {}
-
-        public <T> ListState<T> getState(States.ListStateDeclaration<T> stateDeclaration)
-                throws Exception {
-            if (!usedStates.contains(stateDeclaration)) {
-                throw new IllegalArgumentException("This state is not registered.");
-            }
-
-            ListStateDescriptor<T> listStateDescriptor =
-                    StateDeclarationConverter.getListStateDescriptor(stateDeclaration);
-            return getOperatorStateBackend().getListState(listStateDescriptor);
-        }
-
-        @Override
-        public <T> ValueState<T> getState(States.ValueStateDeclaration<T> stateDeclaration)
-                throws Exception {
-            throw new UnsupportedOperationException(
-                    "Only keyed operator supports access keyed state.");
         }
     }
 }
