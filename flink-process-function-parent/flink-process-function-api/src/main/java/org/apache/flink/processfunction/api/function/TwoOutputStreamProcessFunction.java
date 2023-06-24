@@ -25,4 +25,21 @@ import java.util.function.Consumer;
 public interface TwoOutputStreamProcessFunction<IN, OUT1, OUT2> extends ProcessFunction {
     void processRecord(
             IN record, Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx);
+
+    /**
+     * This will be called ONLY in BATCH execution mode, allowing the ProcessFunction to emit
+     * results at once rather than upon each record.
+     *
+     * <p>For {@link org.apache.flink.processfunction.api.stream.KeyedPartitionStream}, this will be
+     * called for each keyed partition when all data from that partition have been processed. Use
+     * {@link RuntimeContext#getCurrentKey()} to find out which partition this is called for.
+     *
+     * <p>For {@link org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream}, this will
+     * be called for each non-keyed partition (i.e. each parallel processing instance) when all data
+     * from that partition have been processed.
+     *
+     * <p>Note: This will NOT be called in STREAMING execution mode.
+     */
+    default void endOfPartition(
+            Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx) {}
 }

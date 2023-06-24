@@ -28,4 +28,36 @@ public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFun
 
     void processSecondInputRecord(IN2 record, Consumer<OUT> output, RuntimeContext ctx)
             throws Exception;
+
+    /**
+     * This will be called ONLY in BATCH execution mode, allowing the ProcessFunction to emit
+     * results at once rather than upon each record.
+     *
+     * <p>For {@link org.apache.flink.processfunction.api.stream.KeyedPartitionStream}, this will be
+     * called for each keyed partition when all data from that partition have been processed. Use
+     * {@link RuntimeContext#getCurrentKey()} to find out which partition this is called for.
+     *
+     * <p>For {@link org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream}, this will
+     * be called for each non-keyed partition (i.e. each parallel processing instance) when all data
+     * from that partition have been processed.
+     *
+     * <p>Note: This will NOT be called in STREAMING execution mode.
+     */
+    default void endOfFirstInputPartition(Consumer<OUT> output, RuntimeContext ctx) {}
+
+    /**
+     * This will be called ONLY in BATCH execution mode, allowing the ProcessFunction to emit
+     * results at once rather than upon each record.
+     *
+     * <p>For {@link org.apache.flink.processfunction.api.stream.KeyedPartitionStream}, this will be
+     * called for each keyed partition when all data from that partition have been processed. Use
+     * {@link RuntimeContext#getCurrentKey()} to find out which partition this is called for.
+     *
+     * <p>For {@link org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream}, this will
+     * be called for each non-keyed partition (i.e. each parallel processing instance) when all data
+     * from that partition have been processed.
+     *
+     * <p>Note: This will NOT be called in STREAMING execution mode.
+     */
+    default void endOfSecondInputPartition(Consumer<OUT> output, RuntimeContext ctx) {}
 }

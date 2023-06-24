@@ -21,7 +21,7 @@ package org.apache.flink.processfunction.examples;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.function.Functions;
+import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
@@ -54,7 +54,7 @@ public class WordCount {
         source.process(new Tokenizer())
                 .keyBy(WordAndCount::getWord)
                 .process(
-                        Functions.reduce(
+                        BatchStreamingUnifiedFunctions.reduce(
                                 (wc1, wc2) -> new WordAndCount(wc1.word, wc1.count + wc2.count)))
                 // Don't use Lambda reference as PrintStream is not serializable.
                 .tmpToConsumerSink((wc) -> System.out.println(wc));

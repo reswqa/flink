@@ -32,4 +32,11 @@ public interface RuntimeContext {
             throws Exception;
 
     <K> Optional<K> getCurrentKey();
+
+    ExecutionMode getExecutionMode();
+
+    enum ExecutionMode {
+        STREAMING,
+        BATCH
+    }
 }

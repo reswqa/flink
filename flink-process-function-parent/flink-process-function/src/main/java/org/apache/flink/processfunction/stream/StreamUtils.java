@@ -5,7 +5,7 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
-import org.apache.flink.processfunction.api.function.Functions;
+import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -30,7 +30,7 @@ public class StreamUtils {
             outType =
                     TypeExtractor.getUnaryOperatorReturnType(
                             ((SingleStreamMapFunction<IN, OUT>) processFunction).getMapFunction(),
-                            Functions.MapFunction.class,
+                            BatchStreamingUnifiedFunctions.MapFunction.class,
                             0,
                             1,
                             TypeExtractor.NO_INDEX,

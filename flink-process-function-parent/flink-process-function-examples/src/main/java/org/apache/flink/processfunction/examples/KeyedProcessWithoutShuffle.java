@@ -19,7 +19,7 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
-import org.apache.flink.processfunction.api.function.Functions;
+import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
@@ -31,9 +31,10 @@ public class KeyedProcessWithoutShuffle {
         KeyedPartitionStream<Integer, Integer> keyStream =
                 env.tmpFromCollection(Arrays.asList(1, 2, 3, 4, 5, 6))
                         .keyBy(v -> v % 2)
-                        .process(Functions.map(value -> value + 2), v -> v % 2);
+                        .process(
+                                BatchStreamingUnifiedFunctions.map(value -> value + 2), v -> v % 2);
         NonKeyedPartitionStream<String> nonKeyedStream =
-                keyStream.process(Functions.map(v -> "non-keyed: " + v));
+                keyStream.process(BatchStreamingUnifiedFunctions.map(v -> "non-keyed: " + v));
         nonKeyedStream
                 // Don't use Lambda reference as PrintStream is not serializable.
                 .tmpToConsumerSink((tsStr) -> System.out.println(tsStr));

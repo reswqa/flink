@@ -24,7 +24,7 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
-import org.apache.flink.processfunction.api.function.Functions;
+import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -124,7 +124,8 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     private Transformation<V> transformReduce(SingleStreamReduceFunction<V> processFunction) {
-        Functions.ReduceFunction<V> reduceFunction = processFunction.getReduceFunction();
+        BatchStreamingUnifiedFunctions.ReduceFunction<V> reduceFunction =
+                processFunction.getReduceFunction();
         ReduceTransformation<V, K> reduce =
                 new ReduceTransformation<>(
                         "Keyed Reduce",

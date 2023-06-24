@@ -19,7 +19,7 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
-import org.apache.flink.processfunction.api.function.Functions;
+import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -30,7 +30,7 @@ public class SimpleMap {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         env.tmpFromSupplierSource(System::currentTimeMillis)
                 .process(
-                        Functions.map(
+                        BatchStreamingUnifiedFunctions.map(
                                 record ->
                                         new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS")
                                                 .format(new Date(record))))
