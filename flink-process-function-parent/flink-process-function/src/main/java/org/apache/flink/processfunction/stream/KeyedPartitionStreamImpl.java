@@ -114,6 +114,15 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
         return new NonKeyedPartitionStreamImpl<>(environment, transform);
     }
 
+    @Override
+    public <OUT1, OUT2> TwoOutputStreams<K, OUT1, OUT2> process(
+            TwoOutputStreamProcessFunction<V, OUT1, OUT2> processFunction,
+            KeySelector<OUT1, K> keySelector1,
+            KeySelector<OUT2, K> keySelector2) {
+        // TODO: to be implemented
+        return null;
+    }
+
     private Transformation<V> transformReduce(SingleStreamReduceFunction<V> processFunction) {
         Functions.ReduceFunction<V> reduceFunction = processFunction.getReduceFunction();
         ReduceTransformation<V, K> reduce =

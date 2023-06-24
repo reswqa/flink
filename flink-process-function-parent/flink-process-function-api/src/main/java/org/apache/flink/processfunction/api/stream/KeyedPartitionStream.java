@@ -36,6 +36,11 @@ public interface KeyedPartitionStream<K, T> {
 
     <OUT> NonKeyedPartitionStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
 
+    <OUT1, OUT2> TwoOutputStreams<K, OUT1, OUT2> process(
+            TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction,
+            KeySelector<OUT1, K> keySelector1,
+            KeySelector<OUT2, K> keySelector2);
+
     <OUT1, OUT2> NonKeyedPartitionStream.TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
