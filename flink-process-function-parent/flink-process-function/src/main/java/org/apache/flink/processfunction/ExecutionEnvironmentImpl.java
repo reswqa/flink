@@ -96,7 +96,7 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     }
 
     @Override
-    public <OUT> NonKeyedPartitionStream<OUT> fromCollection(Collection<OUT> data) {
+    public <OUT> NonKeyedPartitionStream<OUT> tmpFromCollection(Collection<OUT> data) {
         Preconditions.checkNotNull(data, "Collection must not be null");
         if (data.isEmpty()) {
             throw new IllegalArgumentException("Collection must not be empty");
@@ -133,7 +133,7 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     }
 
     @Override
-    public ExecutionEnvironment setRuntimeMode(RuntimeExecutionMode runtimeMode) {
+    public ExecutionEnvironment tmpSetRuntimeMode(RuntimeExecutionMode runtimeMode) {
         checkNotNull(runtimeMode);
         configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode);
         return this;

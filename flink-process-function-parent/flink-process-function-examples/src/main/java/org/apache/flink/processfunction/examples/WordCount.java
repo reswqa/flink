@@ -35,7 +35,7 @@ public class WordCount {
         boolean isStreamingMode = false;
         NonKeyedPartitionStream<String> source;
         if (isStreamingMode) {
-            env.setRuntimeMode(RuntimeExecutionMode.STREAMING);
+            env.tmpSetRuntimeMode(RuntimeExecutionMode.STREAMING);
             source =
                     env.tmpFromSupplierSource(
                             () -> {
@@ -48,8 +48,8 @@ public class WordCount {
                                 return sb.toString();
                             });
         } else {
-            env.setRuntimeMode(RuntimeExecutionMode.BATCH);
-            source = env.fromCollection(Arrays.asList("A", "B", "A", "C"));
+            env.tmpSetRuntimeMode(RuntimeExecutionMode.BATCH);
+            source = env.tmpFromCollection(Arrays.asList("A", "B", "A", "C"));
         }
         source.process(new Tokenizer())
                 .keyBy(WordAndCount::getWord)

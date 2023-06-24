@@ -35,15 +35,14 @@ public abstract class ExecutionEnvironment {
 
     public abstract void execute() throws Exception;
 
-    /**
-     * TODO: 1. Temporal method. Will revisit source functions later. 2. Refactor and move the type
-     * information related code to core-api module.
-     */
+    /** TODO: Temporal method. Will revisit source functions later. */
     public abstract <OUT> NonKeyedPartitionStream<OUT> tmpFromSupplierSource(
             SupplierFunction<OUT> supplier);
 
-    public abstract <OUT> NonKeyedPartitionStream<OUT> fromCollection(Collection<OUT> collection);
+    /** TODO: Temporal method. Will revisit source functions later. */
+    public abstract <OUT> NonKeyedPartitionStream<OUT> tmpFromCollection(
+            Collection<OUT> collection);
 
-    // Temporal method for testing. We should consider how to set the execution mode later.
-    public abstract ExecutionEnvironment setRuntimeMode(RuntimeExecutionMode runtimeMode);
+    /** TODO: Temporal method. Probably should not decide execution mode programmatically. */
+    public abstract ExecutionEnvironment tmpSetRuntimeMode(RuntimeExecutionMode runtimeMode);
 }

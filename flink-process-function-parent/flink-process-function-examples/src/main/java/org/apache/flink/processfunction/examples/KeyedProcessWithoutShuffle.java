@@ -29,7 +29,7 @@ public class KeyedProcessWithoutShuffle {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         KeyedPartitionStream<Integer, Integer> keyStream =
-                env.fromCollection(Arrays.asList(1, 2, 3, 4, 5, 6))
+                env.tmpFromCollection(Arrays.asList(1, 2, 3, 4, 5, 6))
                         .keyBy(v -> v % 2)
                         .process(Functions.map(value -> value + 2), v -> v % 2);
         NonKeyedPartitionStream<String> nonKeyedStream =

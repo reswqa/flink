@@ -36,10 +36,10 @@ public class TwoInputProcess {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         KeyedPartitionStream<String, String> source1 =
-                env.fromCollection(Arrays.asList("A:1", "A:3", "B:9", "C:1"))
+                env.tmpFromCollection(Arrays.asList("A:1", "A:3", "B:9", "C:1"))
                         .keyBy(x -> x.split(":")[0]);
         KeyedPartitionStream<String, Tuple2<String, Long>> source2 =
-                env.fromCollection(
+                env.tmpFromCollection(
                                 Arrays.asList(
                                         Tuple2.of("A", 5L),
                                         Tuple2.of("B", 3L),
