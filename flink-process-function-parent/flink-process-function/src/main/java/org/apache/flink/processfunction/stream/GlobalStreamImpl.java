@@ -76,20 +76,18 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
 
     @Override
     public <T_OTHER, OUT> GlobalStream<OUT> connectAndProcess(
-            BroadcastStream<T_OTHER> other,
+            GlobalStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =
                 StreamUtils.getOutputTypeForTwoInputProcessFunction(
-                        processFunction,
-                        getType(),
-                        ((BroadcastStreamImpl<T_OTHER>) other).getType());
+                        processFunction, getType(), ((GlobalStreamImpl<T_OTHER>) other).getType());
         TwoInputProcessOperator<T, T_OTHER, OUT> processOperator =
                 new TwoInputProcessOperator<>(processFunction);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
-                        "Broadcast-Global-TwoInput-Process",
+                        "Global-Global-TwoInput-Process",
                         this,
-                        (BroadcastStreamImpl<T_OTHER>) other,
+                        (GlobalStreamImpl<T_OTHER>) other,
                         outTypeInfo,
                         processOperator);
         // Operator parallelism should always be 1 for global stream.

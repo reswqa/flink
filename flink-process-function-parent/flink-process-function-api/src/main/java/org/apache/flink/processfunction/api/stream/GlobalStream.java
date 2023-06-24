@@ -31,7 +31,7 @@ public interface GlobalStream<T> {
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
     <T_OTHER, OUT> GlobalStream<OUT> connectAndProcess(
-            BroadcastStream<T_OTHER> other,
+            GlobalStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
     <K> KeyedPartitionStream<K, T> keyBy(KeySelector<T, K> keySelector);
