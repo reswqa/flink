@@ -19,10 +19,10 @@
 package org.apache.flink.processfunction.api.stream;
 
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
-import org.apache.flink.util.function.ConsumerFunction;
 
 public interface GlobalStream<T> {
     <OUT> ProcessConfigurableAndGlobalStream<OUT> process(
@@ -41,7 +41,7 @@ public interface GlobalStream<T> {
 
     BroadcastStream<T> broadcast();
 
-    void tmpToConsumerSink(ConsumerFunction<T> consumer);
+    ProcessConfigurable<?> sinkTo(Sink<T> sink);
 
     interface ProcessConfigurableAndGlobalStream<T>
             extends GlobalStream<T>, ProcessConfigurable<ProcessConfigurableAndGlobalStream<T>> {}

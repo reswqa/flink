@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
+import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
@@ -38,7 +39,7 @@ public class KeyedProcessWithoutShuffle {
                 keyStream.process(BatchStreamingUnifiedFunctions.map(v -> "non-keyed: " + v));
         nonKeyedStream
                 // Don't use Lambda reference as PrintStream is not serializable.
-                .tmpToConsumerSink((tsStr) -> System.out.println(tsStr));
+                .sinkTo(Sinks.consumer((tsStr) -> System.out.println(tsStr)));
         env.execute();
     }
 }

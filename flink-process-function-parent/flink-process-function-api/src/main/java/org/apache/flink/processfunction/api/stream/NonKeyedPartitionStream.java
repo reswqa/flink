@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.api.stream;
 
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -52,6 +53,7 @@ public interface NonKeyedPartitionStream<T> {
 
     BroadcastStream<T> broadcast();
 
+    ProcessConfigurable<?> sinkTo(Sink<T> sink);
     /** TODO: Temporal method. Will revisit sink functions later. */
     void tmpToConsumerSink(ConsumerFunction<T> consumer);
 

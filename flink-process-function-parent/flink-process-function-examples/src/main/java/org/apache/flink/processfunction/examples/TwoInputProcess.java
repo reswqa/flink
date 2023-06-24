@@ -24,6 +24,7 @@ import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
+import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
@@ -96,7 +97,7 @@ public class TwoInputProcess {
                                 return Collections.singleton(stateDeclaration);
                             }
                         })
-                .tmpToConsumerSink(out -> System.out.println(out));
+                .sinkTo(Sinks.consumer(out -> System.out.println(out)));
         env.execute();
     }
 }

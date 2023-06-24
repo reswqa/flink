@@ -25,6 +25,7 @@ import org.apache.flink.api.common.state.States.StateDeclaration;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
+import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 
@@ -39,10 +40,12 @@ public class SimpleStatefulMap {
         env.fromSource(Sources.supplier(System::currentTimeMillis))
                 .process(new CalcTimeDiffFunc())
                 // Don't use Lambda reference as PrintStream is not serializable.
-                .tmpToConsumerSink(
-                        (timeDiff) ->
-                                System.out.printf(
-                                        "%d milliseconds since last timestamp. \n", timeDiff));
+                .sinkTo(
+                        Sinks.consumer(
+                                (timeDiff) ->
+                                        System.out.printf(
+                                                "%d milliseconds since last timestamp. \n",
+                                                timeDiff)));
         env.execute();
     }
 

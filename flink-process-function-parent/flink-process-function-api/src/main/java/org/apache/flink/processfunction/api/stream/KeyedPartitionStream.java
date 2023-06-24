@@ -19,12 +19,12 @@
 package org.apache.flink.processfunction.api.stream;
 
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndTwoNonKeyedPartitionStreams;
-import org.apache.flink.util.function.ConsumerFunction;
 
 public interface KeyedPartitionStream<K, T> {
     /**
@@ -80,7 +80,7 @@ public interface KeyedPartitionStream<K, T> {
 
     BroadcastStream<T> broadcast();
 
-    void tmpToConsumerSink(ConsumerFunction<T> consumer);
+    ProcessConfigurable<?> sinkTo(Sink<T> sink);
 
     // TODO implements two output process return keyed stream.
     interface TwoOutputStreams<K, T1, T2> {
