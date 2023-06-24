@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
+import org.apache.flink.processfunction.api.builtin.Sources;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -28,7 +29,7 @@ import java.util.Date;
 public class SimpleMap {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.tmpFromSupplierSource(System::currentTimeMillis)
+        env.fromSource(Sources.supplier(System::currentTimeMillis))
                 .process(
                         BatchStreamingUnifiedFunctions.map(
                                 record ->

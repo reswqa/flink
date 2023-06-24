@@ -19,10 +19,7 @@
 package org.apache.flink.processfunction.api;
 
 import org.apache.flink.api.common.RuntimeExecutionMode;
-import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
-import org.apache.flink.util.function.SupplierFunction;
-
-import java.util.Collection;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 
 public abstract class ExecutionEnvironment {
     public static ExecutionEnvironment getExecutionEnvironment()
@@ -33,15 +30,11 @@ public abstract class ExecutionEnvironment {
                         .invoke(null);
     }
 
+    /** TODO: No watermark strategy atm. Revisit event-time supports later. */
+    public abstract <OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> fromSource(
+            Source<OUT> source);
+
     public abstract void execute() throws Exception;
-
-    /** TODO: Temporal method. Will revisit source functions later. */
-    public abstract <OUT> NonKeyedPartitionStream<OUT> tmpFromSupplierSource(
-            SupplierFunction<OUT> supplier);
-
-    /** TODO: Temporal method. Will revisit source functions later. */
-    public abstract <OUT> NonKeyedPartitionStream<OUT> tmpFromCollection(
-            Collection<OUT> collection);
 
     /** TODO: Temporal method. Probably should not decide execution mode programmatically. */
     public abstract ExecutionEnvironment tmpSetRuntimeMode(RuntimeExecutionMode runtimeMode);

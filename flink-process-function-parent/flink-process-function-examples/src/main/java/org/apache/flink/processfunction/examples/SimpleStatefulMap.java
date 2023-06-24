@@ -25,6 +25,7 @@ import org.apache.flink.api.common.state.States.StateDeclaration;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
+import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 
 import java.util.Collections;
@@ -35,7 +36,7 @@ import java.util.function.Consumer;
 public class SimpleStatefulMap {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.tmpFromSupplierSource(System::currentTimeMillis)
+        env.fromSource(Sources.supplier(System::currentTimeMillis))
                 .process(new CalcTimeDiffFunc())
                 // Don't use Lambda reference as PrintStream is not serializable.
                 .tmpToConsumerSink(

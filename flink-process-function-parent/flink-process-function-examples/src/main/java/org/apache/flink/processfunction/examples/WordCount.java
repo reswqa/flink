@@ -22,6 +22,7 @@ import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
+import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
@@ -37,19 +38,22 @@ public class WordCount {
         if (isStreamingMode) {
             env.tmpSetRuntimeMode(RuntimeExecutionMode.STREAMING);
             source =
-                    env.tmpFromSupplierSource(
-                            () -> {
-                                // generate lines of text, each line contains 5 words (letter)
-                                Random random = new Random();
-                                StringBuilder sb = new StringBuilder();
-                                for (int i = 0; i < 5; ++i) {
-                                    sb.append((char) ('A' + random.nextInt(26))).append(' ');
-                                }
-                                return sb.toString();
-                            });
+                    env.fromSource(
+                            Sources.supplier(
+                                    () -> {
+                                        // generate lines of text, each line contains 5 words
+                                        // (letter)
+                                        Random random = new Random();
+                                        StringBuilder sb = new StringBuilder();
+                                        for (int i = 0; i < 5; ++i) {
+                                            sb.append((char) ('A' + random.nextInt(26)))
+                                                    .append(' ');
+                                        }
+                                        return sb.toString();
+                                    }));
         } else {
             env.tmpSetRuntimeMode(RuntimeExecutionMode.BATCH);
-            source = env.tmpFromCollection(Arrays.asList("A", "B", "A", "C"));
+            source = env.fromSource(Sources.collection(Arrays.asList("A", "B", "A", "C")));
         }
         source.process(new Tokenizer())
                 .keyBy(WordAndCount::getWord)

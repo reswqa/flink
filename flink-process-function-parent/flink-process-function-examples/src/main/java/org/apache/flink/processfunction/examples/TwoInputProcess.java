@@ -24,6 +24,7 @@ import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
+import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 
@@ -36,15 +37,16 @@ public class TwoInputProcess {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         KeyedPartitionStream<String, String> source1 =
-                env.tmpFromCollection(Arrays.asList("A:1", "A:3", "B:9", "C:1"))
+                env.fromSource(Sources.collection(Arrays.asList("A:1", "A:3", "B:9", "C:1")))
                         .keyBy(x -> x.split(":")[0]);
         KeyedPartitionStream<String, Tuple2<String, Long>> source2 =
-                env.tmpFromCollection(
-                                Arrays.asList(
-                                        Tuple2.of("A", 5L),
-                                        Tuple2.of("B", 3L),
-                                        Tuple2.of("C", 11L),
-                                        Tuple2.of("D", 1L)))
+                env.fromSource(
+                                Sources.collection(
+                                        Arrays.asList(
+                                                Tuple2.of("A", 5L),
+                                                Tuple2.of("B", 3L),
+                                                Tuple2.of("C", 11L),
+                                                Tuple2.of("D", 1L))))
                         .keyBy(x -> x.f0);
         source1.connectAndProcess(
                         source2,
