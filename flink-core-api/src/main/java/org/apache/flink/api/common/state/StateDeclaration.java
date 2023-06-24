@@ -16,20 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.api.common.state;
 
-import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.state.States.ListStateDeclaration;
-import org.apache.flink.api.common.state.States.ValueStateDeclaration;
-import org.apache.flink.api.common.state.ValueState;
+public interface StateDeclaration {
 
-import java.util.Optional;
+    String getName();
 
-public interface RuntimeContext {
-    <T> Optional<ListState<T>> getState(ListStateDeclaration<T> stateDeclaration) throws Exception;
+    Scope getScope();
 
-    <T> Optional<ValueState<T>> getState(ValueStateDeclaration<T> stateDeclaration)
-            throws Exception;
+    interface ListStateDeclaration<T> extends StateDeclaration {}
 
-    <K> Optional<K> getCurrentKey();
+    interface ValueStateDeclaration<T> extends StateDeclaration {}
+
+    enum Scope {
+        KEYED,
+        OPERATOR
+    }
 }

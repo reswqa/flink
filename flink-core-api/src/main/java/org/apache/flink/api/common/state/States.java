@@ -25,15 +25,29 @@ import java.util.Objects;
 
 /** All related classes of state declaration. */
 public class States {
-    public static <T> ListStateDeclaration<T> ofList(
-            String name, TypeDescriptor<T> elementTypeDescriptor) {
-        return new ListStateDeclaration<>(name, elementTypeDescriptor);
+
+    // ------------------------------------------------------------------------
+    //  Operator State
+    // ------------------------------------------------------------------------
+    public static <T> ListStateDeclaration<T> operatorListState(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return null;
     }
 
-    public static <T> ValueStateDeclaration<T> ofValue(
+    // ------------------------------------------------------------------------
+    //  Keyed State
+    // ------------------------------------------------------------------------
+    public static <T> ListStateDeclaration<T> keyedListState(
             String name, TypeDescriptor<T> typeDescriptor) {
-        return new ValueStateDeclaration<>(name, typeDescriptor);
+        return null;
     }
+
+    public static <T> ValueStateDeclaration<T> keyedValueState(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return null;
+    }
+
+    // TODO: implement above, and move everything below to implementation modules
 
     /** Declaration for state. */
     public abstract static class StateDeclaration implements Serializable {

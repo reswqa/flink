@@ -19,7 +19,7 @@
 package org.apache.flink.processfunction.api.function;
 
 import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.api.common.state.States.StateDeclaration;
+import org.apache.flink.api.common.state.StateDeclaration;
 
 import java.util.Collections;
 import java.util.Set;
