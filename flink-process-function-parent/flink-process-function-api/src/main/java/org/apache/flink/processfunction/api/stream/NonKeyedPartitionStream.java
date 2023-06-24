@@ -26,20 +26,21 @@ import org.apache.flink.util.function.ConsumerFunction;
 
 public interface NonKeyedPartitionStream<T> {
 
-    <OUT> NonKeyedPartitionStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
+    <OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> process(
+            SingleStreamProcessFunction<T, OUT> processFunction);
 
-    <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
+    <OUT1, OUT2> ProcessConfigurableAndTwoNonKeyedPartitionStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
-    <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    <K, T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
-    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
-    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
@@ -54,7 +55,12 @@ public interface NonKeyedPartitionStream<T> {
     /** TODO: Temporal method. Will revisit sink functions later. */
     void tmpToConsumerSink(ConsumerFunction<T> consumer);
 
-    interface TwoOutputStreams<T1, T2> {
+    interface ProcessConfigurableAndNonKeyedPartitionStream<T>
+            extends NonKeyedPartitionStream<T>,
+                    ProcessConfigurable<ProcessConfigurableAndNonKeyedPartitionStream<T>> {}
+
+    interface ProcessConfigurableAndTwoNonKeyedPartitionStreams<T1, T2>
+            extends ProcessConfigurable<ProcessConfigurableAndTwoNonKeyedPartitionStreams<T1, T2>> {
         NonKeyedPartitionStream<T1> getFirst();
 
         NonKeyedPartitionStream<T2> getSecond();

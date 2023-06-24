@@ -25,12 +25,13 @@ import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunct
 import org.apache.flink.util.function.ConsumerFunction;
 
 public interface GlobalStream<T> {
-    <OUT> GlobalStream<OUT> process(SingleStreamProcessFunction<T, OUT> processFunction);
+    <OUT> ProcessConfigurableAndGlobalStream<OUT> process(
+            SingleStreamProcessFunction<T, OUT> processFunction);
 
-    <OUT1, OUT2> GlobalStream.TwoOutputStreams<OUT1, OUT2> process(
+    <OUT1, OUT2> ProcessConfigurableAndTwoGlobalStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction);
 
-    <T_OTHER, OUT> GlobalStream<OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndGlobalStream<OUT> connectAndProcess(
             GlobalStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
@@ -42,7 +43,11 @@ public interface GlobalStream<T> {
 
     void tmpToConsumerSink(ConsumerFunction<T> consumer);
 
-    interface TwoOutputStreams<T1, T2> {
+    interface ProcessConfigurableAndGlobalStream<T>
+            extends GlobalStream<T>, ProcessConfigurable<ProcessConfigurableAndGlobalStream<T>> {}
+
+    interface ProcessConfigurableAndTwoGlobalStreams<T1, T2>
+            extends ProcessConfigurable<ProcessConfigurableAndTwoGlobalStreams<T1, T2>> {
         GlobalStream<T1> getFirst();
 
         GlobalStream<T2> getSecond();
