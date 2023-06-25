@@ -25,6 +25,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
+import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
@@ -33,6 +34,7 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
@@ -47,7 +49,6 @@ import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.OutputTag;
-import org.apache.flink.util.function.ConsumerFunction;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -285,10 +286,9 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public void tmpToConsumerSink(ConsumerFunction<V> consumer) {
-        Transformation<V> sinkTransformation =
-                StreamUtils.getConsumerSinkTransform(transformation, consumer);
-        environment.addOperator(sinkTransformation);
+    public ProcessConfigurable<?> sinkTo(Sink<V> sink) {
+        // TODO impl this.
+        return null;
     }
 
     public TypeInformation<K> getKeyType() {

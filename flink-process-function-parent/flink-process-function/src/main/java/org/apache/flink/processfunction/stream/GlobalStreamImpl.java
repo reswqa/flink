@@ -24,6 +24,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
+import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -31,6 +32,7 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
@@ -40,7 +42,6 @@ import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.OutputTag;
-import org.apache.flink.util.function.ConsumerFunction;
 
 /** Implementation for {@link GlobalStream}. */
 public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T> {
@@ -118,11 +119,9 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
     }
 
     @Override
-    public void tmpToConsumerSink(ConsumerFunction<T> consumer) {
-        Transformation<T> sinkTransformation =
-                StreamUtils.getConsumerSinkTransform(transformation, consumer);
-        sinkTransformation.setParallelism(1, true);
-        environment.addOperator(sinkTransformation);
+    public ProcessConfigurable<?> sinkTo(Sink<T> sink) {
+        // TODO impl this.
+        return null;
     }
 
     private <R> GlobalStreamImpl<R> transform(
