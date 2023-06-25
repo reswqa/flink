@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.stream;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -62,17 +63,19 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
     @Override
     public <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction) {
-        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output") {};
+        Tuple2<TypeInformation<OUT1>, TypeInformation<OUT2>> twoOutputType =
+                StreamUtils.getTwoOutputType(processFunction, getType());
+        TypeInformation<OUT1> firstOutputType = twoOutputType.f0;
+        TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
+        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output", secondTOutputType);
 
-        TypeInformation<OUT1> firstOutputType =
-                StreamUtils.getFirstOutputType(processFunction, getType());
         TwoOutputProcessOperator<T, OUT1, OUT2> operator =
                 new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
-        NonKeyedPartitionStream<OUT1> firstStream =
+        NonKeyedPartitionStreamImpl<OUT1> firstStream =
                 transform("Two-Output-Operator", firstOutputType, operator);
         NonKeyedPartitionStreamImpl<OUT2> secondStream =
                 new NonKeyedPartitionStreamImpl<>(
-                        environment, getSideOutputTransform(secondOutputTag));
+                        environment, firstStream.getSideOutputTransform(secondOutputTag));
         return NonKeyedTwoOutputStream.of(firstStream, secondStream);
     }
 
@@ -149,7 +152,7 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
         environment.addOperator(sinkTransformation);
     }
 
-    private <R> NonKeyedPartitionStream<R> transform(
+    private <R> NonKeyedPartitionStreamImpl<R> transform(
             String operatorName,
             TypeInformation<R> outputTypeInfo,
             OneInputStreamOperator<T, R> operator) {
@@ -166,7 +169,7 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
                         1,
                         true);
 
-        NonKeyedPartitionStream<R> returnStream =
+        NonKeyedPartitionStreamImpl<R> returnStream =
                 new NonKeyedPartitionStreamImpl<>(environment, resultTransform);
 
         environment.addOperator(resultTransform);

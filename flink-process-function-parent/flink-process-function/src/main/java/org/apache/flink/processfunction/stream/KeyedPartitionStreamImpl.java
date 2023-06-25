@@ -22,6 +22,7 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -168,10 +169,12 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     @Override
     public <OUT1, OUT2> NonKeyedPartitionStream.TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<V, OUT1, OUT2> processFunction) {
-        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output") {};
+        Tuple2<TypeInformation<OUT1>, TypeInformation<OUT2>> twoOutputType =
+                StreamUtils.getTwoOutputType(processFunction, getType());
+        TypeInformation<OUT1> firstOutputType = twoOutputType.f0;
+        TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
+        OutputTag<OUT2> secondOutputTag = new OutputTag<>("Second-Output", secondTOutputType);
 
-        TypeInformation<OUT1> firstOutputType =
-                StreamUtils.getFirstOutputType(processFunction, getType());
         TwoOutputProcessOperator<V, OUT1, OUT2> operator =
                 new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
         Transformation<OUT1> firstTransformation =
@@ -180,7 +183,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
                 new NonKeyedPartitionStreamImpl<>(environment, firstTransformation);
         NonKeyedPartitionStreamImpl<OUT2> secondStream =
                 new NonKeyedPartitionStreamImpl<>(
-                        environment, getSideOutputTransform(secondOutputTag));
+                        environment, firstStream.getSideOutputTransform(secondOutputTag));
         return NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream.of(firstStream, secondStream);
     }
 
