@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction;
+package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.streaming.api.transformations.SideOutputTransformation;
 import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.Preconditions;
