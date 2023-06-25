@@ -3,6 +3,7 @@ package org.apache.flink.processfunction.stream;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.Utils;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -145,17 +146,30 @@ public class StreamUtils {
         return transform;
     }
 
-    public static <IN, OUT1, OUT2> TypeInformation<OUT1> getFirstOutputType(
-            TwoOutputStreamProcessFunction<IN, OUT1, OUT2> twoOutputStreamProcessFunction,
-            TypeInformation<IN> inTypeInformation) {
-        return TypeExtractor.getUnaryOperatorReturnType(
-                twoOutputStreamProcessFunction,
-                TwoOutputStreamProcessFunction.class,
-                0,
-                1,
-                new int[] {1, 0},
-                inTypeInformation,
-                Utils.getCallLocationName(),
-                true);
+    public static <IN, OUT1, OUT2>
+            Tuple2<TypeInformation<OUT1>, TypeInformation<OUT2>> getTwoOutputType(
+                    TwoOutputStreamProcessFunction<IN, OUT1, OUT2> twoOutputStreamProcessFunction,
+                    TypeInformation<IN> inTypeInformation) {
+        TypeInformation<OUT1> firstOutputType =
+                TypeExtractor.getUnaryOperatorReturnType(
+                        twoOutputStreamProcessFunction,
+                        TwoOutputStreamProcessFunction.class,
+                        0,
+                        1,
+                        new int[] {1, 0},
+                        inTypeInformation,
+                        Utils.getCallLocationName(),
+                        true);
+        TypeInformation<OUT2> secondOutputType =
+                TypeExtractor.getUnaryOperatorReturnType(
+                        twoOutputStreamProcessFunction,
+                        TwoOutputStreamProcessFunction.class,
+                        0,
+                        2,
+                        new int[] {2, 0},
+                        inTypeInformation,
+                        Utils.getCallLocationName(),
+                        true);
+        return Tuple2.of(firstOutputType, secondOutputType);
     }
 }

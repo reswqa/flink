@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.stream;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -61,16 +62,19 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
     @Override
     public <OUT1, OUT2> TwoOutputStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<T, OUT1, OUT2> processFunction) {
-        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output") {};
+        Tuple2<TypeInformation<OUT1>, TypeInformation<OUT2>> twoOutputType =
+                StreamUtils.getTwoOutputType(processFunction, getType());
+        TypeInformation<OUT1> firstOutputType = twoOutputType.f0;
+        TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
+        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output", secondTOutputType);
 
-        TypeInformation<OUT1> firstOutputType =
-                StreamUtils.getFirstOutputType(processFunction, getType());
         TwoOutputProcessOperator<T, OUT1, OUT2> operator =
                 new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
-        GlobalStream<OUT1> firstStream =
+        GlobalStreamImpl<OUT1> firstStream =
                 transform("Two-Output-Operator", firstOutputType, operator);
-        GlobalStream<OUT2> secondStream =
-                new GlobalStreamImpl<>(environment, getSideOutputTransform(secondOutputTag));
+        GlobalStreamImpl<OUT2> secondStream =
+                new GlobalStreamImpl<>(
+                        environment, firstStream.getSideOutputTransform(secondOutputTag));
         return GlobalTwoOutputStream.of(firstStream, secondStream);
     }
 
@@ -121,7 +125,7 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
         environment.addOperator(sinkTransformation);
     }
 
-    private <R> GlobalStream<R> transform(
+    private <R> GlobalStreamImpl<R> transform(
             String operatorName,
             TypeInformation<R> outputTypeInfo,
             OneInputStreamOperator<T, R> operator) {
@@ -140,7 +144,7 @@ public class GlobalStreamImpl<T> extends DataStream<T> implements GlobalStream<T
                         // AdaptiveBatchScheduler.
                         true);
 
-        GlobalStream<R> returnStream = new GlobalStreamImpl<>(environment, resultTransform);
+        GlobalStreamImpl<R> returnStream = new GlobalStreamImpl<>(environment, resultTransform);
 
         environment.addOperator(resultTransform);
 

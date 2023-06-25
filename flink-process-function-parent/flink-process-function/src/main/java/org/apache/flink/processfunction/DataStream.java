@@ -72,7 +72,7 @@ public abstract class DataStream<T> {
 
     // TODO maybe we should force ban this from broadcastStreamImpl via abstract sideOutput related
     // codes to a new subclass of DataStream called DataStreamWithSideOutput?
-    protected <X> Transformation<X> getSideOutputTransform(OutputTag<X> outputTag) {
+    public <X> Transformation<X> getSideOutputTransform(OutputTag<X> outputTag) {
         TypeInformation<?> type = requestedSideOutputs.get(outputTag);
         if (type != null && !type.equals(outputTag.getTypeInfo())) {
             throw new UnsupportedOperationException(
