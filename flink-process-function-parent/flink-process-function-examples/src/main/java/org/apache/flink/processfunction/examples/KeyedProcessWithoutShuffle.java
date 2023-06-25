@@ -22,20 +22,20 @@ import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
-import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
-import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 
 import java.util.Arrays;
 
 public class KeyedProcessWithoutShuffle {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        KeyedPartitionStream<Integer, Integer> keyStream =
+        ProcessConfigurableAndKeyedPartitionStream<Integer, Integer> keyStream =
                 env.fromSource(Sources.collection(Arrays.asList(1, 2, 3, 4, 5, 6)))
                         .keyBy(v -> v % 2)
                         .process(
                                 BatchStreamingUnifiedFunctions.map(value -> value + 2), v -> v % 2);
-        NonKeyedPartitionStream<String> nonKeyedStream =
+        ProcessConfigurableAndNonKeyedPartitionStream<String> nonKeyedStream =
                 keyStream.process(BatchStreamingUnifiedFunctions.map(v -> "non-keyed: " + v));
         nonKeyedStream
                 // Don't use Lambda reference as PrintStream is not serializable.

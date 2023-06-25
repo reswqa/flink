@@ -34,20 +34,22 @@ public class TwoOutputProcess {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         NonKeyedPartitionStream<Integer> source =
                 env.fromSource(Sources.collection(Arrays.asList(1, 2, 3)));
-        NonKeyedPartitionStream.TwoOutputStreams<Integer, String> twoOutputStreams =
-                source.process(
-                        // Do not use lambda expression as type will be erased from Consumer<T>.
-                        new TwoOutputStreamProcessFunction<Integer, Integer, String>() {
-                            @Override
-                            public void processRecord(
-                                    Integer record,
-                                    Consumer<Integer> output1,
-                                    Consumer<String> output2,
-                                    RuntimeContext ctx) {
-                                output1.accept(record);
-                                output2.accept("side-output: " + record);
-                            }
-                        });
+        NonKeyedPartitionStream.ProcessConfigurableAndTwoNonKeyedPartitionStreams<Integer, String>
+                twoOutputStreams =
+                        source.process(
+                                // Do not use lambda expression as type will be erased from
+                                // Consumer<T>.
+                                new TwoOutputStreamProcessFunction<Integer, Integer, String>() {
+                                    @Override
+                                    public void processRecord(
+                                            Integer record,
+                                            Consumer<Integer> output1,
+                                            Consumer<String> output2,
+                                            RuntimeContext ctx) {
+                                        output1.accept(record);
+                                        output2.accept("side-output: " + record);
+                                    }
+                                });
         twoOutputStreams.getFirst().sinkTo(Sinks.consumer(out -> System.out.println(out)));
         twoOutputStreams.getSecond().sinkTo(Sinks.consumer(out -> System.out.println(out)));
         env.execute();

@@ -20,12 +20,12 @@ package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
@@ -47,7 +47,7 @@ public class BroadcastStreamImpl<T> extends DataStream<T> implements BroadcastSt
     }
 
     @Override
-    public <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    public <K, T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =
@@ -68,7 +68,7 @@ public class BroadcastStreamImpl<T> extends DataStream<T> implements BroadcastSt
     }
 
     @Override
-    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    public <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =

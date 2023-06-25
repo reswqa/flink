@@ -24,7 +24,6 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.processfunction.DataStream;
 import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -34,11 +33,14 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndTwoNonKeyedPartitionStreams;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
+import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
@@ -53,8 +55,10 @@ import org.apache.flink.util.OutputTag;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Implementation for {@link KeyedPartitionStream}. */
-public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
-        implements KeyedPartitionStream<K, V> {
+public class KeyedPartitionStreamImpl<K, V>
+        extends ProcessConfigurableDataStream<
+                V, KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream<K, V>>
+        implements KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream<K, V> {
 
     /**
      * The key selector that can get the key by which the stream if partitioned from the elements.
@@ -95,7 +99,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <OUT> NonKeyedPartitionStream<OUT> process(
+    public <OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> process(
             SingleStreamProcessFunction<V, OUT> processFunction) {
         TypeInformation<OUT> outType;
         outType = StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
@@ -117,7 +121,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <OUT1, OUT2> TwoOutputStreams<K, OUT1, OUT2> process(
+    public <OUT1, OUT2> ProcessConfigurableAndTwoKeyedPartitionStreams<K, OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<V, OUT1, OUT2> processFunction,
             KeySelector<OUT1, K> keySelector1,
             KeySelector<OUT2, K> keySelector2) {
@@ -146,7 +150,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <OUT> KeyedPartitionStream<K, OUT> process(
+    public <OUT> ProcessConfigurableAndKeyedPartitionStream<K, OUT> process(
             SingleStreamProcessFunction<V, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector) {
         TypeInformation<OUT> outType =
@@ -168,7 +172,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <OUT1, OUT2> NonKeyedPartitionStream.TwoOutputStreams<OUT1, OUT2> process(
+    public <OUT1, OUT2> ProcessConfigurableAndTwoNonKeyedPartitionStreams<OUT1, OUT2> process(
             TwoOutputStreamProcessFunction<V, OUT1, OUT2> processFunction) {
         Tuple2<TypeInformation<OUT1>, TypeInformation<OUT2>> twoOutputType =
                 StreamUtils.getTwoOutputType(processFunction, getType());
@@ -185,11 +189,11 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
         NonKeyedPartitionStreamImpl<OUT2> secondStream =
                 new NonKeyedPartitionStreamImpl<>(
                         environment, firstStream.getSideOutputTransform(secondOutputTag));
-        return NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream.of(firstStream, secondStream);
+        return NonKeyedTwoOutputStream.of(firstStream, secondStream);
     }
 
     @Override
-    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    public <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =
@@ -210,7 +214,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    public <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =
@@ -231,7 +235,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+    public <T_OTHER, OUT> ProcessConfigurableAndKeyedPartitionStream<K, OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector) {
@@ -261,7 +265,7 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
     }
 
     @Override
-    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    public <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =
