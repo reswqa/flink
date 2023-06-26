@@ -16,17 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api.function;
+package org.apache.flink.processfunction.state;
 
-import org.apache.flink.api.common.functions.Function;
+import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.common.typeinfo.TypeDescriptor;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 
-import java.util.Collections;
-import java.util.Set;
+/** Declaration a {@link ValueState}. */
+public class ValueStateDeclarationImpl<T> implements StateDeclaration.ValueStateDeclaration<T> {
+    private final String name;
 
-public interface ProcessFunction extends Function {
-    // Explicitly declares states upfront. See FLIP-22.
-    default Set<StateDeclaration> usesStates() {
-        return Collections.emptySet();
+    private final TypeDescriptor<T> typeDescriptor;
+
+    public ValueStateDeclarationImpl(String name, TypeDescriptor<T> typeDescriptor) {
+        this.name = name;
+        this.typeDescriptor = typeDescriptor;
+    }
+
+    public TypeDescriptor<T> getTypeDescriptor() {
+        return typeDescriptor;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public Scope getScope() {
+        return Scope.KEYED;
     }
 }

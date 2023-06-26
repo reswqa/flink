@@ -16,9 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.state;
+package org.apache.flink.processfunction.api.state;
 
-public interface StateDeclaration {
+import java.io.Serializable;
+
+/** {@link StateDeclaration} represents a declaration of the specific state used. */
+public interface StateDeclaration extends Serializable {
 
     String getName();
 

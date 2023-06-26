@@ -19,9 +19,9 @@
 package org.apache.flink.processfunction.api;
 
 import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.state.States.ListStateDeclaration;
-import org.apache.flink.api.common.state.States.ValueStateDeclaration;
 import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.api.state.StateDeclaration.ListStateDeclaration;
+import org.apache.flink.processfunction.api.state.StateDeclaration.ValueStateDeclaration;
 
 import java.util.Optional;
 

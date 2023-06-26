@@ -62,7 +62,7 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         this.sideCollector = new SideOutputCollector();
         this.context =
                 new DefaultRuntimeContext(
-                        userFunction.usesStates(), getOperatorStateBackend(), getKeyedStateStore());
+                        userFunction.usesStates(), getOperatorStateBackend(), getRuntimeContext());
     }
 
     @Override

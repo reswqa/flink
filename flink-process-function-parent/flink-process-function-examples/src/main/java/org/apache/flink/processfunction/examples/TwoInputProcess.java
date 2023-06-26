@@ -18,7 +18,6 @@
 
 package org.apache.flink.processfunction.examples;
 
-import org.apache.flink.api.common.state.States;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -27,10 +26,15 @@ import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
+import org.apache.flink.processfunction.api.state.StateDeclaration.ValueStateDeclaration;
+import org.apache.flink.processfunction.api.state.States;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
+import org.apache.flink.util.Preconditions;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -52,8 +56,8 @@ public class TwoInputProcess {
         source1.connectAndProcess(
                         source2,
                         new TwoInputStreamProcessFunction<String, Tuple2<String, Long>, String>() {
-                            private final States.ValueStateDeclaration<Long> stateDeclaration =
-                                    States.ofValue("max-value", TypeDescriptors.LONG);
+                            private final ValueStateDeclaration<Long> stateDeclaration =
+                                    States.keyedValueState("max-value", TypeDescriptors.LONG);
 
                             // TODO provide open method in process function to do something like get
                             // state.
@@ -64,7 +68,10 @@ public class TwoInputProcess {
                                 // "key:value"
                                 String key = record.split(":")[0];
                                 Long value = Long.parseLong(record.split(":")[1]);
-                                ValueState<Long> state = ctx.getState(stateDeclaration);
+                                Optional<ValueState<Long>> stateOptional =
+                                        ctx.getState(stateDeclaration);
+                                Preconditions.checkState(stateOptional.isPresent());
+                                ValueState<Long> state = stateOptional.get();
                                 if (state.value() == null) {
                                     state.update(value);
                                     output.accept(key + " : " + value);
@@ -82,7 +89,10 @@ public class TwoInputProcess {
                                     throws Exception {
                                 // (key, value)
                                 Long value = record.f1;
-                                ValueState<Long> state = ctx.getState(stateDeclaration);
+                                Optional<ValueState<Long>> stateOptional =
+                                        ctx.getState(stateDeclaration);
+                                Preconditions.checkState(stateOptional.isPresent());
+                                ValueState<Long> state = stateOptional.get();
                                 if (state.value() == null) {
                                     state.update(value);
                                     output.accept(record.f0 + " : " + record.f1);
@@ -93,7 +103,7 @@ public class TwoInputProcess {
                             }
 
                             @Override
-                            public Set<States.StateDeclaration> usesStates() {
+                            public Set<StateDeclaration> usesStates() {
                                 return Collections.singleton(stateDeclaration);
                             }
                         })

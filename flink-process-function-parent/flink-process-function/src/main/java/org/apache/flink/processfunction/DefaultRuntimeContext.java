@@ -18,55 +18,78 @@
 
 package org.apache.flink.processfunction;
 
-import org.apache.flink.api.common.state.KeyedStateStore;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.OperatorStateStore;
-import org.apache.flink.api.common.state.StateDeclarationConverter;
-import org.apache.flink.api.common.state.States;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.processfunction.api.RuntimeContext;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
+import org.apache.flink.processfunction.state.ListStateDeclarationImpl;
+import org.apache.flink.processfunction.state.StateDeclarationConverter;
+import org.apache.flink.processfunction.state.ValueStateDeclarationImpl;
+import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 
+import java.util.Optional;
 import java.util.Set;
 
 /** The default implementations of {@link RuntimeContext}. */
 public class DefaultRuntimeContext implements RuntimeContext {
-    private final Set<States.StateDeclaration> usedStates;
+    private final Set<StateDeclaration> usedStates;
 
     private final OperatorStateStore operatorStateStore;
 
-    private final KeyedStateStore keyedStateStore;
+    private final StreamingRuntimeContext streamingRuntimeContext;
 
     public DefaultRuntimeContext(
-            Set<States.StateDeclaration> usedStates,
+            Set<StateDeclaration> usedStates,
             OperatorStateStore operatorStateStore,
-            KeyedStateStore keyedStateStore) {
+            StreamingRuntimeContext streamingRuntimeContext) {
         this.usedStates = usedStates;
         this.operatorStateStore = operatorStateStore;
-        this.keyedStateStore = keyedStateStore;
+        this.streamingRuntimeContext = streamingRuntimeContext;
     }
 
     @Override
-    public <T> ListState<T> getState(States.ListStateDeclaration<T> stateDeclaration)
-            throws Exception {
+    public <T> Optional<ListState<T>> getState(
+            StateDeclaration.ListStateDeclaration<T> stateDeclaration) throws Exception {
         if (!usedStates.contains(stateDeclaration)) {
-            throw new IllegalArgumentException("This state is not registered.");
+            return Optional.empty();
         }
+
         ListStateDescriptor<T> listStateDescriptor =
-                StateDeclarationConverter.getListStateDescriptor(stateDeclaration);
-        return operatorStateStore.getListState(listStateDescriptor);
+                StateDeclarationConverter.getListStateDescriptor(
+                        (ListStateDeclarationImpl<T>) stateDeclaration);
+        StateDeclaration.Scope scope = stateDeclaration.getScope();
+        if (scope == StateDeclaration.Scope.OPERATOR) {
+            return Optional.ofNullable(operatorStateStore.getListState(listStateDescriptor));
+        } else if (scope == StateDeclaration.Scope.KEYED) {
+            try {
+                return Optional.ofNullable(
+                        streamingRuntimeContext.getListState(listStateDescriptor));
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        } else {
+            throw new UnsupportedOperationException(
+                    "Scope type " + scope.name() + " is not supported.");
+        }
     }
 
     @Override
-    public <T> ValueState<T> getState(States.ValueStateDeclaration<T> stateDeclaration)
-            throws Exception {
+    public <T> Optional<ValueState<T>> getState(
+            StateDeclaration.ValueStateDeclaration<T> stateDeclaration) throws Exception {
         if (!usedStates.contains(stateDeclaration)) {
-            throw new IllegalArgumentException("This state is not registered.");
+            return Optional.empty();
         }
 
         ValueStateDescriptor<T> valueStateDescriptor =
-                StateDeclarationConverter.getValueStateDescriptor(stateDeclaration);
-        return keyedStateStore == null ? null : keyedStateStore.getState(valueStateDescriptor);
+                StateDeclarationConverter.getValueStateDescriptor(
+                        (ValueStateDeclarationImpl<T>) stateDeclaration);
+        try {
+            return Optional.ofNullable(streamingRuntimeContext.getState(valueStateDescriptor));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 }
