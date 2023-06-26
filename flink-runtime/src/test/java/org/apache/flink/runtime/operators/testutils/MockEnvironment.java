@@ -39,6 +39,7 @@ import org.apache.flink.runtime.io.network.api.writer.RecordCollectingResultPart
 import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 import org.apache.flink.runtime.io.network.partition.consumer.IteratorWrappingTestSingleInputGate;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.tasks.InputSplitProvider;
 import org.apache.flink.runtime.jobgraph.tasks.TaskOperatorEventGateway;
@@ -102,6 +103,8 @@ public class MockEnvironment implements Environment, AutoCloseable {
 
     private final JobID jobID;
 
+    private final JobType jobType;
+
     private final JobVertexID jobVertexID;
 
     private final ExecutionAttemptID executionAttemptID;
@@ -144,6 +147,7 @@ public class MockEnvironment implements Environment, AutoCloseable {
 
     protected MockEnvironment(
             JobID jobID,
+            JobType jobType,
             JobVertexID jobVertexID,
             String taskName,
             MockInputSplitProvider inputSplitProvider,
@@ -164,6 +168,7 @@ public class MockEnvironment implements Environment, AutoCloseable {
             ChannelStateWriteRequestExecutorFactory channelStateExecutorFactory) {
 
         this.jobID = jobID;
+        this.jobType = jobType;
         this.jobVertexID = jobVertexID;
 
         this.taskInfo = new TaskInfo(taskName, maxParallelism, subtaskIndex, parallelism, 0);
@@ -262,6 +267,11 @@ public class MockEnvironment implements Environment, AutoCloseable {
     @Override
     public JobID getJobID() {
         return this.jobID;
+    }
+
+    @Override
+    public JobType getJobType() {
+        return jobType;
     }
 
     @Override

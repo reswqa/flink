@@ -59,6 +59,7 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionID;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
 import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointableTask;
@@ -156,6 +157,9 @@ public class Task
 
     /** The job that the task belongs to. */
     private final JobID jobId;
+
+    /** The type of this job. */
+    private final JobType jobType;
 
     /** The vertex in the JobGraph whose code the task executes. */
     private final JobVertexID vertexId;
@@ -344,6 +348,7 @@ public class Task
                         String.valueOf(slotAllocationId));
 
         this.jobId = jobInformation.getJobId();
+        this.jobType = jobInformation.getJobType();
         this.vertexId = taskInformation.getJobVertexId();
         this.executionId = Preconditions.checkNotNull(executionAttemptID);
         this.allocationId = Preconditions.checkNotNull(slotAllocationId);
@@ -689,6 +694,7 @@ public class Task
             Environment env =
                     new RuntimeEnvironment(
                             jobId,
+                            jobType,
                             vertexId,
                             executionId,
                             executionConfig,

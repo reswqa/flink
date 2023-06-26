@@ -32,6 +32,7 @@ import org.apache.flink.processfunction.state.ListStateDeclarationImpl;
 import org.apache.flink.processfunction.state.MapStateDeclarationImpl;
 import org.apache.flink.processfunction.state.StateDeclarationConverter;
 import org.apache.flink.processfunction.state.ValueStateDeclarationImpl;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 
 import java.util.Optional;
@@ -141,5 +142,12 @@ public class DefaultRuntimeContext implements RuntimeContext {
                             + redistributionMode.name()
                             + " is not supported for map state.");
         }
+    }
+
+    @Override
+    public ExecutionMode getExecutionMode() {
+        return streamingRuntimeContext.getJobType() == JobType.STREAMING
+                ? ExecutionMode.STREAMING
+                : ExecutionMode.BATCH;
     }
 }

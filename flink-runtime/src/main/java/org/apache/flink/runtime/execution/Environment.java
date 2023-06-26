@@ -36,6 +36,7 @@ import org.apache.flink.runtime.io.disk.iomanager.IOManager;
 import org.apache.flink.runtime.io.network.TaskEventDispatcher;
 import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.tasks.InputSplitProvider;
 import org.apache.flink.runtime.jobgraph.tasks.TaskOperatorEventGateway;
@@ -74,6 +75,17 @@ public interface Environment {
      * @return the ID of the job from the original job graph
      */
     JobID getJobID();
+
+    /**
+     * Returns the type of the job that the task belongs to.
+     *
+     * @return the type of the job from the original job graph
+     */
+    default JobType getJobType() {
+        // TODO implements this for all subclass. As for PoC atm, we only return the ground-truth
+        // job type for RuntimeEnvironment.
+        return JobType.STREAMING;
+    }
 
     /**
      * Gets the ID of the JobVertex for which this task executes a parallel subtask.
