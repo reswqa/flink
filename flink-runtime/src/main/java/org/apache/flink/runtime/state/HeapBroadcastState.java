@@ -38,7 +38,7 @@ import java.util.Map;
  * @param <K> The key type of the elements in the {@link BroadcastState Broadcast State}.
  * @param <V> The value type of the elements in the {@link BroadcastState Broadcast State}.
  */
-public class HeapBroadcastState<K, V> implements BackendWritableBroadcastState<K, V> {
+public class HeapBroadcastState<K, V> extends BackendWritableBroadcastState<K, V> {
 
     /** Meta information of the state, including state name, assignment mode, and serializer. */
     private RegisteredBroadcastStateBackendMetaInfo<K, V> stateMetaInfo;
@@ -150,13 +150,33 @@ public class HeapBroadcastState<K, V> implements BackendWritableBroadcastState<K
     }
 
     @Override
+    public boolean isEmpty() throws Exception {
+        return backingMap.isEmpty();
+    }
+
+    @Override
     public Iterable<Map.Entry<K, V>> entries() {
         return backingMap.entrySet();
     }
 
     @Override
+    public Iterable<K> keys() throws Exception {
+        return backingMap.keySet();
+    }
+
+    @Override
+    public Iterable<V> values() throws Exception {
+        return backingMap.values();
+    }
+
+    @Override
     public Iterable<Map.Entry<K, V>> immutableEntries() {
         return Collections.unmodifiableSet(backingMap.entrySet());
+    }
+
+    @Override
+    public Iterator<Map.Entry<K, V>> immutableIterator() throws Exception {
+        return Collections.unmodifiableSet(backingMap.entrySet()).iterator();
     }
 
     @VisibleForTesting

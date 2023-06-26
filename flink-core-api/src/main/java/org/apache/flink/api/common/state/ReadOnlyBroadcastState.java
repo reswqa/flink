@@ -20,6 +20,7 @@ package org.apache.flink.api.common.state;
 
 import org.apache.flink.annotation.PublicEvolving;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -34,33 +35,46 @@ import java.util.Map;
  * @param <V> The value type of the elements in the {@link ReadOnlyBroadcastState}.
  */
 @PublicEvolving
-public interface ReadOnlyBroadcastState<K, V> extends State {
-
-    /**
-     * Returns the current value associated with the given key.
-     *
-     * <p>The user code must not modify the value returned, as this can lead to inconsistent states.
-     *
-     * @param key The key of the mapping
-     * @return The value of the mapping with the given key
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    V get(K key) throws Exception;
-
-    /**
-     * Returns whether there exists the given mapping.
-     *
-     * @param key The key of the mapping
-     * @return True if there exists a mapping whose key equals to the given key
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    boolean contains(K key) throws Exception;
-
+public abstract class ReadOnlyBroadcastState<K, V> implements MapState<K, V> {
+    // TODO This implementation will cause the put method to appear on the ReadableBroadcastState.
+    // Not sure if we have more better way.
     /**
      * Returns an immutable {@link Iterable} over the entries in the state.
      *
      * <p>The user code must not modify the entries of the returned immutable iterator, as this can
      * lead to inconsistent states.
      */
-    Iterable<Map.Entry<K, V>> immutableEntries() throws Exception;
+    public abstract Iterable<Map.Entry<K, V>> immutableEntries() throws Exception;
+
+    public abstract Iterator<Map.Entry<K, V>> immutableIterator() throws Exception;
+
+    @Override
+    public void remove(K key) throws Exception {
+        throw new UnsupportedOperationException(
+                "ReadOnlyBroadcastState does not allow modify operation");
+    }
+
+    @Override
+    public void put(K key, V value) throws Exception {
+        throw new UnsupportedOperationException(
+                "ReadOnlyBroadcastState does not allow modify operation");
+    }
+
+    @Override
+    public void putAll(Map<K, V> map) throws Exception {
+        throw new UnsupportedOperationException(
+                "ReadOnlyBroadcastState does not allow modify operation");
+    }
+
+    @Override
+    public Iterable<Map.Entry<K, V>> entries() throws Exception {
+        throw new UnsupportedOperationException(
+                "ReadOnlyBroadcastState does not allow entries operation, please using immutableEntries");
+    }
+
+    @Override
+    public Iterator<Map.Entry<K, V>> iterator() throws Exception {
+        throw new UnsupportedOperationException(
+                "ReadOnlyBroadcastState does not allow iterator operation, please using immutableIterator");
+    }
 }

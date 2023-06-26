@@ -1,0 +1,55 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.flink.processfunction.state;
+
+import org.apache.flink.api.common.typeinfo.TypeDescriptor;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
+import org.apache.flink.processfunction.api.state.StateDeclaration.ListStateDeclaration.RedistributionStrategy;
+import org.apache.flink.processfunction.api.state.StateDeclaration.RedistributionMode;
+
+/** Provider for all {@link StateDeclaration}. */
+public class StatesImpl {
+    public static <T> StateDeclaration.ListStateDeclaration listState(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return new ListStateDeclarationImpl<>(name, typeDescriptor, null);
+    }
+
+    public static <T> StateDeclaration.ListStateDeclaration splitRedistributionListState(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return new ListStateDeclarationImpl<>(name, typeDescriptor, RedistributionStrategy.SPLIT);
+    }
+
+    public static <T> StateDeclaration.ListStateDeclaration unionRedistributionListState(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return new ListStateDeclarationImpl<>(name, typeDescriptor, RedistributionStrategy.UNION);
+    }
+
+    public static <T> StateDeclaration.ValueStateDeclaration valueState(
+            String name, TypeDescriptor<T> typeDescriptor) {
+        return new ValueStateDeclarationImpl<>(name, typeDescriptor);
+    }
+
+    public static <K, V> StateDeclaration.MapStateDeclaration broadcastMapState(
+            String name,
+            TypeDescriptor<K> keyTypeDescriptor,
+            TypeDescriptor<V> valueTypeDescriptor) {
+        return new MapStateDeclarationImpl<>(
+                name, keyTypeDescriptor, valueTypeDescriptor, RedistributionMode.IDENTICAL);
+    }
+}

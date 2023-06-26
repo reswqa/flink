@@ -16,20 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.state;
+package org.apache.flink.processfunction.api.state;
 
-public interface StateDeclaration {
+import java.io.Serializable;
+
+/** {@link StateDeclaration} represents a declaration of the specific state used. */
+public interface StateDeclaration extends Serializable {
 
     String getName();
 
-    Scope getScope();
+    RedistributionMode getRedistributionMode();
 
-    interface ListStateDeclaration<T> extends StateDeclaration {}
+    interface ListStateDeclaration extends StateDeclaration {
+        RedistributionStrategy getRedistributionStrategy();
 
-    interface ValueStateDeclaration<T> extends StateDeclaration {}
+        enum RedistributionStrategy {
+            SPLIT,
+            UNION
+        }
+    }
 
-    enum Scope {
-        KEYED,
-        OPERATOR
+    interface ValueStateDeclaration extends StateDeclaration {}
+
+    interface MapStateDeclaration extends StateDeclaration {}
+
+    enum RedistributionMode {
+        NONE,
+        REDISTRIBUTABLE,
+        IDENTICAL
     }
 }

@@ -16,18 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.state;
+package org.apache.flink.processfunction.state;
 
-import org.apache.flink.api.common.state.States.ListStateDeclaration;
-import org.apache.flink.api.common.state.States.StateDeclaration;
-import org.apache.flink.api.common.state.States.ValueStateDeclaration;
+import org.apache.flink.api.common.state.ListStateDescriptor;
+import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.api.common.state.StateDescriptor;
+import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.TypeInformationUtils;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
 
 /** Utils to convert {@link StateDeclaration} to {@link StateDescriptor}. */
 public class StateDeclarationConverter {
     public static <T> ListStateDescriptor<T> getListStateDescriptor(
-            ListStateDeclaration<T> stateDeclaration) {
+            ListStateDeclarationImpl<T> stateDeclaration) {
         //noinspection unchecked
         return new ListStateDescriptor<>(
                 stateDeclaration.getName(),
@@ -37,12 +39,25 @@ public class StateDeclarationConverter {
     }
 
     public static <T> ValueStateDescriptor<T> getValueStateDescriptor(
-            ValueStateDeclaration<T> stateDeclaration) {
+            ValueStateDeclarationImpl<T> stateDeclaration) {
         //noinspection unchecked
         return new ValueStateDescriptor<>(
                 stateDeclaration.getName(),
                 (TypeInformation<T>)
                         TypeInformationUtils.fromTypeDescriptor(
                                 stateDeclaration.getTypeDescriptor()));
+    }
+
+    public static <K, V> MapStateDescriptor<K, V> getMapStateDescriptor(
+            MapStateDeclarationImpl<K, V> stateDeclaration) {
+        //noinspection unchecked
+        return new MapStateDescriptor<K, V>(
+                stateDeclaration.getName(),
+                (TypeInformation<K>)
+                        TypeInformationUtils.fromTypeDescriptor(
+                                stateDeclaration.getKeyTypeDescriptor()),
+                (TypeInformation<V>)
+                        TypeInformationUtils.fromTypeDescriptor(
+                                stateDeclaration.getValueTypeDescriptor()));
     }
 }

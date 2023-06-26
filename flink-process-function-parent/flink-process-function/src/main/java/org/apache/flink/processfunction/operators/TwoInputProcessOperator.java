@@ -46,7 +46,7 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
         this.collector = getOutputCollector();
         this.context =
                 new DefaultRuntimeContext(
-                        userFunction.usesStates(), getOperatorStateBackend(), getKeyedStateStore());
+                        userFunction.usesStates(), getOperatorStateBackend(), getRuntimeContext());
     }
 
     @Override

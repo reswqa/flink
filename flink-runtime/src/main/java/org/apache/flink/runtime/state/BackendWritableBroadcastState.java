@@ -30,13 +30,13 @@ import java.io.IOException;
  * @param <K> The key type of the elements in the {@link BroadcastState Broadcast State}.
  * @param <V> The value type of the elements in the {@link BroadcastState Broadcast State}.
  */
-public interface BackendWritableBroadcastState<K, V> extends BroadcastState<K, V> {
+public abstract class BackendWritableBroadcastState<K, V> extends BroadcastState<K, V> {
 
-    BackendWritableBroadcastState<K, V> deepCopy();
+    abstract BackendWritableBroadcastState<K, V> deepCopy();
 
-    long write(FSDataOutputStream out) throws IOException;
+    abstract long write(FSDataOutputStream out) throws IOException;
 
-    void setStateMetaInfo(RegisteredBroadcastStateBackendMetaInfo<K, V> stateMetaInfo);
+    abstract void setStateMetaInfo(RegisteredBroadcastStateBackendMetaInfo<K, V> stateMetaInfo);
 
-    RegisteredBroadcastStateBackendMetaInfo<K, V> getStateMetaInfo();
+    abstract RegisteredBroadcastStateBackendMetaInfo<K, V> getStateMetaInfo();
 }

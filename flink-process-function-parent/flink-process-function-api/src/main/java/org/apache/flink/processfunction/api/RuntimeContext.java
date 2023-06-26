@@ -20,21 +20,19 @@ package org.apache.flink.processfunction.api;
 
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.MapState;
-import org.apache.flink.api.common.state.States;
-import org.apache.flink.api.common.state.States.ListStateDeclaration;
-import org.apache.flink.api.common.state.States.ValueStateDeclaration;
 import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.api.state.StateDeclaration.ListStateDeclaration;
+import org.apache.flink.processfunction.api.state.StateDeclaration.MapStateDeclaration;
+import org.apache.flink.processfunction.api.state.StateDeclaration.ValueStateDeclaration;
 
 import java.util.Optional;
 
 public interface RuntimeContext {
-    <T> Optional<ListState<T>> getState(ListStateDeclaration<T> stateDeclaration) throws Exception;
+    <T> Optional<ListState<T>> getState(ListStateDeclaration stateDeclaration) throws Exception;
 
-    <T> Optional<ValueState<T>> getState(ValueStateDeclaration<T> stateDeclaration)
-            throws Exception;
+    <T> Optional<ValueState<T>> getState(ValueStateDeclaration stateDeclaration) throws Exception;
 
-    <K, V> Optional<MapState<K, V>> getState(States.MapStateDeclaration<K, V> stateDeclaration)
-            throws Exception;
+    <K, V> Optional<MapState<K, V>> getState(MapStateDeclaration stateDeclaration) throws Exception;
 
     <K> Optional<K> getCurrentKey();
 

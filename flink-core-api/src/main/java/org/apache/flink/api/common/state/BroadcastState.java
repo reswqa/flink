@@ -42,46 +42,14 @@ import java.util.Map;
  * @param <V> The value type of the elements in the {@link BroadcastState}.
  */
 @PublicEvolving
-public interface BroadcastState<K, V> extends ReadOnlyBroadcastState<K, V> {
+public abstract class BroadcastState<K, V> extends ReadOnlyBroadcastState<K, V> {
+    public abstract void put(K key, V value);
 
-    /**
-     * Associates a new value with the given key.
-     *
-     * @param key The key of the mapping
-     * @param value The new value of the mapping
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    void put(K key, V value) throws Exception;
+    public abstract void putAll(Map<K, V> map) throws Exception;
 
-    /**
-     * Copies all of the mappings from the given map into the state.
-     *
-     * @param map The mappings to be stored in this state
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    void putAll(Map<K, V> map) throws Exception;
+    public abstract void remove(K key) throws Exception;
 
-    /**
-     * Deletes the mapping of the given key.
-     *
-     * @param key The key of the mapping
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    void remove(K key) throws Exception;
+    public abstract Iterable<Map.Entry<K, V>> entries() throws Exception;
 
-    /**
-     * Iterates over all the mappings in the state.
-     *
-     * @return An iterator over all the mappings in the state
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    Iterator<Map.Entry<K, V>> iterator() throws Exception;
-
-    /**
-     * Returns all the mappings in the state.
-     *
-     * @return An iterable view of all the key-value pairs in the state.
-     * @throws Exception Thrown if the system cannot access the state.
-     */
-    Iterable<Map.Entry<K, V>> entries() throws Exception;
+    public abstract Iterator<Map.Entry<K, V>> iterator() throws Exception;
 }

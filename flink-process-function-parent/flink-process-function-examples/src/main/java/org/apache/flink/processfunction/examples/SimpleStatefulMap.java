@@ -19,17 +19,18 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.state.States;
-import org.apache.flink.api.common.state.States.ListStateDeclaration;
-import org.apache.flink.api.common.state.States.StateDeclaration;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
+import org.apache.flink.processfunction.api.state.States;
+import org.apache.flink.util.Preconditions;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -52,13 +53,15 @@ public class SimpleStatefulMap {
     private static class CalcTimeDiffFunc implements SingleStreamProcessFunction<Long, Long> {
         static final String STATE_ID = "lastTimestamp";
 
-        static final ListStateDeclaration<Long> LIST_STATE_DECLARATION =
-                States.ofList(STATE_ID, TypeDescriptors.LONG);
+        static final StateDeclaration.ListStateDeclaration LIST_STATE_DECLARATION =
+                States.splitRedistributionListState(STATE_ID, TypeDescriptors.LONG);
 
         @Override
         public void processRecord(Long record, Consumer<Long> output, RuntimeContext ctx)
                 throws Exception {
-            ListState<Long> state = ctx.getState(LIST_STATE_DECLARATION);
+            Optional<ListState<Long>> stateOptional = ctx.getState(LIST_STATE_DECLARATION);
+            Preconditions.checkState(stateOptional.isPresent());
+            ListState<Long> state = stateOptional.get();
             if (!state.get().iterator().hasNext()) {
                 // for first record
                 output.accept(0L);
