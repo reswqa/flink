@@ -28,6 +28,7 @@ import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.state.ListStateDeclarationImpl;
 import org.apache.flink.processfunction.state.StateDeclarationConverter;
 import org.apache.flink.processfunction.state.ValueStateDeclarationImpl;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 
 import java.util.Optional;
@@ -91,5 +92,12 @@ public class DefaultRuntimeContext implements RuntimeContext {
         } catch (Exception e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public ExecutionMode getExecutionMode() {
+        return streamingRuntimeContext.getJobType() == JobType.STREAMING
+                ? ExecutionMode.STREAMING
+                : ExecutionMode.BATCH;
     }
 }

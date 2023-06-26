@@ -37,6 +37,7 @@ import org.apache.flink.runtime.io.disk.iomanager.IOManager;
 import org.apache.flink.runtime.io.network.TaskEventDispatcher;
 import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
 import org.apache.flink.runtime.io.network.partition.consumer.IndexedInputGate;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.tasks.InputSplitProvider;
 import org.apache.flink.runtime.jobgraph.tasks.TaskOperatorEventGateway;
@@ -63,6 +64,9 @@ public class RuntimeEnvironment implements Environment {
 
     private final JobID jobId;
     private final JobVertexID jobVertexId;
+
+    private final JobType jobType;
+
     private final ExecutionAttemptID executionId;
 
     private final TaskInfo taskInfo;
@@ -113,6 +117,7 @@ public class RuntimeEnvironment implements Environment {
 
     public RuntimeEnvironment(
             JobID jobId,
+            JobType jobType,
             JobVertexID jobVertexId,
             ExecutionAttemptID executionId,
             ExecutionConfig executionConfig,
@@ -142,6 +147,7 @@ public class RuntimeEnvironment implements Environment {
             ChannelStateWriteRequestExecutorFactory channelStateExecutorFactory) {
 
         this.jobId = checkNotNull(jobId);
+        this.jobType = checkNotNull(jobType);
         this.jobVertexId = checkNotNull(jobVertexId);
         this.executionId = checkNotNull(executionId);
         this.taskInfo = checkNotNull(taskInfo);
@@ -181,6 +187,11 @@ public class RuntimeEnvironment implements Environment {
     @Override
     public JobID getJobID() {
         return jobId;
+    }
+
+    @Override
+    public JobType getJobType() {
+        return jobType;
     }
 
     @Override

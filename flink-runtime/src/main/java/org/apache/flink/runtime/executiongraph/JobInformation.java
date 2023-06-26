@@ -18,10 +18,12 @@
 
 package org.apache.flink.runtime.executiongraph;
 
+import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
+import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.SerializedValue;
 
@@ -40,6 +42,9 @@ public class JobInformation implements Serializable {
     /** Job name. */
     private final String jobName;
 
+    /** Job type. */
+    private final JobType jobType;
+
     /** Serialized execution config because it can contain user code classes. */
     private final SerializedValue<ExecutionConfig> serializedExecutionConfig;
 
@@ -52,6 +57,9 @@ public class JobInformation implements Serializable {
     /** URLs specifying the classpath to add to the class loader. */
     private final Collection<URL> requiredClasspathURLs;
 
+    // TODO This is only introduced for PoC as there are too many tests that need to adapt the
+    // jobType param.
+    @VisibleForTesting
     public JobInformation(
             JobID jobId,
             String jobName,
@@ -59,7 +67,26 @@ public class JobInformation implements Serializable {
             Configuration jobConfiguration,
             Collection<PermanentBlobKey> requiredJarFileBlobKeys,
             Collection<URL> requiredClasspathURLs) {
+        this(
+                jobId,
+                JobType.STREAMING,
+                jobName,
+                serializedExecutionConfig,
+                jobConfiguration,
+                requiredJarFileBlobKeys,
+                requiredClasspathURLs);
+    }
+
+    public JobInformation(
+            JobID jobId,
+            JobType jobType,
+            String jobName,
+            SerializedValue<ExecutionConfig> serializedExecutionConfig,
+            Configuration jobConfiguration,
+            Collection<PermanentBlobKey> requiredJarFileBlobKeys,
+            Collection<URL> requiredClasspathURLs) {
         this.jobId = Preconditions.checkNotNull(jobId);
+        this.jobType = jobType;
         this.jobName = Preconditions.checkNotNull(jobName);
         this.serializedExecutionConfig = Preconditions.checkNotNull(serializedExecutionConfig);
         this.jobConfiguration = Preconditions.checkNotNull(jobConfiguration);
@@ -69,6 +96,10 @@ public class JobInformation implements Serializable {
 
     public JobID getJobId() {
         return jobId;
+    }
+
+    public JobType getJobType() {
+        return jobType;
     }
 
     public String getJobName() {
