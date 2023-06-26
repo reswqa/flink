@@ -19,10 +19,12 @@
 package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nullable;
 
@@ -34,20 +36,116 @@ public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
 
     @Nullable private final KeySelector<OUT, KEY> outKeySelector;
 
-    public KeyedTwoInputProcessOperator(TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction) {
-        this(userFunction, null);
+    /** Only NonNull in batch mode with keyed input. */
+    @Nullable private InputKeyListener<OUT> inputKeyListener1;
+
+    /** Only NonNull in batch mode with keyed input. */
+    @Nullable private InputKeyListener<OUT> inputKeyListener2;
+
+    private final boolean sortInputs;
+
+    public KeyedTwoInputProcessOperator(
+            TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction, boolean sortInputs) {
+        this(userFunction, sortInputs, null);
     }
 
     public KeyedTwoInputProcessOperator(
             TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction,
+            boolean sortInputs,
             KeySelector<OUT, KEY> outKeySelector) {
         super(userFunction);
+        this.sortInputs = sortInputs;
         this.outKeySelector = outKeySelector;
+    }
+
+    @Override
+    public void open() throws Exception {
+        super.open();
+        if (context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH) {
+            if (getStateKeySelector1() != null) {
+                inputKeyListener1 =
+                        sortInputs
+                                ? new InputKeyListener.SortedInputKeyListener<>(
+                                        collector, context, userFunction::endOfFirstInputPartition)
+                                : new InputKeyListener.UnSortedInputKeyListener<>(
+                                        collector, context, userFunction::endOfFirstInputPartition);
+            }
+
+            if (getStateKeySelector2() != null) {
+                inputKeyListener2 =
+                        sortInputs
+                                ? new InputKeyListener.SortedInputKeyListener<>(
+                                        collector, context, userFunction::endOfSecondInputPartition)
+                                : new InputKeyListener.UnSortedInputKeyListener<>(
+                                        collector,
+                                        context,
+                                        userFunction::endOfSecondInputPartition);
+            }
+        }
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void setKeyContextElement1(StreamRecord record) throws Exception {
+        // TODO FLINK-30601 Omit "setKeyContextElement" call for non-keyed stream/operators to
+        // improve performance if operator is not keyed and does not override setKeyContextElement1
+        // setKeyContextElement2. We do depend on this method to dispatch end of keyed partition, as
+        // a result, may cause some performance regression for keyed-broadcast co-process. We should
+        // re-consider this, to some extent, the previous design was also a bit strange.
+        setKeyContextElement(record, getStateKeySelector1(), inputKeyListener1);
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void setKeyContextElement2(StreamRecord record) throws Exception {
+        // TODO FLINK-30601 Omit "setKeyContextElement" call for non-keyed stream/operators to
+        // improve performance if operator is not keyed and does not override setKeyContextElement1
+        // setKeyContextElement2. We do depend on this method to dispatch end of keyed partition, as
+        // a result, may cause some performance regression for keyed-broadcast co-process. We should
+        // re-consider this, to some extent, the previous design was also a bit strange.
+        setKeyContextElement(record, getStateKeySelector2(), inputKeyListener2);
+    }
+
+    private <T> void setKeyContextElement(
+            StreamRecord<T> record,
+            KeySelector<T, ?> selector,
+            InputKeyListener<OUT> inputKeyListener)
+            throws Exception {
+        if (selector == null) {
+            return;
+        }
+        Object key = selector.getKey(record.getValue());
+        setCurrentKey(key);
+        if (inputKeyListener != null) {
+            inputKeyListener.keySelected(key);
+        }
     }
 
     @Override
     protected Consumer<OUT> getOutputCollector() {
         return outKeySelector == null ? new OutputCollector() : new KeyCheckedCollector();
+    }
+
+    @Override
+    public void endInput(int inputId) throws Exception {
+        if (!(context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH)) {
+            return;
+        }
+        // sanity check.
+        Preconditions.checkState(inputId >= 1 && inputId <= 2);
+        if (inputId == 1) {
+            if (inputKeyListener1 != null) {
+                inputKeyListener1.endOfInput();
+            } else {
+                userFunction.endOfFirstInputPartition(collector, context);
+            }
+        } else {
+            if (inputKeyListener2 != null) {
+                inputKeyListener2.endOfInput();
+            } else {
+                userFunction.endOfSecondInputPartition(collector, context);
+            }
+        }
     }
 
     private class KeyCheckedCollector extends OutputCollector {

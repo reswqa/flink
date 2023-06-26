@@ -19,34 +19,80 @@
 package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nullable;
 
 import java.util.function.Consumer;
+
+import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Operator for {@link SingleStreamProcessFunction} in {@link KeyedPartitionStream}. */
 public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT> {
 
     @Nullable private final KeySelector<OUT, KEY> outKeySelector;
 
-    public KeyedProcessOperator(SingleStreamProcessFunction<IN, OUT> userFunction) {
-        this(userFunction, null);
+    @Nullable private InputKeyListener<OUT> inputKeyListener;
+
+    private final boolean sortInputs;
+
+    public KeyedProcessOperator(
+            SingleStreamProcessFunction<IN, OUT> userFunction, boolean sortInputs) {
+        this(userFunction, sortInputs, null);
     }
 
     public KeyedProcessOperator(
             SingleStreamProcessFunction<IN, OUT> userFunction,
+            boolean sortInputs,
             KeySelector<OUT, KEY> outKeySelector) {
         super(userFunction);
+        this.sortInputs = sortInputs;
         this.outKeySelector = outKeySelector;
     }
 
     @Override
     public void open() throws Exception {
         super.open();
+        if (context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH) {
+            inputKeyListener =
+                    sortInputs
+                            ? new InputKeyListener.SortedInputKeyListener<>(
+                                    outputCollector, context, userFunction::endOfPartition)
+                            : new InputKeyListener.UnSortedInputKeyListener<>(
+                                    outputCollector, context, userFunction::endOfPartition);
+        }
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void setKeyContextElement1(StreamRecord record) throws Exception {
+        setKeyContextElement(record, getStateKeySelector1());
+    }
+
+    private <T> void setKeyContextElement(StreamRecord<T> record, KeySelector<T, ?> selector)
+            throws Exception {
+        checkNotNull(selector);
+        Object key = selector.getKey(record.getValue());
+        setCurrentKey(key);
+        if (inputKeyListener != null) {
+            inputKeyListener.keySelected(key);
+        }
+    }
+
+    @Override
+    public void endInput() {
+        if (!(context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH)) {
+            return;
+        }
+
+        Preconditions.checkNotNull(
+                inputKeyListener, "inputKeyListener must be not-null in batch mode.");
+        inputKeyListener.endOfInput();
     }
 
     @Override

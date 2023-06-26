@@ -61,7 +61,7 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
 
     private final ExecutionConfig config = new ExecutionConfig();
 
-    private final Configuration configuration = new Configuration();
+    private Configuration configuration = new Configuration();
 
     public static ExecutionEnvironmentImpl newInstance() {
         return new ExecutionEnvironmentImpl();
@@ -93,6 +93,16 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
         checkNotNull(runtimeMode);
         configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode);
         return this;
+    }
+
+    @Override
+    public ExecutionEnvironment tmpWithConfiguration(Configuration configuration) {
+        this.configuration = checkNotNull(configuration);
+        return this;
+    }
+
+    public Configuration getConfiguration() {
+        return this.configuration;
     }
 
     // -----------------------------------------------

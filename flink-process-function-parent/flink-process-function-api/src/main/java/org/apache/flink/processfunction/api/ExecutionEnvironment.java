@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.api;
 
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 
 public abstract class ExecutionEnvironment {
@@ -38,4 +39,10 @@ public abstract class ExecutionEnvironment {
 
     /** TODO: Temporal method. Probably should not decide execution mode programmatically. */
     public abstract ExecutionEnvironment tmpSetRuntimeMode(RuntimeExecutionMode runtimeMode);
+
+    /**
+     * TODO: Temporal method. Probably should not set config programmatically. Just for testing in
+     * PoC.
+     */
+    public abstract ExecutionEnvironment tmpWithConfiguration(Configuration configuration);
 }

@@ -22,19 +22,21 @@ import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
+import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.util.Preconditions;
 
 import java.util.function.Consumer;
 
 /** Operator for {@link TwoInputStreamProcessFunction}. */
 public class TwoInputProcessOperator<IN1, IN2, OUT>
         extends AbstractUdfStreamOperator<OUT, TwoInputStreamProcessFunction<IN1, IN2, OUT>>
-        implements TwoInputStreamOperator<IN1, IN2, OUT> {
+        implements TwoInputStreamOperator<IN1, IN2, OUT>, BoundedMultiInput {
 
-    private transient Consumer<OUT> collector;
+    protected transient Consumer<OUT> collector;
 
-    private transient RuntimeContext context;
+    protected transient DefaultRuntimeContext context;
 
     public TwoInputProcessOperator(TwoInputStreamProcessFunction<IN1, IN2, OUT> userFunction) {
         super(userFunction);
@@ -64,6 +66,20 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
 
     protected Consumer<OUT> getOutputCollector() {
         return new OutputCollector();
+    }
+
+    @Override
+    public void endInput(int inputId) throws Exception {
+        if (!(context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH)) {
+            return;
+        }
+        // sanity check.
+        Preconditions.checkState(inputId >= 1 && inputId <= 2);
+        if (inputId == 1) {
+            userFunction.endOfFirstInputPartition(collector, context);
+        } else {
+            userFunction.endOfSecondInputPartition(collector, context);
+        }
     }
 
     private class OutputCollector implements Consumer<OUT> {

@@ -18,10 +18,13 @@
 
 package org.apache.flink.streaming.util;
 
+import org.apache.flink.runtime.operators.testutils.MockEnvironment;
+import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
+import org.apache.flink.util.Preconditions;
 
 /**
  * A test harness for testing a {@link TwoInputStreamOperator}.
@@ -38,6 +41,14 @@ public class TwoInputStreamOperatorTestHarness<IN1, IN2, OUT>
     public TwoInputStreamOperatorTestHarness(TwoInputStreamOperator<IN1, IN2, OUT> operator)
             throws Exception {
         this(operator, 1, 1, 0);
+    }
+
+    public TwoInputStreamOperatorTestHarness(
+            TwoInputStreamOperator<IN1, IN2, OUT> operator, MockEnvironment mockEnvironment)
+            throws Exception {
+        super(operator, mockEnvironment);
+
+        this.twoInputOperator = operator;
     }
 
     public TwoInputStreamOperatorTestHarness(
@@ -88,5 +99,12 @@ public class TwoInputStreamOperatorTestHarness<IN1, IN2, OUT>
 
     public void processWatermarkStatus2(WatermarkStatus watermarkStatus) throws Exception {
         twoInputOperator.processWatermarkStatus2(watermarkStatus);
+    }
+
+    public void endInput(int inputId) throws Exception {
+        Preconditions.checkState(inputId >= 1 && inputId <= 2);
+        if (operator instanceof BoundedMultiInput) {
+            ((BoundedMultiInput) operator).endInput(inputId);
+        }
     }
 }

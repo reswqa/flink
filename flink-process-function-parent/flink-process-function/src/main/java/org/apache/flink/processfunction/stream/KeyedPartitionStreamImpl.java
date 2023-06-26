@@ -24,6 +24,8 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -112,8 +114,11 @@ public class KeyedPartitionStreamImpl<K, V>
                     (Transformation<OUT>)
                             transformReduce((SingleStreamReduceFunction<V>) processFunction);
         } else {
+            Configuration configuration = getEnvironment().getConfiguration();
+            boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
             // universal process
-            KeyedProcessOperator<K, V, OUT> operator = new KeyedProcessOperator<>(processFunction);
+            KeyedProcessOperator<K, V, OUT> operator =
+                    new KeyedProcessOperator<>(processFunction, sortInputs);
             transform = oneInputTransformWithOperator("KeyedProcess", outType, operator);
         }
 
@@ -155,9 +160,12 @@ public class KeyedPartitionStreamImpl<K, V>
             KeySelector<OUT, K> newKeySelector) {
         TypeInformation<OUT> outType =
                 StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         // TODO Supports checking key for non-process operator(i.e. ReduceOperator).
         KeyedProcessOperator<K, V, OUT> operator =
-                new KeyedProcessOperator<>(processFunction, checkNotNull(newKeySelector));
+                new KeyedProcessOperator<>(
+                        processFunction, sortInputs, checkNotNull(newKeySelector));
         Transformation<OUT> transform =
                 oneInputTransformWithOperator("KeyedProcess", outType, operator);
         NonKeyedPartitionStreamImpl<OUT> outputStream =
@@ -201,8 +209,10 @@ public class KeyedPartitionStreamImpl<K, V>
                         processFunction,
                         getType(),
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction);
+                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Keyed-TwoInput-Process",
@@ -223,8 +233,11 @@ public class KeyedPartitionStreamImpl<K, V>
                         processFunction,
                         getType(),
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction, newKeySelector);
+                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs, newKeySelector);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Keyed-TwoInput-Process",
@@ -252,8 +265,10 @@ public class KeyedPartitionStreamImpl<K, V>
                         processFunction,
                         getType(),
                         ((BroadcastStreamImpl<T_OTHER>) other).getType());
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction);
+                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Broadcast-Keyed-TwoInput-Process",
