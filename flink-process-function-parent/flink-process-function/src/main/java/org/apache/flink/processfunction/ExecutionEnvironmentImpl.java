@@ -32,8 +32,9 @@ import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.PipelineExecutor;
 import org.apache.flink.core.execution.PipelineExecutorFactory;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
+import org.apache.flink.processfunction.api.Source;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
-import org.apache.flink.processfunction.connector.SupplierSourceFunction;
+import org.apache.flink.processfunction.connector.FromCollectionSource;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.functions.source.FromElementsFunction;
@@ -45,7 +46,6 @@ import org.apache.flink.streaming.api.transformations.LegacySourceTransformation
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
-import org.apache.flink.util.function.SupplierFunction;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,27 +76,32 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     }
 
     @Override
-    public <OUT> NonKeyedPartitionStream<OUT> tmpFromSupplierSource(
-            SupplierFunction<OUT> supplier) {
-        final SupplierSourceFunction<OUT> sourceFunction = new SupplierSourceFunction<>(supplier);
-        final String sourceName = "Supplier Source";
-        // TODO Supports clean closure
-        final TypeInformation<OUT> resolvedTypeInfo =
-                TypeExtractor.getUnaryOperatorReturnType(
-                        supplier,
-                        SupplierFunction.class,
-                        -1,
-                        0,
-                        TypeExtractor.NO_INDEX,
-                        null,
-                        null,
-                        false);
-        return addSource(
-                sourceFunction, sourceName, resolvedTypeInfo, Boundedness.CONTINUOUS_UNBOUNDED);
+    public <OUT>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<OUT> fromSource(
+                    Source<OUT> source) {
+        if (source instanceof FromCollectionSource) {
+            return transformToLegacyFromCollectionSource(
+                    ((FromCollectionSource<OUT>) source).getDatas());
+        }
+
+        // TODO supports FLIP-27 based source.
+        return null;
     }
 
     @Override
-    public <OUT> NonKeyedPartitionStream<OUT> tmpFromCollection(Collection<OUT> data) {
+    public ExecutionEnvironment tmpSetRuntimeMode(RuntimeExecutionMode runtimeMode) {
+        checkNotNull(runtimeMode);
+        configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode);
+        return this;
+    }
+
+    // -----------------------------------------------
+    //              Internal Methods
+    // -----------------------------------------------
+
+    private <OUT>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<OUT>
+                    transformToLegacyFromCollectionSource(Collection<OUT> data) {
         Preconditions.checkNotNull(data, "Collection must not be null");
         if (data.isEmpty()) {
             throw new IllegalArgumentException("Collection must not be empty");
@@ -118,32 +123,23 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
                             + "StreamExecutionEnvironment#fromElements(Collection, TypeInformation)",
                     e);
         }
-        return fromCollection(data, typeInfo);
+        return transformToLegacyFromCollectionSource(data, typeInfo);
     }
 
-    public <OUT> NonKeyedPartitionStream<OUT> fromCollection(
-            Collection<OUT> data, TypeInformation<OUT> typeInfo) {
+    public <OUT>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<OUT>
+                    transformToLegacyFromCollectionSource(
+                            Collection<OUT> data, TypeInformation<OUT> typeInfo) {
         Preconditions.checkNotNull(data, "Collection must not be null");
 
         // must not have null elements and mixed elements
         FromElementsFunction.checkCollection(data, typeInfo.getTypeClass());
 
         SourceFunction<OUT> function = new FromElementsFunction<>(data);
-        return addSource(function, "Collection Source", typeInfo, Boundedness.BOUNDED);
+        return addLegacySource(function, "Collection Source", typeInfo, Boundedness.BOUNDED);
     }
 
-    @Override
-    public ExecutionEnvironment tmpSetRuntimeMode(RuntimeExecutionMode runtimeMode) {
-        checkNotNull(runtimeMode);
-        configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode);
-        return this;
-    }
-
-    // -----------------------------------------------
-    //              Internal Methods
-    // -----------------------------------------------
-
-    private <OUT> NonKeyedPartitionStreamImpl<OUT> addSource(
+    private <OUT> NonKeyedPartitionStreamImpl<OUT> addLegacySource(
             SourceFunction<OUT> sourceFunction,
             String sourceName,
             TypeInformation<OUT> typeInformation,
