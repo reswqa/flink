@@ -22,6 +22,7 @@ import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
+import org.apache.flink.streaming.api.operators.BoundedOneInput;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -31,9 +32,9 @@ import java.util.function.Consumer;
 /** Operator for {@link SingleStreamProcessFunction}. */
 public class ProcessOperator<IN, OUT>
         extends AbstractUdfStreamOperator<OUT, SingleStreamProcessFunction<IN, OUT>>
-        implements OneInputStreamOperator<IN, OUT> {
+        implements OneInputStreamOperator<IN, OUT>, BoundedOneInput {
 
-    protected transient RuntimeContext context;
+    protected transient DefaultRuntimeContext context;
 
     protected transient Consumer<OUT> outputCollector;
 
@@ -62,6 +63,14 @@ public class ProcessOperator<IN, OUT>
 
     protected Consumer<OUT> getOutputCollector() {
         return new OutputCollector();
+    }
+
+    @Override
+    public void endInput() throws Exception {
+        if (!(context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH)) {
+            return;
+        }
+        userFunction.endOfPartition(outputCollector, context);
     }
 
     private class OutputCollector implements Consumer<OUT> {

@@ -20,6 +20,8 @@ package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.BroadcastStream;
@@ -55,8 +57,10 @@ public class BroadcastStreamImpl<T> extends DataStream<T> implements BroadcastSt
                         processFunction,
                         getType(),
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         KeyedTwoInputProcessOperator<K, T, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction);
+                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Broadcast-Keyed-TwoInput-Process",

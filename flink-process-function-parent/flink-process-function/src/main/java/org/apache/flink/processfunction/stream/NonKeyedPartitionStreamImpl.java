@@ -22,6 +22,8 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -91,8 +93,10 @@ public class NonKeyedPartitionStreamImpl<T>
                         processFunction,
                         getType(),
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         KeyedTwoInputProcessOperator<K, T, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction);
+                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Keyed-TwoInput-Process",

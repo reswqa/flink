@@ -30,6 +30,9 @@ import org.apache.flink.processfunction.state.StateDeclarationConverter;
 import org.apache.flink.processfunction.state.ValueStateDeclarationImpl;
 import org.apache.flink.runtime.jobgraph.JobType;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
+import org.apache.flink.util.Preconditions;
+
+import javax.annotation.Nullable;
 
 import java.util.Optional;
 import java.util.Set;
@@ -44,6 +47,12 @@ public class DefaultRuntimeContext implements RuntimeContext {
     private final StreamingRuntimeContext streamingRuntimeContext;
 
     private final Supplier<Object> currentKeySupplier;
+
+    /**
+     * {@link #getCurrentKey()} will return this if it is not null, otherwise return the key from
+     * {@link #currentKeySupplier}.
+     */
+    @Nullable private Object overwriteCurrentKey;
 
     public DefaultRuntimeContext(
             Set<StateDeclaration> usedStates,
@@ -99,10 +108,21 @@ public class DefaultRuntimeContext implements RuntimeContext {
         }
     }
 
+    public void setCurrentKey(Object key) {
+        overwriteCurrentKey = Preconditions.checkNotNull(key);
+    }
+
+    public void resetCurrentKey() {
+        overwriteCurrentKey = null;
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public <K> Optional<K> getCurrentKey() {
         try {
+            if (overwriteCurrentKey != null) {
+                return Optional.of((K) overwriteCurrentKey);
+            }
             return Optional.ofNullable((K) currentKeySupplier.get());
         } catch (Exception e) {
             return Optional.empty();
