@@ -22,6 +22,7 @@ import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.processfunction.api.state.StateDeclaration.ListStateDeclaration;
 import org.apache.flink.processfunction.api.state.StateDeclaration.ValueStateDeclaration;
+import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 
 import java.util.Optional;
 
@@ -31,6 +32,12 @@ public interface RuntimeContext {
     <T> Optional<ValueState<T>> getState(ValueStateDeclaration<T> stateDeclaration)
             throws Exception;
 
+    /**
+     * Get the key of current record.
+     *
+     * @return The key of current processed record for {@link KeyedPartitionStream}. {@link
+     *     Optional#empty()} for other non-keyed stream.
+     */
     <K> Optional<K> getCurrentKey();
 
     ExecutionMode getExecutionMode();
