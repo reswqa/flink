@@ -37,6 +37,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /** The default implementations of {@link RuntimeContext}. */
 public class DefaultRuntimeContext implements RuntimeContext {
@@ -46,13 +47,17 @@ public class DefaultRuntimeContext implements RuntimeContext {
 
     private final StreamingRuntimeContext streamingRuntimeContext;
 
+    private final Supplier<Object> currentKeySupplier;
+
     public DefaultRuntimeContext(
             Set<StateDeclaration> usedStates,
             OperatorStateStore operatorStateStore,
-            StreamingRuntimeContext streamingRuntimeContext) {
+            StreamingRuntimeContext streamingRuntimeContext,
+            Supplier<Object> currentKeySupplier) {
         this.usedStates = usedStates;
         this.operatorStateStore = operatorStateStore;
         this.streamingRuntimeContext = streamingRuntimeContext;
+        this.currentKeySupplier = currentKeySupplier;
     }
 
     @Override
@@ -141,6 +146,16 @@ public class DefaultRuntimeContext implements RuntimeContext {
                     "RedistributionMode "
                             + redistributionMode.name()
                             + " is not supported for map state.");
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <K> Optional<K> getCurrentKey() {
+        try {
+            return Optional.ofNullable((K) currentKeySupplier.get());
+        } catch (Exception e) {
+            return Optional.empty();
         }
     }
 

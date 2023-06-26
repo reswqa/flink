@@ -48,7 +48,10 @@ public class ProcessOperator<IN, OUT>
         super.open();
         context =
                 new DefaultRuntimeContext(
-                        userFunction.usesStates(), getOperatorStateBackend(), getRuntimeContext());
+                        userFunction.usesStates(),
+                        getOperatorStateBackend(),
+                        getRuntimeContext(),
+                        this::getCurrentKey);
         outputCollector = getOutputCollector();
     }
 
