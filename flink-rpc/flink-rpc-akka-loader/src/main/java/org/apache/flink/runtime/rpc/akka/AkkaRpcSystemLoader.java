@@ -17,8 +17,8 @@
 
 package org.apache.flink.runtime.rpc.akka;
 
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.core.classloading.SubmoduleClassLoader;
 import org.apache.flink.runtime.rpc.RpcSystem;
 import org.apache.flink.runtime.rpc.RpcSystemLoader;
@@ -55,7 +55,7 @@ public class AkkaRpcSystemLoader implements RpcSystemLoader {
         try {
             final ClassLoader flinkClassLoader = RpcSystem.class.getClassLoader();
 
-            final Path tmpDirectory = Paths.get(ConfigurationUtils.parseTempDirectories(config)[0]);
+            final Path tmpDirectory = Paths.get(ConfigOptionsUtils.parseTempDirectories(config)[0]);
             Files.createDirectories(FileUtils.getTargetPathIfContainsSymbolicPath(tmpDirectory));
             final Path tempFile =
                     Files.createFile(

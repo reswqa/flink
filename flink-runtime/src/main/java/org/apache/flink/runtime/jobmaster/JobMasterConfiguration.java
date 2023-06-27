@@ -20,8 +20,8 @@ package org.apache.flink.runtime.jobmaster;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.AkkaOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.registration.RetryingRegistrationConfiguration;
 import org.apache.flink.util.Preconditions;
@@ -80,7 +80,7 @@ public class JobMasterConfiguration {
         final Time slotRequestTimeout =
                 Time.milliseconds(configuration.getLong(JobManagerOptions.SLOT_REQUEST_TIMEOUT));
 
-        final String tmpDirectory = ConfigurationUtils.parseTempDirectories(configuration)[0];
+        final String tmpDirectory = ConfigOptionsUtils.parseTempDirectories(configuration)[0];
 
         final RetryingRegistrationConfiguration retryingRegistrationConfiguration =
                 RetryingRegistrationConfiguration.fromConfiguration(configuration);

@@ -19,7 +19,6 @@
 package org.apache.flink.api.common.eventtime;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.java.ClosureCleaner;
 import org.apache.flink.metrics.MetricGroup;
 
 import java.io.Serializable;
@@ -44,7 +43,7 @@ public interface TimestampAssignerSupplier<T> extends Serializable {
 
     /**
      * Additional information available to {@link #createTimestampAssigner(Context)}. This can be
-     * access to {@link org.apache.flink.metrics.MetricGroup MetricGroups}, for example.
+     * access to {@link MetricGroup MetricGroups}, for example.
      */
     interface Context {
 
@@ -63,7 +62,7 @@ public interface TimestampAssignerSupplier<T> extends Serializable {
 
     /**
      * We need an actual class. Implementing this as a lambda in {@link
-     * #of(SerializableTimestampAssigner)} would not allow the {@link ClosureCleaner} to "reach"
+     * #of(SerializableTimestampAssigner)} would not allow the {@code ClosureCleaner} to "reach"
      * into the {@link SerializableTimestampAssigner}.
      */
     class SupplierFromSerializableTimestampAssigner<T> implements TimestampAssignerSupplier<T> {

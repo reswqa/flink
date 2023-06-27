@@ -27,8 +27,8 @@ import org.apache.flink.api.common.JobSubmissionResult;
 import org.apache.flink.api.common.io.FileOutputFormat;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.ClusterOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.HighAvailabilityOptions;
 import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.core.execution.SavepointFormatType;
@@ -410,7 +410,7 @@ public class MiniCluster implements AutoCloseableAsync {
                         MetricUtils.instantiateProcessMetricGroup(
                                 metricRegistry,
                                 RpcUtils.getHostname(commonRpcService),
-                                ConfigurationUtils.getSystemResourceMetricsProbingInterval(
+                                ConfigOptionsUtils.getSystemResourceMetricsProbingInterval(
                                         configuration));
 
                 ioExecutor =

@@ -164,14 +164,14 @@ public class ExecutionConfigFromConfigurationTest {
         spec.assertEqualNonDefault(executionConfig);
     }
 
-    private static ExecutionConfig.GlobalJobParameters getTestGlobalJobParameters() {
+    private static GlobalJobParameters getTestGlobalJobParameters() {
         Configuration globalJobParameters = new Configuration();
         globalJobParameters.setString("key1", "value1");
         globalJobParameters.setString("key2", "value2");
         return globalJobParameters;
     }
 
-    private static ExecutionConfig.GlobalJobParameters getOtherTestGlobalJobParameters() {
+    private static GlobalJobParameters getOtherTestGlobalJobParameters() {
         Configuration globalJobParameters = new Configuration();
         globalJobParameters.setString("key1", "value1");
         globalJobParameters.setString("key2", "value2");

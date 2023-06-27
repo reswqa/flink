@@ -20,8 +20,8 @@ package org.apache.flink.fs.s3.common;
 
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.FileSystemFactory;
@@ -147,7 +147,7 @@ public abstract class AbstractS3FileSystemFactory implements FileSystemFactory {
             }
 
             final String[] localTmpDirectories =
-                    ConfigurationUtils.parseTempDirectories(flinkConfig);
+                    ConfigOptionsUtils.parseTempDirectories(flinkConfig);
             Preconditions.checkArgument(localTmpDirectories.length > 0);
             final String localTmpDirectory = localTmpDirectories[0];
             final long s3minPartSize = flinkConfig.getLong(PART_UPLOAD_MIN_SIZE);

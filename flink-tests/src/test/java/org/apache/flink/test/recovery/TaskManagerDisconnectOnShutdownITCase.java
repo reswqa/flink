@@ -20,8 +20,8 @@ package org.apache.flink.test.recovery;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.AkkaOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.HeartbeatManagerOptions;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.configuration.MemorySize;
@@ -191,7 +191,7 @@ public class TaskManagerDisconnectOnShutdownITCase {
                 Executor ioExecutor) {
 
             final Time standaloneClusterStartupPeriodTime =
-                    ConfigurationUtils.getStandaloneClusterStartupPeriodTime(configuration);
+                    ConfigOptionsUtils.getStandaloneClusterStartupPeriodTime(configuration);
 
             return new StandaloneResourceManager(
                     rpcService,

@@ -21,8 +21,8 @@ package org.apache.flink.fs.osshadoop;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.FileSystemFactory;
 import org.apache.flink.util.Preconditions;
@@ -101,7 +101,7 @@ public class OSSFileSystemFactory implements FileSystemFactory {
 
         final AliyunOSSFileSystem fs = new AliyunOSSFileSystem();
         fs.initialize(fsUri, hadoopConfig);
-        final String[] localTmpDirectories = ConfigurationUtils.parseTempDirectories(flinkConfig);
+        final String[] localTmpDirectories = ConfigOptionsUtils.parseTempDirectories(flinkConfig);
         Preconditions.checkArgument(localTmpDirectories.length > 0);
         final String localTmpDirectory = localTmpDirectories[0];
         return new FlinkOSSFileSystem(

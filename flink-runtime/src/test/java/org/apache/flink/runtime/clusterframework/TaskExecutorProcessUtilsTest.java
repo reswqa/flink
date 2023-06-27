@@ -21,8 +21,8 @@ package org.apache.flink.runtime.clusterframework;
 import org.apache.flink.api.common.resources.CPUResource;
 import org.apache.flink.api.common.resources.ExternalResource;
 import org.apache.flink.configuration.ConfigOption;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.ExternalResourceOptions;
 import org.apache.flink.configuration.IllegalConfigurationException;
 import org.apache.flink.configuration.MemorySize;
@@ -85,7 +85,7 @@ public class TaskExecutorProcessUtilsTest
         String dynamicConfigsStr =
                 TaskExecutorProcessUtils.generateDynamicConfigsStr(TM_RESOURCE_SPEC);
         Map<String, String> configs =
-                ConfigurationUtils.parseTmResourceDynamicConfigs(dynamicConfigsStr);
+                ConfigOptionsUtils.parseTmResourceDynamicConfigs(dynamicConfigsStr);
 
         assertThat(
                 new CPUResource(Double.valueOf(configs.get(TaskManagerOptions.CPU_CORES.key()))),

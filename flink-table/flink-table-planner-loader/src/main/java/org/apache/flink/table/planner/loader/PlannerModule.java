@@ -18,8 +18,8 @@
 
 package org.apache.flink.table.planner.loader;
 
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.core.classloading.ComponentClassLoader;
 import org.apache.flink.core.classloading.SubmoduleClassLoader;
@@ -93,7 +93,7 @@ class PlannerModule {
             final ClassLoader flinkClassLoader = PlannerModule.class.getClassLoader();
 
             final Path tmpDirectory =
-                    Paths.get(ConfigurationUtils.parseTempDirectories(new Configuration())[0]);
+                    Paths.get(ConfigOptionsUtils.parseTempDirectories(new Configuration())[0]);
             Files.createDirectories(FileUtils.getTargetPathIfContainsSymbolicPath(tmpDirectory));
             final Path tempFile =
                     Files.createFile(

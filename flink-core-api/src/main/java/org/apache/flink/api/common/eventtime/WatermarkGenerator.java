@@ -19,7 +19,6 @@
 package org.apache.flink.api.common.eventtime;
 
 import org.apache.flink.annotation.Public;
-import org.apache.flink.api.common.ExecutionConfig;
 
 /**
  * The {@code WatermarkGenerator} generates watermarks either based on events or periodically (in a
@@ -40,7 +39,7 @@ public interface WatermarkGenerator<T> {
     /**
      * Called periodically, and might emit a new watermark, or not.
      *
-     * <p>The interval in which this method is called and Watermarks are generated depends on {@link
+     * <p>The interval in which this method is called and Watermarks are generated depends on {@code
      * ExecutionConfig#getAutoWatermarkInterval()}.
      */
     void onPeriodicEmit(WatermarkOutput output);

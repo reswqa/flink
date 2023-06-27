@@ -85,7 +85,8 @@ public final class GlobalConfiguration {
      * @return Returns the loaded global configuration with dynamic properties
      */
     public static Configuration loadConfiguration(Configuration dynamicProperties) {
-        final String configDir = System.getenv(ConfigConstants.ENV_FLINK_CONF_DIR);
+        // TODO let this ref to org.apache.flink.configuration.ConfigConstants.ENV_FLINK_CONF_DIR
+        final String configDir = System.getenv("FLINK_CONF_DIR");
         if (configDir == null) {
             return new Configuration(dynamicProperties);
         }

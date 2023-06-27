@@ -138,7 +138,7 @@ public class ConfigurationUtilsTest extends TestLogger {
         configuration.set(CoreOptions.TMP_DIRS, tempDirectories.toString());
 
         final Set<File> allTempDirectories =
-                Arrays.stream(ConfigurationUtils.parseTempDirectories(configuration))
+                Arrays.stream(ConfigOptionsUtils.parseTempDirectories(configuration))
                         .map(File::new)
                         .collect(Collectors.toSet());
 
@@ -146,7 +146,7 @@ public class ConfigurationUtilsTest extends TestLogger {
         final int numberDraws = 100;
 
         for (int i = 0; i < numberDraws; i++) {
-            drawnTempDirectories.add(ConfigurationUtils.getRandomTempDirectory(configuration));
+            drawnTempDirectories.add(ConfigOptionsUtils.getRandomTempDirectory(configuration));
         }
 
         assertThat(drawnTempDirectories).hasSizeGreaterThan(1);

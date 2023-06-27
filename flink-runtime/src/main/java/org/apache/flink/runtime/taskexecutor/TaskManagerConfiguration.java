@@ -21,8 +21,8 @@ package org.apache.flink.runtime.taskexecutor;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.ConfigConstants;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.configuration.UnmodifiableConfiguration;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
@@ -193,7 +193,7 @@ public class TaskManagerConfiguration implements TaskManagerRuntimeInfo {
             numberSlots = 1;
         }
 
-        final String[] tmpDirPaths = ConfigurationUtils.parseTempDirectories(configuration);
+        final String[] tmpDirPaths = ConfigOptionsUtils.parseTempDirectories(configuration);
 
         final Time rpcTimeout =
                 Time.fromDuration(configuration.get(AkkaOptions.ASK_TIMEOUT_DURATION));

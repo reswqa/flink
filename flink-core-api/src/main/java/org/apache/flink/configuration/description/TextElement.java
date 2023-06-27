@@ -20,8 +20,6 @@ package org.apache.flink.configuration.description;
 
 import org.apache.flink.annotation.PublicEvolving;
 
-import org.apache.flink.shaded.guava30.com.google.common.base.Strings;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -60,7 +58,7 @@ public class TextElement implements BlockElement, InlineElement {
 
     /** Wraps a list of {@link InlineElement}s into a single {@link TextElement}. */
     public static InlineElement wrap(InlineElement... elements) {
-        return text(Strings.repeat("%s", elements.length), elements);
+        return text(String.join("", Collections.nCopies(elements.length, "%s")), elements);
     }
 
     /**

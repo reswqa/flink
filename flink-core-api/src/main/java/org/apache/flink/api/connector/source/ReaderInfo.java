@@ -18,10 +18,10 @@
 
 package org.apache.flink.api.connector.source;
 
-import org.apache.flink.annotation.Public;
-
 import java.io.Serializable;
 import java.util.Objects;
+
+import org.apache.flink.annotation.Public;
 
 /** A container class hosting the information of a {@link SourceReader}. */
 @Public

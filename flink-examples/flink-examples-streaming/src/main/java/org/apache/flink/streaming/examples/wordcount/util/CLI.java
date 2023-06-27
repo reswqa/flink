@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.examples.wordcount.util;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.GlobalJobParameters;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.java.utils.MultipleParameterTool;
 import org.apache.flink.configuration.ExecutionOptions;
@@ -35,7 +35,7 @@ import java.util.OptionalInt;
  * A simple CLI parser for the {@link org.apache.flink.streaming.examples.wordcount.WordCount}
  * example application.
  */
-public class CLI extends ExecutionConfig.GlobalJobParameters {
+public class CLI extends GlobalJobParameters {
 
     public static final String INPUT_KEY = "input";
     public static final String OUTPUT_KEY = "output";

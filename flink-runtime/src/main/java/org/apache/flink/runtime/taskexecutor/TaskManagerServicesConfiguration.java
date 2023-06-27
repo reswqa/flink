@@ -21,8 +21,8 @@ package org.apache.flink.runtime.taskexecutor;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.AkkaOptions;
 import org.apache.flink.configuration.CheckpointingOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
@@ -266,7 +266,7 @@ public class TaskManagerServicesConfiguration {
             TaskExecutorResourceSpec taskExecutorResourceSpec,
             WorkingDirectory workingDirectory)
             throws Exception {
-        String[] localStateRootDirs = ConfigurationUtils.parseLocalStateDirectories(configuration);
+        String[] localStateRootDirs = ConfigOptionsUtils.parseLocalStateDirectories(configuration);
         final Reference<File[]> localStateDirs;
 
         if (localStateRootDirs.length == 0) {
@@ -310,7 +310,7 @@ public class TaskManagerServicesConfiguration {
 
         final int numIoThreads = ClusterEntrypointUtils.getPoolSize(configuration);
 
-        final String[] tmpDirs = ConfigurationUtils.parseTempDirectories(configuration);
+        final String[] tmpDirs = ConfigOptionsUtils.parseTempDirectories(configuration);
 
         // If TaskManagerOptionsInternal.TASK_MANAGER_NODE_ID is not set, use the external address
         // as the node id.
@@ -335,7 +335,7 @@ public class TaskManagerServicesConfiguration {
                 taskExecutorResourceSpec,
                 timerServiceShutdownTimeout,
                 retryingRegistrationConfiguration,
-                ConfigurationUtils.getSystemResourceMetricsProbingInterval(configuration),
+                ConfigOptionsUtils.getSystemResourceMetricsProbingInterval(configuration),
                 FlinkUserCodeClassLoaders.ResolveOrder.fromString(classLoaderResolveOrder),
                 alwaysParentFirstLoaderPatterns,
                 numIoThreads,

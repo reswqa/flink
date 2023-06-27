@@ -19,6 +19,8 @@
 package org.apache.flink.processfunction.api;
 
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 
@@ -33,7 +35,9 @@ public abstract class ExecutionEnvironment {
 
     /** TODO: No watermark strategy atm. Revisit event-time supports later. */
     public abstract <OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> fromSource(
-            Source<OUT> source);
+            Source<OUT, ?, ?> source,
+            WatermarkStrategy<OUT> timestampsAndWatermarks,
+            String sourceName);
 
     public abstract void execute() throws Exception;
 

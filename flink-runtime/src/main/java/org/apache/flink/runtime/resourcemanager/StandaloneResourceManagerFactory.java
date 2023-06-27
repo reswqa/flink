@@ -21,6 +21,7 @@ package org.apache.flink.runtime.resourcemanager;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.AkkaOptions;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.ResourceManagerOptions;
@@ -73,7 +74,7 @@ public final class StandaloneResourceManagerFactory extends ResourceManagerFacto
             Executor ioExecutor) {
 
         final Time standaloneClusterStartupPeriodTime =
-                ConfigurationUtils.getStandaloneClusterStartupPeriodTime(configuration);
+                ConfigOptionsUtils.getStandaloneClusterStartupPeriodTime(configuration);
 
         return new StandaloneResourceManager(
                 rpcService,

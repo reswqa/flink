@@ -20,8 +20,10 @@ package org.apache.flink.processfunction;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;
+import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.client.deployment.executors.LocalExecutorFactory;
@@ -32,7 +34,6 @@ import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.PipelineExecutor;
 import org.apache.flink.core.execution.PipelineExecutorFactory;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
-import org.apache.flink.processfunction.api.Source;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.connector.FromCollectionSource;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl;
@@ -78,7 +79,9 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     @Override
     public <OUT>
             NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<OUT> fromSource(
-                    Source<OUT> source) {
+                    Source<OUT, ?, ?> source,
+                    WatermarkStrategy<OUT> timestampsAndWatermarks,
+                    String sourceName) {
         if (source instanceof FromCollectionSource) {
             return transformToLegacyFromCollectionSource(
                     ((FromCollectionSource<OUT>) source).getDatas());

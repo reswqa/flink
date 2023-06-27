@@ -18,9 +18,9 @@
 
 package org.apache.flink.configuration;
 
-import org.apache.flink.annotation.PublicEvolving;
-
 import java.util.Optional;
+
+import org.apache.flink.annotation.PublicEvolving;
 
 /**
  * Read access to a configuration object. Allows reading values described with meta information
