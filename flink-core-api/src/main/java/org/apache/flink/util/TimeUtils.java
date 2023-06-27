@@ -18,7 +18,8 @@
 
 package org.apache.flink.util;
 
-import org.apache.flink.api.common.time.Time;
+import static org.apache.flink.util.Preconditions.checkArgument;
+import static org.apache.flink.util.Preconditions.checkNotNull;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -31,8 +32,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.apache.flink.util.Preconditions.checkArgument;
-import static org.apache.flink.util.Preconditions.checkNotNull;
+import org.apache.flink.api.common.time.Time;
 
 /** Collection of utilities about time intervals. */
 public class TimeUtils {

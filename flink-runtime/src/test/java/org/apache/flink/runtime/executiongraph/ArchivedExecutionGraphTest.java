@@ -20,6 +20,7 @@ package org.apache.flink.runtime.executiongraph;
 
 import org.apache.flink.api.common.ArchivedExecutionConfig;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.GlobalJobParameters;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
@@ -410,7 +411,7 @@ public class ArchivedExecutionGraphTest {
         compareExecutionGraph(graph, copy);
     }
 
-    private static class TestJobParameters extends ExecutionConfig.GlobalJobParameters {
+    private static class TestJobParameters extends GlobalJobParameters {
         private static final long serialVersionUID = -8118611781035212808L;
         private Map<String, String> parameters;
 

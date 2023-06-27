@@ -20,7 +20,7 @@ package org.apache.flink.api.java.utils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.GlobalJobParameters;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -32,7 +32,7 @@ import java.util.Set;
  * MultipleParameterTool}.
  */
 @Public
-public abstract class AbstractParameterTool extends ExecutionConfig.GlobalJobParameters
+public abstract class AbstractParameterTool extends GlobalJobParameters
         implements Serializable, Cloneable {
     private static final long serialVersionUID = 1L;
 

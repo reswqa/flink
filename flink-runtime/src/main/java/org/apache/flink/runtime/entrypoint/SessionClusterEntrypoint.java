@@ -19,8 +19,8 @@
 package org.apache.flink.runtime.entrypoint;
 
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.dispatcher.ExecutionGraphInfoStore;
 import org.apache.flink.runtime.dispatcher.FileExecutionGraphInfoStore;
@@ -53,7 +53,7 @@ public abstract class SessionClusterEntrypoint extends ClusterEntrypoint {
             case File:
                 {
                     final File tmpDir =
-                            new File(ConfigurationUtils.parseTempDirectories(configuration)[0]);
+                            new File(ConfigOptionsUtils.parseTempDirectories(configuration)[0]);
                     final long maximumCacheSizeBytes =
                             configuration.getLong(JobManagerOptions.JOB_STORE_CACHE_SIZE);
 

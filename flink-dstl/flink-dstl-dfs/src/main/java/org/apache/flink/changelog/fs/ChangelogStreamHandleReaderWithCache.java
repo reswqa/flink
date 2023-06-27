@@ -18,8 +18,8 @@
 
 package org.apache.flink.changelog.fs;
 
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.core.fs.RefCountedFile;
 import org.apache.flink.runtime.state.StreamStateHandle;
@@ -71,7 +71,7 @@ class ChangelogStreamHandleReaderWithCache implements ChangelogStreamHandleReade
 
     ChangelogStreamHandleReaderWithCache(Configuration config) {
         this.cacheDirectories =
-                Arrays.stream(ConfigurationUtils.parseTempDirectories(config))
+                Arrays.stream(ConfigOptionsUtils.parseTempDirectories(config))
                         .map(path -> new File(path, CACHE_FILE_SUB_DIR))
                         .toArray(File[]::new);
         Arrays.stream(this.cacheDirectories).forEach(File::mkdirs);

@@ -18,8 +18,8 @@
 
 package org.apache.flink.runtime.taskmanager;
 
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.configuration.NettyShuffleEnvironmentOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
@@ -344,7 +344,7 @@ public class NettyShuffleEnvironmentConfiguration {
         boolean isNetworkDetailedMetrics =
                 configuration.getBoolean(NettyShuffleEnvironmentOptions.NETWORK_DETAILED_METRICS);
 
-        String[] tempDirs = ConfigurationUtils.parseTempDirectories(configuration);
+        String[] tempDirs = ConfigOptionsUtils.parseTempDirectories(configuration);
         // Shuffle the data directories to make it fairer for directory selection between different
         // TaskManagers, which is good for load balance especially when there are multiple disks.
         List<String> shuffleDirs = Arrays.asList(tempDirs);

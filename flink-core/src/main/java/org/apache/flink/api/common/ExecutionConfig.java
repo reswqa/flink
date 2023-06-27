@@ -42,7 +42,6 @@ import com.esotericsoftware.kryo.Serializer;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -1009,40 +1008,6 @@ public class ExecutionConfig
     }
 
     // ------------------------------ Utilities  ----------------------------------
-
-    /**
-     * Abstract class for a custom user configuration object registered at the execution config.
-     *
-     * <p>This user config is accessible at runtime through
-     * getRuntimeContext().getExecutionConfig().GlobalJobParameters()
-     */
-    public static class GlobalJobParameters implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        /**
-         * Convert UserConfig into a {@code Map<String, String>} representation. This can be used by
-         * the runtime, for example for presenting the user config in the web frontend.
-         *
-         * @return Key/Value representation of the UserConfig
-         */
-        public Map<String, String> toMap() {
-            return Collections.emptyMap();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null || this.getClass() != obj.getClass()) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash();
-        }
-    }
 
     /** Configuration settings for the closure cleaner. */
     public enum ClosureCleanerLevel implements DescribedEnum {

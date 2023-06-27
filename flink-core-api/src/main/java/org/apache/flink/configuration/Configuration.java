@@ -20,11 +20,11 @@ package org.apache.flink.configuration;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.GlobalJobParameters;
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
-import org.apache.flink.types.StringValue;
+import org.apache.flink.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Lightweight configuration object which stores key/value pairs. */
 @Public
-public class Configuration extends ExecutionConfig.GlobalJobParameters
+public class Configuration extends GlobalJobParameters
         implements IOReadableWritable,
                 java.io.Serializable,
                 Cloneable,
@@ -877,13 +877,13 @@ public class Configuration extends ExecutionConfig.GlobalJobParameters
             final int numberOfProperties = in.readInt();
 
             for (int i = 0; i < numberOfProperties; i++) {
-                String key = StringValue.readString(in);
+                String key = StringUtils.readString(in);
                 Object value;
 
                 byte type = in.readByte();
                 switch (type) {
                     case TYPE_STRING:
-                        value = StringValue.readString(in);
+                        value = StringUtils.readString(in);
                         break;
                     case TYPE_INT:
                         value = in.readInt();
@@ -927,12 +927,12 @@ public class Configuration extends ExecutionConfig.GlobalJobParameters
                 String key = entry.getKey();
                 Object val = entry.getValue();
 
-                StringValue.writeString(key, out);
+                StringUtils.writeString(key, out);
                 Class<?> clazz = val.getClass();
 
                 if (clazz == String.class) {
                     out.write(TYPE_STRING);
-                    StringValue.writeString((String) val, out);
+                    StringUtils.writeString((String) val, out);
                 } else if (clazz == Integer.class) {
                     out.write(TYPE_INT);
                     out.writeInt((Integer) val);

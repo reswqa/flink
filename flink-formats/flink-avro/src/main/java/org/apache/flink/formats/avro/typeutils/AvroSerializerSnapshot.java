@@ -41,7 +41,7 @@ import java.util.Objects;
 import static org.apache.flink.formats.avro.typeutils.AvroSerializer.isGenericRecord;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.StringUtils.readString;
-import static org.apache.flink.util.StringUtils.writeString;
+import static org.apache.flink.util.StringUtils.writeStringNotNull;
 
 /**
  * An {@code Avro} specific implementation of a {@link TypeSerializerSnapshot}.
@@ -73,8 +73,8 @@ public class AvroSerializerSnapshot<T> implements TypeSerializerSnapshot<T> {
         checkNotNull(runtimeType);
         checkNotNull(schema);
 
-        writeString(runtimeType.getName(), out);
-        writeString(schema.toString(false), out);
+        writeStringNotNull(runtimeType.getName(), out);
+        writeStringNotNull(schema.toString(false), out);
     }
 
     @SuppressWarnings("unchecked")

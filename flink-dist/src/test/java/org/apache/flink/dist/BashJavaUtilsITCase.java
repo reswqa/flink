@@ -18,6 +18,7 @@
 
 package org.apache.flink.dist;
 
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
@@ -65,7 +66,7 @@ public class BashJavaUtilsITCase extends JavaBashTestBase {
 
         assertThat(lines.size(), is(expectedResultLines));
         ConfigurationUtils.parseJvmArgString(lines.get(0));
-        ConfigurationUtils.parseTmResourceDynamicConfigs(lines.get(1));
+        ConfigOptionsUtils.parseTmResourceDynamicConfigs(lines.get(1));
     }
 
     @Test
@@ -82,7 +83,7 @@ public class BashJavaUtilsITCase extends JavaBashTestBase {
 
         assertThat(lines.size(), is(expectedResultLines));
         Map<String, String> configs =
-                ConfigurationUtils.parseTmResourceDynamicConfigs(lines.get(1));
+                ConfigOptionsUtils.parseTmResourceDynamicConfigs(lines.get(1));
         assertThat(Double.valueOf(configs.get(TaskManagerOptions.CPU_CORES.key())), is(cpuCores));
     }
 

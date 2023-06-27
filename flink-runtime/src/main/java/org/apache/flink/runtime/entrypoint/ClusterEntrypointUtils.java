@@ -22,8 +22,8 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.configuration.ClusterOptions;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.ConfigOption;
+import org.apache.flink.configuration.ConfigOptionsUtils;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ConfigurationUtils;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.entrypoint.parser.CommandLineParser;
@@ -211,7 +211,7 @@ public final class ClusterEntrypointUtils {
                         .orElseGet(
                                 () -> {
                                     final File tempDirectory =
-                                            ConfigurationUtils.getRandomTempDirectory(
+                                            ConfigOptionsUtils.getRandomTempDirectory(
                                                     configuration);
 
                                     LOG.debug(
