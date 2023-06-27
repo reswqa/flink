@@ -51,7 +51,9 @@ public final class BatchStreamingUnifiedFunctions {
 
     static {
         try {
-            INSTANCE = Class.forName("org.apache.flink.processfunction.FunctionImpl");
+            INSTANCE =
+                    Class.forName(
+                            "org.apache.flink.processfunction.builtin.BatchStreamingUnifiedFunctionsImpl");
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(
                     "Please ensure that flink-process-function in your class path");
