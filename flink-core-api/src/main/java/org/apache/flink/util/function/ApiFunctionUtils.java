@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,21 +18,22 @@
 
 package org.apache.flink.util.function;
 
-import org.apache.flink.annotation.Internal;
-
 import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
 
-import static org.apache.flink.util.function.FunctionUtils.asCallable;
+public class ApiFunctionUtils {
 
-/** {@link FutureTask} that also implements {@link RunnableWithException}. */
-@Internal
-public class FutureTaskWithException<V> extends FutureTask<V> implements RunnableWithException {
-    public FutureTaskWithException(Callable<V> callable) {
-        super(callable);
+    private ApiFunctionUtils() {
+        throw new UnsupportedOperationException("This class should never be instantiated.");
     }
 
-    public FutureTaskWithException(RunnableWithException command) {
-        this(asCallable(command, null));
+    /**
+     * Converts {@link RunnableWithException} into a {@link Callable} that will return the {@code
+     * result}.
+     */
+    public static <T> Callable<T> asCallable(RunnableWithException command, T result) {
+        return () -> {
+            command.run();
+            return result;
+        };
     }
 }
