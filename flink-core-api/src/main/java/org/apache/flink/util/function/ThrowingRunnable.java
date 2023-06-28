@@ -19,7 +19,7 @@
 package org.apache.flink.util.function;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.util.ApiExceptionUtils;
 
 /**
  * Similar to a {@link Runnable}, this interface is used to capture a block of code to be executed.
@@ -48,7 +48,7 @@ public interface ThrowingRunnable<E extends Throwable> {
             try {
                 throwingRunnable.run();
             } catch (Throwable t) {
-                ExceptionUtils.rethrow(t);
+                ApiExceptionUtils.rethrow(t);
             }
         };
     }

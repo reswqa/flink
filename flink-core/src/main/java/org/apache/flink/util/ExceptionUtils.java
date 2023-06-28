@@ -313,13 +313,10 @@ public final class ExceptionUtils {
      * @param t The throwable to be thrown.
      */
     public static void rethrow(Throwable t) {
-        if (t instanceof Error) {
-            throw (Error) t;
-        } else if (t instanceof RuntimeException) {
-            throw (RuntimeException) t;
-        } else {
-            throw new RuntimeException(t);
-        }
+        // TODO Just for PoC, forwarding this to ApiExceptionUtils is enough. We should consider
+        // move this class all to api module all let other class directly called this method from
+        // api module.
+        ApiExceptionUtils.rethrow(t);
     }
 
     /**
