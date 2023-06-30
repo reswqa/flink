@@ -45,6 +45,18 @@ public abstract class DataStream<T> {
      */
     protected final Map<OutputTag<?>, TypeInformation<?>> requestedSideOutputs = new HashMap<>();
 
+    static {
+        try {
+            // all transformation translator must be put to a map in StreamGraphGenerator, but
+            // streaming-java is not depend on process-function module, using reflect to handle
+            // this.
+            StreamUtils.registerPfSinkTransformationTranslator();
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Can not register process function transformation translator. ");
+        }
+    }
+
     public DataStream(ExecutionEnvironmentImpl environment, Transformation<T> transformation) {
         this.environment =
                 Preconditions.checkNotNull(environment, "Execution Environment must not be null.");
