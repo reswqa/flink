@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -51,10 +52,16 @@ public class WordCount {
                                                     .append(' ');
                                         }
                                         return sb.toString();
-                                    }));
+                                    }),
+                            WatermarkStrategy.noWatermarks(),
+                            "source");
         } else {
             env.tmpSetRuntimeMode(RuntimeExecutionMode.BATCH);
-            source = env.fromSource(Sources.collection(Arrays.asList("A", "B", "A", "C")));
+            source =
+                    env.fromSource(
+                            Sources.collection(Arrays.asList("A", "B", "A", "C")),
+                            WatermarkStrategy.noWatermarks(),
+                            "source");
         }
         source.process(new Tokenizer())
                 .keyBy(WordAndCount::getWord)

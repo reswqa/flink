@@ -16,23 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.operators;
+package org.apache.flink.processfunction.connector;
 
-import org.apache.flink.api.connector.source.Source;
-import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
-import org.apache.flink.processfunction.api.ExecutionEnvironment;
-import org.apache.flink.processfunction.api.builtin.Sources;
+import org.apache.flink.api.connector.source.SourceSplit;
 
-import org.junit.jupiter.api.Test;
+public class SourceUtils {
+    public static class NoOpEnumState {}
 
-import java.util.Arrays;
+    public static class DummySourceSplit implements SourceSplit {
 
-class TestSource {
-    @Test
-    void testSource() throws Exception {
-        Source<Integer, ?, ?> collection = Sources.collection(Arrays.asList(1, 2, 3));
-
-        ExecutionEnvironment env = ExecutionEnvironmentImpl.getExecutionEnvironment();
-        env.fromSource(collection);
+        @Override
+        public String splitId() {
+            return "dummy-split";
+        }
     }
 }

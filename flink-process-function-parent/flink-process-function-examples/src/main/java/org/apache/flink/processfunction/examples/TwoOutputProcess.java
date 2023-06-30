@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.examples;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -33,7 +34,10 @@ public class TwoOutputProcess {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         NonKeyedPartitionStream<Integer> source =
-                env.fromSource(Sources.collection(Arrays.asList(1, 2, 3)));
+                env.fromSource(
+                        Sources.collection(Arrays.asList(1, 2, 3)),
+                        WatermarkStrategy.noWatermarks(),
+                        "source");
         NonKeyedPartitionStream.ProcessConfigurableAndTwoNonKeyedPartitionStreams<Integer, String>
                 twoOutputStreams =
                         source.process(

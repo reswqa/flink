@@ -18,8 +18,9 @@
 
 package org.apache.flink.processfunction.builtin;
 
-import org.apache.flink.processfunction.api.Source;
+import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.processfunction.connector.FromCollectionSource;
+import org.apache.flink.processfunction.connector.SupplierSource;
 import org.apache.flink.util.function.SupplierFunction;
 
 import java.util.Collection;
@@ -27,11 +28,11 @@ import java.util.Collection;
 /** This class provides some built-in sources for convenience. */
 public class SourcesImpl {
 
-    public static <T> Source<T> supplier(SupplierFunction<T> supplier) {
-        return null;
+    public static <T> Source<T, ?, ?> supplier(SupplierFunction<T> supplier) {
+        return new SupplierSource<>(supplier);
     }
 
-    public static <T> Source<T> collection(Collection<T> collection) {
+    public static <T> Source<T, ?, ?> collection(Collection<T> collection) {
         return new FromCollectionSource<>(collection);
     }
 }
