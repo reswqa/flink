@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.eventtime;
+package org.apache.flink.processfunction.operators;
 
-import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
+import org.apache.flink.processfunction.api.ExecutionEnvironment;
+import org.apache.flink.processfunction.api.builtin.Sources;
 
-import java.io.Serializable;
+import org.junit.jupiter.api.Test;
 
-/** A {@link TimestampAssigner} that is also {@link java.io.Serializable}. */
-@PublicEvolving
-@FunctionalInterface
-public interface SerializableTimestampAssigner<T> extends TimestampAssigner<T>, Serializable {}
+import java.util.Arrays;
+
+class TestSource {
+    @Test
+    void testSource() throws Exception {
+        Source<Integer, ?, ?> collection = Sources.collection(Arrays.asList(1, 2, 3));
+
+        ExecutionEnvironment env = ExecutionEnvironmentImpl.getExecutionEnvironment();
+        env.fromSource(collection);
+    }
+}

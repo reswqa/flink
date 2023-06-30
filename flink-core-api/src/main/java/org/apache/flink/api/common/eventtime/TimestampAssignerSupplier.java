@@ -44,7 +44,7 @@ public interface TimestampAssignerSupplier<T> extends Serializable {
 
     /**
      * Additional information available to {@link #createTimestampAssigner(Context)}. This can be
-     * access to {@link org.apache.flink.metrics.MetricGroup MetricGroups}, for example.
+     * access to {@link MetricGroup MetricGroups}, for example.
      */
     interface Context {
 

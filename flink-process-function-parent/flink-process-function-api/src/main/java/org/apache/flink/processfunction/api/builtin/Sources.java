@@ -18,7 +18,7 @@
 
 package org.apache.flink.processfunction.api.builtin;
 
-import org.apache.flink.processfunction.api.Source;
+import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.util.function.SupplierFunction;
 
 import java.util.Collection;
@@ -36,9 +36,9 @@ public class Sources {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Source<T> supplier(SupplierFunction<T> supplier) {
+    public static <T> Source<T, ?, ?> supplier(SupplierFunction<T> supplier) {
         try {
-            return (Source<T>)
+            return (Source<T, ?, ?>)
                     INSTANCE.getMethod("supplier", SupplierFunction.class).invoke(null, supplier);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -46,9 +46,9 @@ public class Sources {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Source<T> collection(Collection<T> collection) {
+    public static <T> Source<T, ?, ?> collection(Collection<T> collection) {
         try {
-            return (Source<T>)
+            return (Source<T, ?, ?>)
                     INSTANCE.getMethod("collection", Collection.class).invoke(null, collection);
         } catch (Exception e) {
             throw new RuntimeException(e);
