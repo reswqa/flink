@@ -18,8 +18,8 @@
 
 package org.apache.flink.processfunction.api.stream;
 
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;

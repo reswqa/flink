@@ -9,16 +9,21 @@ import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctio
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
-import org.apache.flink.processfunction.connector.ConsumerSinkFunction;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
+import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
+import org.apache.flink.streaming.api.graph.TransformationTranslator;
 import org.apache.flink.streaming.api.operators.SimpleOperatorFactory;
-import org.apache.flink.streaming.api.operators.StreamSink;
+import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
-import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
+import org.apache.flink.streaming.api.transformations.OneInputTransformation;
+import org.apache.flink.streaming.api.transformations.PfSinkTransformation;
 import org.apache.flink.streaming.api.transformations.TwoInputTransformation;
-import org.apache.flink.util.function.ConsumerFunction;
+import org.apache.flink.streaming.runtime.translators.PfSinkTransformationTranslator;
+
+import java.lang.reflect.Field;
+import java.util.Map;
 
 /** Utils for all streams. */
 public class StreamUtils {
@@ -70,25 +75,6 @@ public class StreamUtils {
                 in1TypeInformation,
                 in2TypeInformation,
                 Utils.getCallLocationName(),
-                true);
-    }
-
-    public static <T> Transformation<T> getConsumerSinkTransform(
-            Transformation<T> inputTransform, ConsumerFunction<T> consumer) {
-        // read the output type of the input Transform to coax out errors about MissingTypeInfo
-        inputTransform.getOutputType();
-
-        ConsumerSinkFunction<T> sinkFunction = new ConsumerSinkFunction<>(consumer);
-
-        // TODO Supports clean closure
-        StreamSink<T> sinkOperator = new StreamSink<>(sinkFunction);
-
-        return new LegacySinkTransformation<>(
-                inputTransform,
-                "Consumer Sink",
-                sinkOperator,
-                // TODO Supports configure parallelism
-                1,
                 true);
     }
 
@@ -170,5 +156,50 @@ public class StreamUtils {
                         Utils.getCallLocationName(),
                         true);
         return Tuple2.of(firstOutputType, secondOutputType);
+    }
+
+    public static <T, R> DataStream<R> transformToNonKeyedStream(
+            DataStream<T> dataStream,
+            String operatorName,
+            TypeInformation<R> outTypeInfo,
+            StreamOperatorFactory<R> operatorFactory) {
+        if (dataStream instanceof BroadcastStreamImpl) {
+            throw new UnsupportedOperationException(
+                    "broadcast stream does not supports transform to one input non-keyed stream");
+        }
+        // read the output type of the input Transform to coax out errors about MissingTypeInfo
+        dataStream.getTransformation().getOutputType();
+
+        OneInputTransformation<T, R> resultTransform =
+                new OneInputTransformation<>(
+                        dataStream.getTransformation(),
+                        operatorName,
+                        operatorFactory,
+                        outTypeInfo,
+                        dataStream.getEnvironment().getParallelism(),
+                        false);
+
+        NonKeyedPartitionStreamImpl<R> returnStream =
+                new NonKeyedPartitionStreamImpl<>(dataStream.getEnvironment(), resultTransform);
+
+        dataStream.getEnvironment().addOperator(resultTransform);
+        return returnStream;
+    }
+
+    @SuppressWarnings("rawtypes,unchecked")
+    public static void registerPfSinkTransformationTranslator() throws Exception {
+        final Field translatorMapField =
+                StreamGraphGenerator.class.getDeclaredField("translatorMap");
+        translatorMapField.setAccessible(true);
+        final Map<Class<? extends Transformation>, TransformationTranslator<?, ?>> translatorMap =
+                (Map<Class<? extends Transformation>, TransformationTranslator<?, ?>>)
+                        translatorMapField.get(null);
+        final Field underlyingMapField = translatorMap.getClass().getDeclaredField("m");
+        underlyingMapField.setAccessible(true);
+        final Map<Class<? extends Transformation>, TransformationTranslator<?, ?>> underlyingMap =
+                (Map<Class<? extends Transformation>, TransformationTranslator<?, ?>>)
+                        underlyingMapField.get(translatorMap);
+
+        underlyingMap.put(PfSinkTransformation.class, new PfSinkTransformationTranslator<>());
     }
 }

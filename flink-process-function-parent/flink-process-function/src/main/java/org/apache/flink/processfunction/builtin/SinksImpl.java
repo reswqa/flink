@@ -16,30 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api.builtin;
+package org.apache.flink.processfunction.builtin;
 
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.processfunction.connector.ConsumerSink;
 import org.apache.flink.util.function.ConsumerFunction;
 
-public class Sinks {
-    private static final Class<?> INSTANCE;
-
-    static {
-        try {
-            INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.SinksImpl");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(
-                    "Please ensure that flink-process-function in your class path");
-        }
-    }
-
-    @SuppressWarnings("unchecked")
+/** This class provides some built-in sinks for convenience. */
+public class SinksImpl {
     public static <T> Sink<T> consumer(ConsumerFunction<T> consumer) {
-        try {
-            return (Sink<T>)
-                    INSTANCE.getMethod("consumer", ConsumerFunction.class).invoke(null, consumer);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return new ConsumerSink<>(consumer);
     }
 }

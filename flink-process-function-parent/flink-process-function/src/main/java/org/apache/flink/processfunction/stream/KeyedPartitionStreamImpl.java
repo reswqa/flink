@@ -20,13 +20,13 @@ package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExecutionOptions;
-import org.apache.flink.processfunction.api.Sink;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
@@ -43,11 +43,13 @@ import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
+import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
+import org.apache.flink.streaming.api.transformations.PfSinkTransformation;
 import org.apache.flink.streaming.api.transformations.ReduceTransformation;
 import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
@@ -329,8 +331,19 @@ public class KeyedPartitionStreamImpl<K, V>
 
     @Override
     public ProcessConfigurable<?> sinkTo(Sink<V> sink) {
-        // TODO impl this.
-        return null;
+        // read the output type of the input Transform to coax out errors about MissingTypeInfo
+        transformation.getOutputType();
+        PfSinkTransformation<V, V> sinkTransformation =
+                new PfSinkTransformation<>(
+                        this,
+                        sink,
+                        getType(),
+                        "Sink",
+                        getEnvironment().getParallelism(),
+                        false,
+                        CustomSinkOperatorUidHashes.DEFAULT);
+        this.getEnvironment().addOperator(sinkTransformation);
+        return new NonKeyedPartitionStreamImpl<>(environment, sinkTransformation);
     }
 
     public TypeInformation<K> getKeyType() {

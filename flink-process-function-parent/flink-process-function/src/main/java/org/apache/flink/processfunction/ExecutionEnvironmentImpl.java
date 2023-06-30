@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction;
 
+import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -30,10 +31,12 @@ import org.apache.flink.api.java.typeutils.MissingTypeInfo;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.client.deployment.executors.LocalExecutorFactory;
+import org.apache.flink.configuration.BatchExecutionOptions;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.configuration.ExecutionOptions;
+import org.apache.flink.configuration.PipelineOptions;
+import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.PipelineExecutor;
 import org.apache.flink.core.execution.PipelineExecutorFactory;
@@ -43,6 +46,7 @@ import org.apache.flink.processfunction.connector.FromCollectionSource;
 import org.apache.flink.processfunction.connector.SupplierSource;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
+import org.apache.flink.streaming.api.environment.ExecutionCheckpointingOptions;
 import org.apache.flink.streaming.api.functions.source.FromElementsFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.graph.StreamGraph;
@@ -68,12 +72,17 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     private final List<Transformation<?>> transformations = new ArrayList<>();
 
     // Todo merge execution config and configuration.
-    private final ExecutionConfig config = new ExecutionConfig();
+    private final ExecutionConfig executionConfig = new ExecutionConfig();
 
     private Configuration configuration = new Configuration();
 
     public static ExecutionEnvironmentImpl newInstance() {
         return new ExecutionEnvironmentImpl();
+    }
+
+    ExecutionEnvironmentImpl() {
+        // TODO re-consider the class loader.
+        configure(configuration, null);
     }
 
     @Override
@@ -144,8 +153,21 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
         return this.configuration;
     }
 
+    public ExecutionConfig getExecutionConfig() {
+        return executionConfig;
+    }
+
     public int getParallelism() {
-        return configuration.get(CoreOptions.DEFAULT_PARALLELISM);
+        return executionConfig.getParallelism();
+    }
+
+    public ExecutionEnvironmentImpl setParallelism(int parallelism) {
+        executionConfig.setParallelism(parallelism);
+        return this;
+    }
+
+    public List<Transformation<?>> getTransformations() {
+        return transformations;
     }
 
     // -----------------------------------------------
@@ -292,7 +314,7 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
         // stream graph generation.
         return new StreamGraphGenerator(
                         new ArrayList<>(transformations),
-                        config,
+                        executionConfig,
                         new CheckpointConfig(),
                         configuration)
                 // TODO Re-Consider should we expose the logic of controlling chains to users.
@@ -307,5 +329,60 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
         // supported.
         configuration.set(DeploymentOptions.ATTACHED, true);
         return executorFactory.getExecutor(configuration);
+    }
+
+    @PublicEvolving
+    public void configure(ReadableConfig configuration, ClassLoader classLoader) {
+        // TODO not all configure are merged.
+        configuration
+                .getOptional(ExecutionOptions.RUNTIME_MODE)
+                .ifPresent(
+                        runtimeMode ->
+                                this.configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode));
+
+        configuration
+                .getOptional(ExecutionOptions.BATCH_SHUFFLE_MODE)
+                .ifPresent(
+                        shuffleMode ->
+                                this.configuration.set(
+                                        ExecutionOptions.BATCH_SHUFFLE_MODE, shuffleMode));
+
+        configuration
+                .getOptional(ExecutionOptions.SORT_INPUTS)
+                .ifPresent(
+                        sortInputs ->
+                                this.configuration.set(ExecutionOptions.SORT_INPUTS, sortInputs));
+        configuration
+                .getOptional(ExecutionOptions.USE_BATCH_STATE_BACKEND)
+                .ifPresent(
+                        sortInputs ->
+                                this.configuration.set(
+                                        ExecutionOptions.USE_BATCH_STATE_BACKEND, sortInputs));
+        configuration
+                .getOptional(PipelineOptions.NAME)
+                .ifPresent(jobName -> this.configuration.set(PipelineOptions.NAME, jobName));
+
+        configuration
+                .getOptional(ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH)
+                .ifPresent(
+                        flag ->
+                                this.configuration.set(
+                                        ExecutionCheckpointingOptions
+                                                .ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH,
+                                        flag));
+
+        configuration
+                .getOptional(PipelineOptions.JARS)
+                .ifPresent(jars -> this.configuration.set(PipelineOptions.JARS, jars));
+
+        configuration
+                .getOptional(BatchExecutionOptions.ADAPTIVE_AUTO_PARALLELISM_ENABLED)
+                .ifPresent(
+                        flag ->
+                                this.configuration.set(
+                                        BatchExecutionOptions.ADAPTIVE_AUTO_PARALLELISM_ENABLED,
+                                        flag));
+
+        executionConfig.configure(configuration, classLoader);
     }
 }
