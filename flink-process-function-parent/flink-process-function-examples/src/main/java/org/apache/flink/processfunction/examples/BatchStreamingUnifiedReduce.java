@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.function.Consumer;
 
-public class WordCount {
+public class BatchStreamingUnifiedReduce {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         boolean isStreamingMode = false;
