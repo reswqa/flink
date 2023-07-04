@@ -179,9 +179,8 @@ public class NonKeyedPartitionStreamImpl<T>
                         operatorName,
                         SimpleUdfStreamOperatorFactory.of(operator),
                         outputTypeInfo,
-                        // TODO Supports set parallelism.
-                        1,
-                        true);
+                        environment.getParallelism(),
+                        false);
 
         NonKeyedPartitionStreamImpl<R> returnStream =
                 new NonKeyedPartitionStreamImpl<>(environment, resultTransform);

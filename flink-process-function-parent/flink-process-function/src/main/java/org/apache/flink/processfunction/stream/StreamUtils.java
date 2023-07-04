@@ -91,9 +91,9 @@ public class StreamUtils {
                         functionName,
                         SimpleOperatorFactory.of(operator),
                         outTypeInformation,
-                        // TODO Supports configure parallelism
-                        1,
-                        true);
+                        // inputStream1 & 2 share the same env.
+                        inputStream1.getEnvironment().getParallelism(),
+                        false);
 
         TypeInformation<?> keyType = null;
         if (inputStream1 instanceof KeyedPartitionStreamImpl) {

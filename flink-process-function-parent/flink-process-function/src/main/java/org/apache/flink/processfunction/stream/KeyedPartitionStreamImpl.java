@@ -142,8 +142,7 @@ public class KeyedPartitionStreamImpl<K, V>
         ReduceTransformation<V, K> reduce =
                 new ReduceTransformation<>(
                         "Keyed Reduce",
-                        // TODO Supports set parallelism.
-                        1,
+                        environment.getParallelism(),
                         transformation,
                         // TODO Supports clean closure.
                         // We can directly pass Functions.ReduceFunction after remove old datastream
@@ -344,9 +343,8 @@ public class KeyedPartitionStreamImpl<K, V>
                         operatorName,
                         SimpleUdfStreamOperatorFactory.of(operator),
                         outputTypeInfo,
-                        // TODO Supports set parallelism.
-                        1,
-                        true);
+                        environment.getParallelism(),
+                        false);
 
         environment.addOperator(resultTransform);
 
