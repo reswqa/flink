@@ -30,7 +30,6 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
-import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
@@ -75,27 +74,6 @@ public class NonKeyedPartitionStreamImpl<T> extends DataStream<T>
                 new NonKeyedPartitionStreamImpl<>(
                         environment, getSideOutputTransform(secondOutputTag));
         return NonKeyedTwoOutputStream.of(firstStream, secondStream);
-    }
-
-    @Override
-    public <K, T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
-            KeyedPartitionStream<K, T_OTHER> other,
-            TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
-        TypeInformation<OUT> outTypeInfo =
-                StreamUtils.getOutputTypeForTwoInputProcessFunction(
-                        processFunction,
-                        getType(),
-                        ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
-        KeyedTwoInputProcessOperator<K, T, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction);
-        Transformation<OUT> outTransformation =
-                StreamUtils.getTwoInputTransform(
-                        "Keyed-TwoInput-Process",
-                        this,
-                        (KeyedPartitionStreamImpl<K, T_OTHER>) other,
-                        outTypeInfo,
-                        processOperator);
-        return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
     }
 
     @Override

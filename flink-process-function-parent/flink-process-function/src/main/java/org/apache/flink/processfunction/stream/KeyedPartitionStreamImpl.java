@@ -186,27 +186,6 @@ public class KeyedPartitionStreamImpl<K, V> extends DataStream<V>
 
     @Override
     public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
-            NonKeyedPartitionStream<T_OTHER> other,
-            TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
-        TypeInformation<OUT> outTypeInfo =
-                StreamUtils.getOutputTypeForTwoInputProcessFunction(
-                        processFunction,
-                        getType(),
-                        ((NonKeyedPartitionStreamImpl<T_OTHER>) other).getType());
-        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction);
-        Transformation<OUT> outTransformation =
-                StreamUtils.getTwoInputTransform(
-                        "Keyed-TwoInput-Process",
-                        this,
-                        (NonKeyedPartitionStreamImpl<T_OTHER>) other,
-                        outTypeInfo,
-                        processOperator);
-        return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
-    }
-
-    @Override
-    public <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputStreamProcessFunction<V, T_OTHER, OUT> processFunction) {
         TypeInformation<OUT> outTypeInfo =
