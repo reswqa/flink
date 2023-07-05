@@ -41,7 +41,7 @@ import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
-import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
+import org.apache.flink.processfunction.operators.KeyedTwoOutputProcessOperator;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
 import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
@@ -132,8 +132,44 @@ public class KeyedPartitionStreamImpl<K, V>
             TwoOutputStreamProcessFunction<V, OUT1, OUT2> processFunction,
             KeySelector<OUT1, K> keySelector1,
             KeySelector<OUT2, K> keySelector2) {
-        // TODO: to be implemented
-        return null;
+        Tuple2<TypeInformation<OUT1>, TypeInformation<OUT2>> twoOutputType =
+                StreamUtils.getTwoOutputType(processFunction, getType());
+        TypeInformation<OUT1> firstOutputType = twoOutputType.f0;
+        TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
+        OutputTag<OUT2> secondOutputTag = new OutputTag<>("Second-Output", secondTOutputType);
+
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
+
+        KeyedTwoOutputProcessOperator<K, V, OUT1, OUT2> operator =
+                new KeyedTwoOutputProcessOperator<>(
+                        processFunction, secondOutputTag, sortInputs, keySelector1, keySelector2);
+        Transformation<OUT1> mainOutputTransform =
+                oneInputTransformWithOperator("Two-Output-Operator", firstOutputType, operator);
+        NonKeyedPartitionStreamImpl<OUT1> nonKeyedMainOutputStream =
+                new NonKeyedPartitionStreamImpl<>(environment, mainOutputTransform);
+        Transformation<OUT2> sideOutputTransform =
+                nonKeyedMainOutputStream.getSideOutputTransform(secondOutputTag);
+        NonKeyedPartitionStreamImpl<OUT2> nonKeyedSideStream =
+                new NonKeyedPartitionStreamImpl<>(environment, sideOutputTransform);
+
+        // Note: Construct a keyed stream directly without partitionTransformation to avoid
+        // shuffle.
+        KeyedPartitionStreamImpl<K, OUT1> keyedMainOutputStream =
+                new KeyedPartitionStreamImpl<>(
+                        nonKeyedMainOutputStream,
+                        mainOutputTransform,
+                        keySelector1,
+                        TypeExtractor.getKeySelectorTypes(
+                                keySelector1, nonKeyedMainOutputStream.getType()));
+        KeyedPartitionStreamImpl<K, OUT2> keyedSideOutputStream =
+                new KeyedPartitionStreamImpl<>(
+                        nonKeyedSideStream,
+                        sideOutputTransform,
+                        keySelector2,
+                        TypeExtractor.getKeySelectorTypes(
+                                keySelector2, nonKeyedSideStream.getType()));
+        return KeyedTwoOutputStream.of(keyedMainOutputStream, keyedSideOutputStream);
     }
 
     private Transformation<V> transformReduce(SingleStreamReduceFunction<V> processFunction) {
@@ -189,8 +225,12 @@ public class KeyedPartitionStreamImpl<K, V>
         TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
         OutputTag<OUT2> secondOutputTag = new OutputTag<>("Second-Output", secondTOutputType);
 
-        TwoOutputProcessOperator<V, OUT1, OUT2> operator =
-                new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
+
+        KeyedTwoOutputProcessOperator<K, V, OUT1, OUT2> operator =
+                new KeyedTwoOutputProcessOperator<>(
+                        processFunction, secondOutputTag, sortInputs, null, null);
         Transformation<OUT1> firstTransformation =
                 oneInputTransformWithOperator("Two-Output-Operator", firstOutputType, operator);
         NonKeyedPartitionStreamImpl<OUT1> firstStream =
@@ -353,5 +393,39 @@ public class KeyedPartitionStreamImpl<K, V>
         resultTransform.setStateKeyType(keyType);
 
         return resultTransform;
+    }
+
+    static class KeyedTwoOutputStream<K, OUT1, OUT2>
+            extends ProcessConfigurableDataStream<
+                    OUT1, ProcessConfigurableAndTwoKeyedPartitionStreams<K, OUT1, OUT2>>
+            implements ProcessConfigurableAndTwoKeyedPartitionStreams<K, OUT1, OUT2> {
+
+        private final KeyedPartitionStream<K, OUT1> firstStream;
+
+        private final KeyedPartitionStream<K, OUT2> secondStream;
+
+        public static <K, OUT1, OUT2> KeyedTwoOutputStream<K, OUT1, OUT2> of(
+                KeyedPartitionStreamImpl<K, OUT1> firstStream,
+                KeyedPartitionStreamImpl<K, OUT2> secondStream) {
+            return new KeyedTwoOutputStream<>(firstStream, secondStream);
+        }
+
+        private KeyedTwoOutputStream(
+                KeyedPartitionStreamImpl<K, OUT1> firstStream,
+                KeyedPartitionStreamImpl<K, OUT2> secondStream) {
+            super(firstStream.environment, firstStream.transformation);
+            this.firstStream = firstStream;
+            this.secondStream = secondStream;
+        }
+
+        @Override
+        public KeyedPartitionStream<K, OUT1> getFirst() {
+            return firstStream;
+        }
+
+        @Override
+        public KeyedPartitionStream<K, OUT2> getSecond() {
+            return secondStream;
+        }
     }
 }

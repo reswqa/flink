@@ -82,7 +82,7 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
         }
     }
 
-    private class OutputCollector implements Consumer<OUT> {
+    protected class OutputCollector implements Consumer<OUT> {
 
         private final StreamRecord<OUT> reuse = new StreamRecord<>(null);
 

@@ -44,7 +44,7 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     protected transient Consumer<OUT_SIDE> sideCollector;
 
-    protected transient RuntimeContext context;
+    protected transient DefaultRuntimeContext context;
 
     protected OutputTag<OUT_SIDE> outputTag;
 
@@ -59,8 +59,8 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     @Override
     public void open() throws Exception {
-        this.mainCollector = new MainOutputCollector();
-        this.sideCollector = new SideOutputCollector();
+        this.mainCollector = getMainCollector();
+        this.sideCollector = getSideCollector();
         this.context =
                 new DefaultRuntimeContext(
                         userFunction.usesStates(),
@@ -82,7 +82,15 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         userFunction.endOfPartition(mainCollector, sideCollector, context);
     }
 
-    private class MainOutputCollector implements Consumer<OUT_MAIN> {
+    protected Consumer<OUT_MAIN> getMainCollector() {
+        return new MainOutputCollector();
+    }
+
+    public Consumer<OUT_SIDE> getSideCollector() {
+        return new SideOutputCollector();
+    }
+
+    protected class MainOutputCollector implements Consumer<OUT_MAIN> {
 
         private final StreamRecord<OUT_MAIN> reuse = new StreamRecord<>(null);
 
@@ -92,7 +100,7 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         }
     }
 
-    private class SideOutputCollector implements Consumer<OUT_SIDE> {
+    protected class SideOutputCollector implements Consumer<OUT_SIDE> {
         private final StreamRecord<OUT_SIDE> reuse = new StreamRecord<>(null);
 
         @Override

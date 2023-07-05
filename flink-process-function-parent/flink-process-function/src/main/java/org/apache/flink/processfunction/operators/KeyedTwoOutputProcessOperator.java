@@ -20,10 +20,10 @@ package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
+import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.ExceptionUtils;
+import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nullable;
@@ -32,27 +32,27 @@ import java.util.function.Consumer;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
-/** Operator for {@link SingleStreamProcessFunction} in {@link KeyedPartitionStream}. */
-public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT> {
+public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
+        extends TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE> {
 
-    @Nullable private final KeySelector<OUT, KEY> outKeySelector;
+    @Nullable private final KeySelector<OUT_MAIN, KEY> mainOutKeySelector;
+
+    @Nullable private final KeySelector<OUT_SIDE, KEY> sideOutKeySelector;
 
     @Nullable private transient InputKeyListener inputKeyListener;
 
-    private final boolean sortInputs;
+    private final boolean sortInput;
 
-    public KeyedProcessOperator(
-            SingleStreamProcessFunction<IN, OUT> userFunction, boolean sortInputs) {
-        this(userFunction, sortInputs, null);
-    }
-
-    public KeyedProcessOperator(
-            SingleStreamProcessFunction<IN, OUT> userFunction,
-            boolean sortInputs,
-            KeySelector<OUT, KEY> outKeySelector) {
-        super(userFunction);
-        this.sortInputs = sortInputs;
-        this.outKeySelector = outKeySelector;
+    public KeyedTwoOutputProcessOperator(
+            TwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE> userFunction,
+            OutputTag<OUT_SIDE> outputTag,
+            boolean sortInput,
+            @Nullable KeySelector<OUT_MAIN, KEY> mainOutKeySelector,
+            @Nullable KeySelector<OUT_SIDE, KEY> sideOutKeySelector) {
+        super(userFunction, outputTag);
+        this.mainOutKeySelector = mainOutKeySelector;
+        this.sideOutKeySelector = sideOutKeySelector;
+        this.sortInput = sortInput;
     }
 
     @Override
@@ -60,11 +60,17 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
         super.open();
         if (context.getExecutionMode() == RuntimeContext.ExecutionMode.BATCH) {
             inputKeyListener =
-                    sortInputs
-                            ? new InputKeyListener.SortedInputKeyListener<>(
-                                    outputCollector, context, userFunction::endOfPartition)
-                            : new InputKeyListener.UnSortedInputKeyListener<>(
-                                    outputCollector, context, userFunction::endOfPartition);
+                    sortInput
+                            ? new InputKeyListener.SortedTwoOutputInputKeyListener<>(
+                                    userFunction::endOfPartition,
+                                    mainCollector,
+                                    sideCollector,
+                                    context)
+                            : new InputKeyListener.UnsortedTwoOutputInputKeyListener<>(
+                                    userFunction::endOfPartition,
+                                    mainCollector,
+                                    sideCollector,
+                                    context);
         }
     }
 
@@ -97,22 +103,41 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
-        userFunction.processRecord(element.getValue(), outputCollector, context);
+        userFunction.processRecord(element.getValue(), mainCollector, sideCollector, context);
     }
 
     @Override
-    protected Consumer<OUT> getOutputCollector() {
-        return outKeySelector != null ? new KeyCheckedCollector() : new OutputCollector();
+    protected Consumer<OUT_MAIN> getMainCollector() {
+        return mainOutKeySelector != null && sideOutKeySelector != null
+                ? new KeyCheckedOutputCollector<>(new MainOutputCollector(), mainOutKeySelector)
+                : new MainOutputCollector();
     }
 
-    private class KeyCheckedCollector extends OutputCollector {
+    @Override
+    public Consumer<OUT_SIDE> getSideCollector() {
+        return mainOutKeySelector != null && sideOutKeySelector != null
+                ? new KeyCheckedOutputCollector<>(new SideOutputCollector(), sideOutKeySelector)
+                : new SideOutputCollector();
+    }
+
+    private class KeyCheckedOutputCollector<T> implements Consumer<T> {
+
+        private final Consumer<T> outputCollector;
+
+        private final KeySelector<T, KEY> outputKeySelector;
+
+        private KeyCheckedOutputCollector(
+                Consumer<T> outputCollector, KeySelector<T, KEY> outputKeySelector) {
+            this.outputCollector = outputCollector;
+            this.outputKeySelector = outputKeySelector;
+        }
 
         @SuppressWarnings("unchecked")
         @Override
-        public void accept(OUT outputRecord) {
+        public void accept(T outputRecord) {
             try {
                 KEY currentKey = (KEY) getCurrentKey();
-                KEY outputKey = outKeySelector.getKey(outputRecord);
+                KEY outputKey = this.outputKeySelector.getKey(outputRecord);
                 if (!outputKey.equals(currentKey)) {
                     throw new IllegalStateException(
                             "Output key must equals to input key if you want the produced stream is keyed. ");
@@ -121,7 +146,7 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
                 // TODO Change Consumer to ThrowingConsumer.
                 ExceptionUtils.rethrow(e);
             }
-            super.accept(outputRecord);
+            this.outputCollector.accept(outputRecord);
         }
     }
 }

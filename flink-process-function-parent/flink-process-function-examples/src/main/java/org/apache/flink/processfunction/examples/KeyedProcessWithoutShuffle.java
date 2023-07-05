@@ -20,16 +20,29 @@ package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
+import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
+import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream;
-import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public class KeyedProcessWithoutShuffle {
     public static void main(String[] args) throws Exception {
+        // TODO switch by parse args.
+        // oneInput();
+        // twoInput();
+        twoOutput();
+    }
+
+    private static void oneInput() throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         ProcessConfigurableAndKeyedPartitionStream<Integer, Integer> keyStream =
                 env.fromSource(
@@ -39,11 +52,102 @@ public class KeyedProcessWithoutShuffle {
                         .keyBy(v -> v % 2)
                         .process(
                                 BatchStreamingUnifiedFunctions.map(value -> value + 2), v -> v % 2);
-        ProcessConfigurableAndNonKeyedPartitionStream<String> nonKeyedStream =
-                keyStream.process(BatchStreamingUnifiedFunctions.map(v -> "non-keyed: " + v));
-        nonKeyedStream
-                // Don't use Lambda reference as PrintStream is not serializable.
+        keyStream
+                .process(new EmitRecordWithKeyProcessFunction<>())
                 .sinkTo(Sinks.consumer((tsStr) -> System.out.println(tsStr)));
+        // Expected:
+        // KeyedProcess -> KeyedProcess -> Sink: Writer
         env.execute();
+    }
+
+    private static void twoInput() throws Exception {
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        KeyedPartitionStream<Integer, Integer> keyed1 =
+                env.fromSource(
+                                Sources.collection(Arrays.asList(1, 2, 3, 4, 5, 6)),
+                                WatermarkStrategy.noWatermarks(),
+                                "source")
+                        .keyBy(v -> v % 2);
+
+        KeyedPartitionStream<Integer, Integer> keyed2 =
+                env.fromSource(
+                                Sources.collection(Arrays.asList(1, 2, 3, 4, 5, 6)),
+                                WatermarkStrategy.noWatermarks(),
+                                "source")
+                        .keyBy(v -> v % 2);
+        keyed2.process(BatchStreamingUnifiedFunctions.map(value -> value + 2), v -> v % 2);
+        ProcessConfigurableAndKeyedPartitionStream<Integer, Integer> keyedTwoInputStream =
+                keyed1.connectAndProcess(
+                        keyed2,
+                        new TwoInputStreamProcessFunction<Integer, Integer, Integer>() {
+                            @Override
+                            public void processFirstInputRecord(
+                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    throws Exception {
+                                output.accept(record + 2);
+                            }
+
+                            @Override
+                            public void processSecondInputRecord(
+                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    throws Exception {
+                                output.accept(record + 2);
+                            }
+                        },
+                        v -> v % 2);
+        keyedTwoInputStream
+                .process(new EmitRecordWithKeyProcessFunction<>())
+                .sinkTo(Sinks.consumer((tsStr) -> System.out.println(tsStr)));
+        // Expected:
+        // Keyed-TwoInput-Process -> KeyedProcess -> Sink: Writer
+        env.execute();
+    }
+
+    private static void twoOutput() throws Exception {
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        KeyedPartitionStream<Integer, Integer> keyedStream =
+                env.fromSource(
+                                Sources.collection(Arrays.asList(1, 2, 3, 4, 5, 6)),
+                                WatermarkStrategy.noWatermarks(),
+                                "source")
+                        .keyBy(v -> v % 2);
+        KeyedPartitionStream.ProcessConfigurableAndTwoKeyedPartitionStreams<
+                        Integer, Integer, String>
+                twoOutputStream =
+                        keyedStream.process(
+                                new TwoOutputStreamProcessFunction<Integer, Integer, String>() {
+                                    @Override
+                                    public void processRecord(
+                                            Integer record,
+                                            Consumer<Integer> output1,
+                                            Consumer<String> output2,
+                                            RuntimeContext ctx) {
+                                        output1.accept(record + 2);
+                                        output2.accept(String.valueOf(record + 2));
+                                    }
+                                },
+                                v -> v % 2,
+                                v -> Integer.parseInt(v) % 2);
+        twoOutputStream
+                .getFirst()
+                .process(new EmitRecordWithKeyProcessFunction<>())
+                .sinkTo(Sinks.consumer((tsStr) -> System.out.println(tsStr)));
+        twoOutputStream
+                .getSecond()
+                .process(new EmitRecordWithKeyProcessFunction<>())
+                .sinkTo(Sinks.consumer((tsStr) -> System.out.println(tsStr)));
+        // Expected:
+        // Two-Output-Operator -> (KeyedProcess -> Sink: Writer, KeyedProcess -> Sink: Writer)
+        env.execute();
+    }
+
+    private static class EmitRecordWithKeyProcessFunction<T>
+            implements SingleStreamProcessFunction<T, String> {
+        @Override
+        public void processRecord(T record, Consumer<String> output, RuntimeContext ctx)
+                throws Exception {
+            Optional<Integer> currentKey = ctx.getCurrentKey();
+            output.accept(String.format("record %s with key %s", record, currentKey.get()));
+        }
     }
 }

@@ -20,17 +20,18 @@ package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
+import org.apache.flink.util.function.TriConsumer;
 
 import java.util.HashSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-interface InputKeyListener<OUT> {
+interface InputKeyListener {
     void keySelected(Object newKey);
 
     void endOfInput();
 
-    class SortedInputKeyListener<OUT> implements InputKeyListener<OUT> {
+    class SortedInputKeyListener<OUT> implements InputKeyListener {
         private Object oldKey;
 
         private final BiConsumer<Consumer<OUT>, RuntimeContext> endOfPartitionNotifier;
@@ -71,7 +72,7 @@ interface InputKeyListener<OUT> {
         }
     }
 
-    class UnSortedInputKeyListener<OUT> implements InputKeyListener<OUT> {
+    class UnSortedInputKeyListener<OUT> implements InputKeyListener {
         private final BiConsumer<Consumer<OUT>, RuntimeContext> endOfPartitionNotifier;
 
         private final Consumer<OUT> output;
@@ -100,6 +101,93 @@ interface InputKeyListener<OUT> {
             for (Object key : allKeys) {
                 ctx.setCurrentKey(key);
                 endOfPartitionNotifier.accept(output, ctx);
+            }
+            // reset current key
+            ctx.resetCurrentKey();
+        }
+    }
+
+    // TODO Consider extract common part with Sorted / UnSorted InputKeyListener.
+    class SortedTwoOutputInputKeyListener<OUT1, OUT2> implements InputKeyListener {
+        private Object oldKey;
+
+        private final TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext>
+                endOfPartitionNotifier;
+
+        private final Consumer<OUT1> output1;
+
+        private final Consumer<OUT2> output2;
+
+        private final DefaultRuntimeContext ctx;
+
+        public SortedTwoOutputInputKeyListener(
+                TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext> endOfPartitionNotifier,
+                Consumer<OUT1> output1,
+                Consumer<OUT2> output2,
+                DefaultRuntimeContext ctx) {
+            this.endOfPartitionNotifier = endOfPartitionNotifier;
+            this.output1 = output1;
+            this.output2 = output2;
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void keySelected(Object newKey) {
+            if (newKey == null) {
+                return;
+            }
+
+            if (!newKey.equals(oldKey) && oldKey != null) {
+                ctx.setCurrentKey(oldKey);
+                endOfPartitionNotifier.accept(output1, output2, ctx);
+                // reset endOfPartitionKey
+                ctx.resetCurrentKey();
+            }
+            oldKey = newKey;
+        }
+
+        @Override
+        public void endOfInput() {
+            ctx.setCurrentKey(oldKey);
+            endOfPartitionNotifier.accept(output1, output2, ctx);
+            ctx.resetCurrentKey();
+        }
+    }
+
+    class UnsortedTwoOutputInputKeyListener<OUT1, OUT2> implements InputKeyListener {
+        private final TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext>
+                endOfPartitionNotifier;
+
+        private final Consumer<OUT1> output1;
+
+        private final Consumer<OUT2> output2;
+
+        private final DefaultRuntimeContext ctx;
+
+        /** Used to store all the keys seen by this input. */
+        private final HashSet<Object> allKeys = new HashSet<>();
+
+        public UnsortedTwoOutputInputKeyListener(
+                TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext> endOfPartitionNotifier,
+                Consumer<OUT1> output1,
+                Consumer<OUT2> output2,
+                DefaultRuntimeContext ctx) {
+            this.endOfPartitionNotifier = endOfPartitionNotifier;
+            this.output1 = output1;
+            this.output2 = output2;
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void keySelected(Object newKey) {
+            allKeys.add(newKey);
+        }
+
+        @Override
+        public void endOfInput() {
+            for (Object key : allKeys) {
+                ctx.setCurrentKey(key);
+                endOfPartitionNotifier.accept(output1, output2, ctx);
             }
             // reset current key
             ctx.resetCurrentKey();

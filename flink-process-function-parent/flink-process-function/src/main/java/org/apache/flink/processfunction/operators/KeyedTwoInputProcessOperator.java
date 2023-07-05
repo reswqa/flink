@@ -37,10 +37,10 @@ public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
     @Nullable private final KeySelector<OUT, KEY> outKeySelector;
 
     /** Only NonNull in batch mode with keyed input. */
-    @Nullable private InputKeyListener<OUT> inputKeyListener1;
+    @Nullable private transient InputKeyListener inputKeyListener1;
 
     /** Only NonNull in batch mode with keyed input. */
-    @Nullable private InputKeyListener<OUT> inputKeyListener2;
+    @Nullable private transient InputKeyListener inputKeyListener2;
 
     private final boolean sortInputs;
 
@@ -107,9 +107,7 @@ public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
     }
 
     private <T> void setKeyContextElement(
-            StreamRecord<T> record,
-            KeySelector<T, ?> selector,
-            InputKeyListener<OUT> inputKeyListener)
+            StreamRecord<T> record, KeySelector<T, ?> selector, InputKeyListener inputKeyListener)
             throws Exception {
         if (selector == null) {
             return;
@@ -165,16 +163,6 @@ public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
                 ExceptionUtils.rethrow(e);
             }
             super.accept(outputRecord);
-        }
-    }
-
-    private class OutputCollector implements Consumer<OUT> {
-
-        private final StreamRecord<OUT> reuse = new StreamRecord<>(null);
-
-        @Override
-        public void accept(OUT outputRecord) {
-            output.collect(reuse.replace(outputRecord));
         }
     }
 }

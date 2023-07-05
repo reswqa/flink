@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class TwoKeyedInputProcessWithState {
+public class KeyedTwoInputProcessWithState {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         KeyedPartitionStream<String, String> source1 =

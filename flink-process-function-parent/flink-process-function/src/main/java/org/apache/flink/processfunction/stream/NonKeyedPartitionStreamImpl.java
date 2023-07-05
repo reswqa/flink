@@ -71,7 +71,7 @@ public class NonKeyedPartitionStreamImpl<T>
                 StreamUtils.getTwoOutputType(processFunction, getType());
         TypeInformation<OUT1> firstOutputType = twoOutputType.f0;
         TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
-        OutputTag<OUT2> secondOutputTag = new OutputTag<OUT2>("Second-Output", secondTOutputType);
+        OutputTag<OUT2> secondOutputTag = new OutputTag<>("Second-Output", secondTOutputType);
 
         TwoOutputProcessOperator<T, OUT1, OUT2> operator =
                 new TwoOutputProcessOperator<>(processFunction, secondOutputTag);

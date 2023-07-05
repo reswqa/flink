@@ -73,7 +73,7 @@ public class ProcessOperator<IN, OUT>
         userFunction.endOfPartition(outputCollector, context);
     }
 
-    private class OutputCollector implements Consumer<OUT> {
+    protected class OutputCollector implements Consumer<OUT> {
 
         private final StreamRecord<OUT> reuse = new StreamRecord<>(null);
 
