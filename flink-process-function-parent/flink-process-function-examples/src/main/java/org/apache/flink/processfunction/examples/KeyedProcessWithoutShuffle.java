@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.examples;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -31,7 +32,10 @@ public class KeyedProcessWithoutShuffle {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         ProcessConfigurableAndKeyedPartitionStream<Integer, Integer> keyStream =
-                env.fromSource(Sources.collection(Arrays.asList(1, 2, 3, 4, 5, 6)))
+                env.fromSource(
+                                Sources.collection(Arrays.asList(1, 2, 3, 4, 5, 6)),
+                                WatermarkStrategy.noWatermarks(),
+                                "source")
                         .keyBy(v -> v % 2)
                         .process(
                                 BatchStreamingUnifiedFunctions.map(value -> value + 2), v -> v % 2);

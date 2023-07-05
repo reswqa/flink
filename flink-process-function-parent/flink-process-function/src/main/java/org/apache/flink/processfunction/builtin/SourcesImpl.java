@@ -16,42 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api.builtin;
+package org.apache.flink.processfunction.builtin;
 
 import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.processfunction.connector.FromCollectionSource;
+import org.apache.flink.processfunction.connector.SupplierSource;
 import org.apache.flink.util.function.SupplierFunction;
 
 import java.util.Collection;
 
-public class Sources {
-    private static final Class<?> INSTANCE;
+/** This class provides some built-in sources for convenience. */
+public class SourcesImpl {
 
-    static {
-        try {
-            INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.SourcesImpl");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(
-                    "Please ensure that flink-process-function in your class path");
-        }
-    }
-
-    @SuppressWarnings("unchecked")
     public static <T> Source<T, ?, ?> supplier(SupplierFunction<T> supplier) {
-        try {
-            return (Source<T, ?, ?>)
-                    INSTANCE.getMethod("supplier", SupplierFunction.class).invoke(null, supplier);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return new SupplierSource<>(supplier);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> Source<T, ?, ?> collection(Collection<T> collection) {
-        try {
-            return (Source<T, ?, ?>)
-                    INSTANCE.getMethod("collection", Collection.class).invoke(null, collection);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return new FromCollectionSource<>(collection);
     }
 }

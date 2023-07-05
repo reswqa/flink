@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.examples;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -42,7 +43,10 @@ public class TwoInputProcess {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         KeyedPartitionStream<String, String> source1 =
-                env.fromSource(Sources.collection(Arrays.asList("A:1", "A:3", "B:9", "C:1")))
+                env.fromSource(
+                                Sources.collection(Arrays.asList("A:1", "A:3", "B:9", "C:1")),
+                                WatermarkStrategy.noWatermarks(),
+                                "source1")
                         .keyBy(x -> x.split(":")[0]);
         KeyedPartitionStream<String, Tuple2<String, Long>> source2 =
                 env.fromSource(
@@ -51,7 +55,9 @@ public class TwoInputProcess {
                                                 Tuple2.of("A", 5L),
                                                 Tuple2.of("B", 3L),
                                                 Tuple2.of("C", 11L),
-                                                Tuple2.of("D", 1L))))
+                                                Tuple2.of("D", 1L))),
+                                WatermarkStrategy.noWatermarks(),
+                                "source2")
                         .keyBy(x -> x.f0);
         source1.connectAndProcess(
                         source2,

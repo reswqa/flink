@@ -16,7 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.api;
+package org.apache.flink.processfunction.connector;
 
-// TODO: move org.apache.flink.api.connector.source.Source to core-api and replace this
-public interface Source<T> {}
+import org.apache.flink.api.connector.source.SourceSplit;
+
+public class SourceUtils {
+    public static class NoOpEnumState {}
+
+    public static class DummySourceSplit implements SourceSplit {
+
+        @Override
+        public String splitId() {
+            return "dummy-split";
+        }
+    }
+}

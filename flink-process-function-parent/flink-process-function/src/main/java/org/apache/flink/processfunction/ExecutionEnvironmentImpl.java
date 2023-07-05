@@ -21,13 +21,17 @@ package org.apache.flink.processfunction;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.api.java.typeutils.MissingTypeInfo;
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.client.deployment.executors.LocalExecutorFactory;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.DeploymentOptions;
 import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.core.execution.JobClient;
@@ -36,6 +40,7 @@ import org.apache.flink.core.execution.PipelineExecutorFactory;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.connector.FromCollectionSource;
+import org.apache.flink.processfunction.connector.SupplierSource;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.functions.source.FromElementsFunction;
@@ -44,9 +49,11 @@ import org.apache.flink.streaming.api.graph.StreamGraph;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.apache.flink.streaming.api.operators.StreamSource;
 import org.apache.flink.streaming.api.transformations.LegacySourceTransformation;
+import org.apache.flink.streaming.api.transformations.SourceTransformation;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.function.SupplierFunction;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,6 +67,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     private final List<Transformation<?>> transformations = new ArrayList<>();
 
+    // Todo merge execution config and configuration.
     private final ExecutionConfig config = new ExecutionConfig();
 
     private Configuration configuration = new Configuration();
@@ -80,15 +88,43 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     public <OUT>
             NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<OUT> fromSource(
                     Source<OUT, ?, ?> source,
-                    WatermarkStrategy<OUT> timestampsAndWatermarks,
+                    WatermarkStrategy<OUT> watermarkStrategy,
                     String sourceName) {
+        TypeInformation<OUT> outputType = null;
         if (source instanceof FromCollectionSource) {
             return transformToLegacyFromCollectionSource(
                     ((FromCollectionSource<OUT>) source).getDatas());
+        } else if (source instanceof SupplierSource) {
+            // Technically speaking, it does not need to be a special case. Some additional work has
+            // been done here to avoid the caller manually setting the type information of this
+            // source.
+            SupplierFunction<OUT> supplierFunction =
+                    ((SupplierSource<OUT>) source).getSupplierFunction();
+            outputType =
+                    TypeExtractor.getUnaryOperatorReturnType(
+                            supplierFunction,
+                            SupplierFunction.class,
+                            -1,
+                            0,
+                            TypeExtractor.NO_INDEX,
+                            null,
+                            null,
+                            false);
         }
 
-        // TODO supports FLIP-27 based source.
-        return null;
+        final TypeInformation<OUT> resolvedTypeInfo =
+                getSourceTypeInfo(source, sourceName, Source.class, outputType);
+
+        SourceTransformation<OUT, ?, ?> sourceTransformation =
+                new SourceTransformation<>(
+                        sourceName,
+                        source,
+                        // TODO revisit event-time supports later.
+                        watermarkStrategy,
+                        resolvedTypeInfo,
+                        getParallelism(),
+                        false);
+        return new NonKeyedPartitionStreamImpl<>(this, sourceTransformation);
     }
 
     @Override
@@ -106,6 +142,10 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
 
     public Configuration getConfiguration() {
         return this.configuration;
+    }
+
+    public int getParallelism() {
+        return configuration.get(CoreOptions.DEFAULT_PARALLELISM);
     }
 
     // -----------------------------------------------
@@ -168,6 +208,27 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
                         1,
                         boundedness,
                         true));
+    }
+
+    private <OUT, T extends TypeInformation<OUT>> T getSourceTypeInfo(
+            Object source,
+            String sourceName,
+            Class<?> baseSourceClass,
+            TypeInformation<OUT> typeInfo) {
+        TypeInformation<OUT> resolvedTypeInfo = typeInfo;
+        if (resolvedTypeInfo == null && source instanceof ResultTypeQueryable) {
+            resolvedTypeInfo = ((ResultTypeQueryable<OUT>) source).getProducedType();
+        }
+        if (resolvedTypeInfo == null) {
+            try {
+                resolvedTypeInfo =
+                        TypeExtractor.createTypeInfo(
+                                baseSourceClass, source.getClass(), 0, null, null);
+            } catch (final InvalidTypesException e) {
+                resolvedTypeInfo = (TypeInformation<OUT>) new MissingTypeInfo(sourceName, e);
+            }
+        }
+        return (T) resolvedTypeInfo;
     }
 
     public void addOperator(Transformation<?> transformation) {

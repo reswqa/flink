@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.examples;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -30,7 +31,10 @@ import java.util.Date;
 public class SimpleMap {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.fromSource(Sources.supplier(System::currentTimeMillis))
+        env.fromSource(
+                        Sources.supplier(System::currentTimeMillis),
+                        WatermarkStrategy.noWatermarks(),
+                        "supplier source")
                 .process(
                         BatchStreamingUnifiedFunctions.map(
                                 record ->

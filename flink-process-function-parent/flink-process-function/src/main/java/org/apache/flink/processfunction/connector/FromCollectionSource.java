@@ -18,7 +18,13 @@
 
 package org.apache.flink.processfunction.connector;
 
-import org.apache.flink.processfunction.api.Source;
+import org.apache.flink.api.connector.source.Boundedness;
+import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.api.connector.source.SourceReader;
+import org.apache.flink.api.connector.source.SourceReaderContext;
+import org.apache.flink.api.connector.source.SplitEnumerator;
+import org.apache.flink.api.connector.source.SplitEnumeratorContext;
+import org.apache.flink.core.io.SimpleVersionedSerializer;
 
 import java.util.Collection;
 
@@ -26,7 +32,8 @@ import java.util.Collection;
  * This is a dummy source implementation as flink do not provide the fromCollectionSource for
  * FLIP-27 Source, see FLINK-28229. We will transform it to legacy source at the compilation phase.
  */
-public class FromCollectionSource<T> implements Source<T> {
+public class FromCollectionSource<T>
+        implements Source<T, SourceUtils.DummySourceSplit, SourceUtils.NoOpEnumState> {
     private final Collection<T> datas;
 
     public FromCollectionSource(Collection<T> datas) {
@@ -35,5 +42,43 @@ public class FromCollectionSource<T> implements Source<T> {
 
     public Collection<T> getDatas() {
         return datas;
+    }
+
+    @Override
+    public Boundedness getBoundedness() {
+        return Boundedness.BOUNDED;
+    }
+
+    @Override
+    public SplitEnumerator<SourceUtils.DummySourceSplit, SourceUtils.NoOpEnumState>
+            createEnumerator(SplitEnumeratorContext<SourceUtils.DummySourceSplit> enumContext)
+                    throws Exception {
+        throw new UnsupportedOperationException("This should transform to legacy source");
+    }
+
+    @Override
+    public SplitEnumerator<SourceUtils.DummySourceSplit, SourceUtils.NoOpEnumState>
+            restoreEnumerator(
+                    SplitEnumeratorContext<SourceUtils.DummySourceSplit> enumContext,
+                    SourceUtils.NoOpEnumState checkpoint)
+                    throws Exception {
+        throw new UnsupportedOperationException("This should transform to legacy source");
+    }
+
+    @Override
+    public SimpleVersionedSerializer<SourceUtils.DummySourceSplit> getSplitSerializer() {
+        throw new UnsupportedOperationException("This should transform to legacy source");
+    }
+
+    @Override
+    public SimpleVersionedSerializer<SourceUtils.NoOpEnumState>
+            getEnumeratorCheckpointSerializer() {
+        throw new UnsupportedOperationException("This should transform to legacy source");
+    }
+
+    @Override
+    public SourceReader<T, SourceUtils.DummySourceSplit> createReader(
+            SourceReaderContext readerContext) throws Exception {
+        throw new UnsupportedOperationException("This should transform to legacy source");
     }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.examples;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
@@ -38,7 +39,10 @@ import java.util.function.Consumer;
 public class SimpleStatefulMap {
     public static void main(String[] args) throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-        env.fromSource(Sources.supplier(System::currentTimeMillis))
+        env.fromSource(
+                        Sources.supplier(System::currentTimeMillis),
+                        WatermarkStrategy.noWatermarks(),
+                        "source")
                 .process(new CalcTimeDiffFunc())
                 // Don't use Lambda reference as PrintStream is not serializable.
                 .sinkTo(
