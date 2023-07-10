@@ -135,7 +135,7 @@ public class MultipleInputTestBase {
     }
 
     protected StreamOperatorParameters<RowData> createStreamOperatorParameters() throws Exception {
-        return createStreamOperatorParameters(new CollectorOutput<>(new ArrayList<>()));
+        return createStreamOperatorParameters(new CollectorOutput(new ArrayList<>()));
     }
 
     protected StreamConfig createStreamConfig() {

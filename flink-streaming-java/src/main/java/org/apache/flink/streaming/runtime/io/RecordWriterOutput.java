@@ -18,6 +18,10 @@
 package org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
+import org.apache.flink.api.common.typeutils.GeneralizedWatermarkTypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
@@ -28,11 +32,9 @@ import org.apache.flink.runtime.io.network.api.CheckpointBarrier;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.operators.Output;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.metrics.WatermarkGauge;
+import org.apache.flink.streaming.runtime.streamrecord.GeneralizedStreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
-import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
-import org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.OutputWithChainingCheck;
 import org.apache.flink.streaming.runtime.tasks.WatermarkGaugeExposingOutput;
@@ -41,6 +43,7 @@ import org.apache.flink.util.OutputTag;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Map;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -50,9 +53,9 @@ public class RecordWriterOutput<OUT>
         implements WatermarkGaugeExposingOutput<StreamRecord<OUT>>,
                 OutputWithChainingCheck<StreamRecord<OUT>> {
 
-    private RecordWriter<SerializationDelegate<StreamElement>> recordWriter;
+    private RecordWriter<SerializationDelegate<GeneralizedStreamElement>> recordWriter;
 
-    private SerializationDelegate<StreamElement> serializationDelegate;
+    private SerializationDelegate<GeneralizedStreamElement> serializationDelegate;
 
     private final boolean supportsUnalignedCheckpoints;
 
@@ -71,17 +74,20 @@ public class RecordWriterOutput<OUT>
             RecordWriter<SerializationDelegate<StreamRecord<OUT>>> recordWriter,
             TypeSerializer<OUT> outSerializer,
             OutputTag outputTag,
-            boolean supportsUnalignedCheckpoints) {
+            boolean supportsUnalignedCheckpoints,
+            Map<Class<?>, GeneralizedWatermarkTypeSerializer> generalizedWatermarkSerializers) {
 
         checkNotNull(recordWriter);
         this.outputTag = outputTag;
         // generic hack: cast the writer to generic Object type so we can use it
         // with multiplexed records and watermarks
         this.recordWriter =
-                (RecordWriter<SerializationDelegate<StreamElement>>) (RecordWriter<?>) recordWriter;
+                (RecordWriter<SerializationDelegate<GeneralizedStreamElement>>)
+                        (RecordWriter<?>) recordWriter;
 
-        TypeSerializer<StreamElement> outRecordSerializer =
-                new StreamElementSerializer<>(outSerializer);
+        GeneralizedStreamElementSerializer outRecordSerializer =
+                new GeneralizedStreamElementSerializer<>(
+                        outSerializer, generalizedWatermarkSerializers);
 
         if (outSerializer != null) {
             serializationDelegate = new SerializationDelegate<>(outRecordSerializer);
@@ -138,12 +144,14 @@ public class RecordWriterOutput<OUT>
     }
 
     @Override
-    public void emitWatermark(Watermark mark) {
-        if (announcedStatus.isIdle()) {
-            return;
-        }
+    public void emitWatermark(GeneralizedWatermark mark) {
+        if (mark instanceof TimestampWatermark) {
+            if (announcedStatus.isIdle()) {
+                return;
+            }
 
-        watermarkGauge.setCurrentWatermark(mark.getTimestamp());
+            watermarkGauge.setCurrentWatermark(((TimestampWatermark) mark).getTimestamp());
+        }
         serializationDelegate.setInstance(mark);
 
         try {

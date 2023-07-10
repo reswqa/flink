@@ -18,6 +18,8 @@
 
 package org.apache.flink.streaming.util;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
@@ -40,8 +42,10 @@ public class CollectorOutput<T> implements Output<StreamRecord<T>> {
     }
 
     @Override
-    public void emitWatermark(Watermark mark) {
-        list.add(mark);
+    public void emitWatermark(GeneralizedWatermark mark) {
+        if (mark instanceof TimestampWatermark) {
+            list.add(new Watermark(((TimestampWatermark) mark).getTimestamp()));
+        }
     }
 
     @Override

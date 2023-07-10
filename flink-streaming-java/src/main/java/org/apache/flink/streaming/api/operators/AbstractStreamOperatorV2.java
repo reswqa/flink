@@ -22,7 +22,9 @@ import org.apache.flink.annotation.Experimental;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.IndexedCombinedWatermarkStatus;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.state.KeyedStateStore;
 import org.apache.flink.api.common.state.State;
 import org.apache.flink.api.common.state.StateDescriptor;
@@ -472,16 +474,23 @@ public abstract class AbstractStreamOperatorV2<OUT>
                 name, keyedStateBackend.getKeySerializer(), namespaceSerializer, triggerable);
     }
 
-    public void processWatermark(Watermark mark) throws Exception {
-        if (timeServiceManager != null) {
-            timeServiceManager.advanceWatermark(mark);
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (timeServiceManager != null && mark instanceof TimestampWatermark) {
+            // TODO we can modify the argument of timeServiceManager.advanceWatermar to
+            // TimestampWatermark to avoid create Watermark object.
+            timeServiceManager.advanceWatermark(
+                    new Watermark(((TimestampWatermark) mark).getTimestamp()));
         }
         output.emitWatermark(mark);
     }
 
-    protected void reportWatermark(Watermark mark, int inputId) throws Exception {
-        if (combinedWatermark.updateWatermark(inputId - 1, mark.getTimestamp())) {
-            processWatermark(new Watermark(combinedWatermark.getCombinedWatermark()));
+    protected void reportWatermark(GeneralizedWatermark mark, int inputId) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            // TODO handle generalized watermark align.
+            if (combinedWatermark.updateWatermark(
+                    inputId - 1, ((TimestampWatermark) mark).getTimestamp())) {
+                processWatermark(new TimestampWatermark(combinedWatermark.getCombinedWatermark()));
+            }
         }
     }
 
@@ -489,7 +498,7 @@ public abstract class AbstractStreamOperatorV2<OUT>
             throws Exception {
         boolean wasIdle = combinedWatermark.isIdle();
         if (combinedWatermark.updateStatus(inputId - 1, watermarkStatus.isIdle())) {
-            processWatermark(new Watermark(combinedWatermark.getCombinedWatermark()));
+            processWatermark(new TimestampWatermark(combinedWatermark.getCombinedWatermark()));
         }
         if (wasIdle != combinedWatermark.isIdle()) {
             output.emitWatermarkStatus(watermarkStatus);

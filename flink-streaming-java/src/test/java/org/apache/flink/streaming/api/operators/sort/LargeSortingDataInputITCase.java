@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.api.operators.sort;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
@@ -34,7 +35,6 @@ import org.apache.flink.runtime.operators.testutils.DummyInvokable;
 import org.apache.flink.runtime.operators.testutils.MockEnvironment;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.sort.MultiInputSortingDataInput.SelectableSortingInputs;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.DataInputStatus;
 import org.apache.flink.streaming.runtime.io.MultipleInputSelectionHandler;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput;
@@ -211,7 +211,7 @@ public class LargeSortingDataInputITCase {
         }
 
         @Override
-        public void emitWatermark(Watermark watermark) throws Exception {}
+        public void emitWatermark(GeneralizedWatermark watermark) throws Exception {}
 
         @Override
         public void emitWatermarkStatus(WatermarkStatus watermarkStatus) throws Exception {}

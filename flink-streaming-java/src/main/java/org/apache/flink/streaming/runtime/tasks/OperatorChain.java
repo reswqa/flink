@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.metrics.Counter;
@@ -553,12 +554,21 @@ public abstract class OperatorChain<OUT, OP extends StreamOperator<OUT>>
                             taskEnvironment.getUserCodeClassLoader().asClassLoader());
         }
 
+        Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs =
+                upStreamConfig.getGeneralizedWatermarkSpecs(
+                        taskEnvironment.getUserCodeClassLoader().asClassLoader());
+
         return closer.register(
                 new RecordWriterOutput<OUT>(
                         recordWriter,
                         outSerializer,
                         sideOutputTag,
-                        streamOutput.supportsUnalignedCheckpoints()));
+                        streamOutput.supportsUnalignedCheckpoints(),
+                        watermarkSpecs.entrySet().stream()
+                                .collect(
+                                        Collectors.toMap(
+                                                Map.Entry::getKey,
+                                                e -> e.getValue().getWatermarkTypeSerializer()))));
     }
 
     @SuppressWarnings("rawtypes")

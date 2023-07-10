@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.metrics.groups.OperatorMetricGroup;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.jobgraph.OperatorID;
@@ -28,7 +29,6 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.OperatorSnapshotFutures;
 import org.apache.flink.streaming.api.operators.StreamTaskStateInitializer;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
@@ -66,7 +66,7 @@ public class TestFinishedOnRestoreStreamOperator
     }
 
     @Override
-    public void processWatermark(Watermark mark) {
+    public void processWatermark(GeneralizedWatermark mark) {
         throw new IllegalStateException(MESSAGE);
     }
 
@@ -166,12 +166,12 @@ public class TestFinishedOnRestoreStreamOperator
     }
 
     @Override
-    public void processWatermark1(Watermark mark) throws Exception {
+    public void processWatermark1(GeneralizedWatermark mark) throws Exception {
         throw new IllegalStateException(MESSAGE);
     }
 
     @Override
-    public void processWatermark2(Watermark mark) throws Exception {
+    public void processWatermark2(GeneralizedWatermark mark) throws Exception {
         throw new IllegalStateException(MESSAGE);
     }
 

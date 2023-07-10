@@ -18,13 +18,14 @@
 
 package org.apache.flink.table.runtime.operators.aggregate.window;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.TimestampedCollector;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.runtime.keyselector.RowDataKeySelector;
@@ -117,15 +118,21 @@ public class LocalSlicingWindowAggOperator extends AbstractStreamOperator<RowDat
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        if (mark.getTimestamp() > currentWatermark) {
-            currentWatermark = mark.getTimestamp();
-            if (currentWatermark >= nextTriggerWatermark) {
-                // we only need to call advanceProgress() when current watermark may trigger window
-                windowBuffer.advanceProgress(currentWatermark);
-                nextTriggerWatermark =
-                        getNextTriggerWatermark(
-                                currentWatermark, windowInterval, shiftTimezone, useDayLightSaving);
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            if (((TimestampWatermark) mark).getTimestamp() > currentWatermark) {
+                currentWatermark = ((TimestampWatermark) mark).getTimestamp();
+                if (currentWatermark >= nextTriggerWatermark) {
+                    // we only need to call advanceProgress() when current watermark may trigger
+                    // window
+                    windowBuffer.advanceProgress(currentWatermark);
+                    nextTriggerWatermark =
+                            getNextTriggerWatermark(
+                                    currentWatermark,
+                                    windowInterval,
+                                    shiftTimezone,
+                                    useDayLightSaving);
+                }
             }
         }
         super.processWatermark(mark);

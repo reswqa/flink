@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.graph;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.operators.ResourceSpec;
 import org.apache.flink.api.common.operators.SlotSharingGroup;
@@ -61,7 +62,6 @@ import org.apache.flink.streaming.api.transformations.CacheTransformation;
 import org.apache.flink.streaming.api.transformations.MultipleInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.StreamExchangeMode;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.partitioner.BroadcastPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.ForwardPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
@@ -1100,10 +1100,10 @@ public class StreamGraphGeneratorTest extends TestLogger {
         }
 
         @Override
-        public void processWatermark1(Watermark mark) throws Exception {}
+        public void processWatermark1(GeneralizedWatermark mark) throws Exception {}
 
         @Override
-        public void processWatermark2(Watermark mark) throws Exception {}
+        public void processWatermark2(GeneralizedWatermark mark) throws Exception {}
 
         @Override
         public void processLatencyMarker1(LatencyMarker latencyMarker) throws Exception {
@@ -1139,7 +1139,7 @@ public class StreamGraphGeneratorTest extends TestLogger {
         }
 
         @Override
-        public void processWatermark(Watermark mark) {}
+        public void processWatermark(GeneralizedWatermark mark) {}
 
         @Override
         public void processLatencyMarker(LatencyMarker latencyMarker) throws Exception {}

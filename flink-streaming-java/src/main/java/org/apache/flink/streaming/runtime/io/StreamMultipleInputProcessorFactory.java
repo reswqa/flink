@@ -21,6 +21,9 @@ package org.apache.flink.streaming.runtime.io;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.configuration.Configuration;
@@ -39,7 +42,6 @@ import org.apache.flink.streaming.api.operators.InputSelectable;
 import org.apache.flink.streaming.api.operators.MultipleInputStreamOperator;
 import org.apache.flink.streaming.api.operators.sort.MultiInputSortingDataInput;
 import org.apache.flink.streaming.api.operators.sort.MultiInputSortingDataInput.SelectableSortingInputs;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.checkpointing.CheckpointedInputGate;
 import org.apache.flink.streaming.runtime.metrics.WatermarkGauge;
 import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
@@ -49,12 +51,14 @@ import org.apache.flink.streaming.runtime.tasks.OperatorChain;
 import org.apache.flink.streaming.runtime.tasks.SourceOperatorStreamTask;
 import org.apache.flink.streaming.runtime.tasks.StreamTask.CanEmitBatchOfRecordsChecker;
 import org.apache.flink.streaming.runtime.tasks.WatermarkGaugeExposingOutput;
-import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
+import org.apache.flink.streaming.runtime.watermarkstatus.GeneralizedWatermarkAligner;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
 import org.apache.flink.util.function.ThrowingConsumer;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -96,6 +100,9 @@ public class StreamMultipleInputProcessorFactory {
         Counter networkRecordsIn = new SimpleCounter();
         ioMetricGroup.reuseRecordsInputCounter(networkRecordsIn);
 
+        Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs =
+                streamConfig.getGeneralizedWatermarkSpecs(userClassloader);
+
         checkState(
                 configuredInputs.length == inputsCount,
                 "Number of configured inputs in StreamConfig [%s] doesn't match the main operator's number of inputs [%s]",
@@ -107,19 +114,28 @@ public class StreamMultipleInputProcessorFactory {
             if (configuredInput instanceof StreamConfig.NetworkInputConfig) {
                 StreamConfig.NetworkInputConfig networkInput =
                         (StreamConfig.NetworkInputConfig) configuredInput;
+                Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners = new HashMap<>();
+                for (Map.Entry<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpec :
+                        watermarkSpecs.entrySet()) {
+                    GeneralizedWatermarkAligner watermarkAligner =
+                            new GeneralizedWatermarkAligner(
+                                    checkpointedInputGates[networkInput.getInputGateIndex()]
+                                            .getNumberOfInputChannels(),
+                                    watermarkSpec.getValue());
+                    watermarkAligners.put(watermarkSpec.getKey(), watermarkAligner);
+                }
                 inputs[i] =
                         StreamTaskNetworkInputFactory.create(
                                 checkpointedInputGates[networkInput.getInputGateIndex()],
                                 networkInput.getTypeSerializer(),
                                 ioManager,
-                                new StatusWatermarkValve(
-                                        checkpointedInputGates[networkInput.getInputGateIndex()]
-                                                .getNumberOfInputChannels()),
                                 i,
                                 inflightDataRescalingDescriptor,
                                 gatePartitioners,
                                 taskInfo,
-                                canEmitBatchOfRecords);
+                                canEmitBatchOfRecords,
+                                watermarkSpecs,
+                                watermarkAligners);
             } else if (configuredInput instanceof StreamConfig.SourceInputConfig) {
                 StreamConfig.SourceInputConfig sourceInput =
                         (StreamConfig.SourceInputConfig) configuredInput;
@@ -275,8 +291,11 @@ public class StreamMultipleInputProcessorFactory {
         }
 
         @Override
-        public void emitWatermark(Watermark watermark) throws Exception {
-            inputWatermarkGauge.setCurrentWatermark(watermark.getTimestamp());
+        public void emitWatermark(GeneralizedWatermark watermark) throws Exception {
+            if (watermark instanceof TimestampWatermark) {
+                inputWatermarkGauge.setCurrentWatermark(
+                        ((TimestampWatermark) watermark).getTimestamp());
+            }
             input.processWatermark(watermark);
         }
 

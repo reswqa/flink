@@ -20,6 +20,8 @@ package org.apache.flink.test.streaming.runtime;
 
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.JobStatus;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -778,15 +780,19 @@ public class TimestampITCase extends TestLogger {
         }
 
         @Override
-        public void processWatermark(Watermark mark) throws Exception {
+        public void processWatermark(GeneralizedWatermark mark) throws Exception {
             super.processWatermark(mark);
 
-            for (Watermark previousMark : watermarks) {
-                assertTrue(previousMark.getTimestamp() < mark.getTimestamp());
+            if (mark instanceof TimestampWatermark) {
+                for (Watermark previousMark : watermarks) {
+                    assertTrue(
+                            previousMark.getTimestamp()
+                                    < ((TimestampWatermark) mark).getTimestamp());
+                }
+                watermarks.add(new Watermark(((TimestampWatermark) mark).getTimestamp()));
+                latch.trigger();
+                output.emitWatermark(mark);
             }
-            watermarks.add(mark);
-            latch.trigger();
-            output.emitWatermark(mark);
         }
 
         @Override

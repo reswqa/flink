@@ -18,6 +18,8 @@
 package org.apache.flink.streaming.api.operators.sort;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -36,7 +38,6 @@ import org.apache.flink.runtime.operators.sort.PushSorter;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.InputSelectable;
 import org.apache.flink.streaming.api.operators.InputSelection;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.DataInputStatus;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput;
 import org.apache.flink.streaming.runtime.io.StreamInputProcessor;
@@ -312,7 +313,7 @@ public final class MultiInputSortingDataInput<IN, K> implements StreamTaskInput<
         } else {
             commonContext.setFinishedEmitting(idx);
             if (seenWatermark > Long.MIN_VALUE) {
-                output.emitWatermark(new Watermark(seenWatermark));
+                output.emitWatermark(new TimestampWatermark(seenWatermark));
             }
             return DataInputStatus.END_OF_DATA;
         }
@@ -416,8 +417,11 @@ public final class MultiInputSortingDataInput<IN, K> implements StreamTaskInput<
         }
 
         @Override
-        public void emitWatermark(Watermark watermark) {
-            seenWatermark = Math.max(seenWatermark, watermark.getTimestamp());
+        public void emitWatermark(GeneralizedWatermark watermark) {
+            if (watermark instanceof TimestampWatermark) {
+                seenWatermark =
+                        Math.max(seenWatermark, ((TimestampWatermark) watermark).getTimestamp());
+            }
         }
 
         @Override

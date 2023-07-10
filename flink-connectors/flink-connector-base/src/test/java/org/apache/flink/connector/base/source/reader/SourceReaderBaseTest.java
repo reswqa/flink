@@ -18,6 +18,8 @@
 
 package org.apache.flink.connector.base.source.reader;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -551,9 +553,10 @@ public class SourceReaderBaseTest extends SourceReaderTestBase<MockSourceSplit> 
         }
 
         @Override
-        public void emitWatermark(org.apache.flink.streaming.api.watermark.Watermark watermark)
-                throws Exception {
-            watermarks.add(watermark.getTimestamp());
+        public void emitWatermark(GeneralizedWatermark watermark) throws Exception {
+            if (watermark instanceof TimestampWatermark) {
+                watermarks.add(((TimestampWatermark) watermark).getTimestamp());
+            }
         }
 
         @Override

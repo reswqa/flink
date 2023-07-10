@@ -18,10 +18,10 @@
 
 package org.apache.flink.table.runtime.operators.multipleinput;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.data.RowData;
@@ -40,8 +40,8 @@ public class TestingTwoInputStreamOperator extends AbstractStreamOperator<RowDat
     private boolean isOpened = false;
     private StreamRecord<RowData> currentElement1 = null;
     private StreamRecord<RowData> currentElement2 = null;
-    private Watermark currentWatermark1 = null;
-    private Watermark currentWatermark2 = null;
+    private GeneralizedWatermark currentWatermark1 = null;
+    private GeneralizedWatermark currentWatermark2 = null;
     private LatencyMarker currentLatencyMarker1 = null;
     private LatencyMarker currentLatencyMarker2 = null;
     private final List<Integer> endInputs = new ArrayList<>();
@@ -81,13 +81,13 @@ public class TestingTwoInputStreamOperator extends AbstractStreamOperator<RowDat
     }
 
     @Override
-    public void processWatermark1(Watermark mark) throws Exception {
+    public void processWatermark1(GeneralizedWatermark mark) throws Exception {
         currentWatermark1 = mark;
         output.emitWatermark(mark);
     }
 
     @Override
-    public void processWatermark2(Watermark mark) throws Exception {
+    public void processWatermark2(GeneralizedWatermark mark) throws Exception {
         currentWatermark2 = mark;
         output.emitWatermark(mark);
     }
@@ -133,11 +133,11 @@ public class TestingTwoInputStreamOperator extends AbstractStreamOperator<RowDat
         return currentElement2;
     }
 
-    public Watermark getCurrentWatermark1() {
+    public GeneralizedWatermark getCurrentWatermark1() {
         return currentWatermark1;
     }
 
-    public Watermark getCurrentWatermark2() {
+    public GeneralizedWatermark getCurrentWatermark2() {
         return currentWatermark2;
     }
 

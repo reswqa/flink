@@ -18,6 +18,8 @@
 
 package org.apache.flink.streaming.runtime.watermarkstatus;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
@@ -434,8 +436,10 @@ class StatusWatermarkValveTest {
         private BlockingQueue<StreamElement> allOutputs = new LinkedBlockingQueue<>();
 
         @Override
-        public void emitWatermark(Watermark watermark) {
-            allOutputs.add(watermark);
+        public void emitWatermark(GeneralizedWatermark watermark) {
+            if (watermark instanceof TimestampWatermark) {
+                allOutputs.add(new Watermark(((TimestampWatermark) watermark).getTimestamp()));
+            }
         }
 
         @Override

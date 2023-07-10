@@ -17,6 +17,8 @@
 
 package org.apache.flink.runtime.operators.lifecycle.graph;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.operators.ProcessingTimeService.ProcessingTimeCallback;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
@@ -36,7 +38,6 @@ import org.apache.flink.runtime.state.StateSnapshotContext;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedOneInput;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 import java.util.HashMap;
@@ -155,14 +156,16 @@ class OneInputTestStreamOperator extends AbstractStreamOperator<TestDataElement>
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        eventQueue.add(
-                new WatermarkReceivedEvent(
-                        operatorID,
-                        getRuntimeContext().getIndexOfThisSubtask(),
-                        getRuntimeContext().getAttemptNumber(),
-                        mark.getTimestamp(),
-                        1));
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            eventQueue.add(
+                    new WatermarkReceivedEvent(
+                            operatorID,
+                            getRuntimeContext().getIndexOfThisSubtask(),
+                            getRuntimeContext().getAttemptNumber(),
+                            ((TimestampWatermark) mark).getTimestamp(),
+                            1));
+        }
         super.processWatermark(mark);
     }
 

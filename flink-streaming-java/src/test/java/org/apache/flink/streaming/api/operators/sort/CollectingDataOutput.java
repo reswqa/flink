@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.operators.sort;
 
-import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -35,7 +35,7 @@ final class CollectingDataOutput<E> implements PushingAsyncDataInput.DataOutput<
     final List<Object> events = new ArrayList<>();
 
     @Override
-    public void emitWatermark(Watermark watermark) throws Exception {
+    public void emitWatermark(GeneralizedWatermark watermark) throws Exception {
         events.add(watermark);
     }
 

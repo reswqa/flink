@@ -18,13 +18,14 @@
 
 package org.apache.flink.table.runtime.operators;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.streaming.api.TimerService;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
 
@@ -53,9 +54,11 @@ public abstract class TableStreamOperator<OUT> extends AbstractStreamOperator<OU
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         super.processWatermark(mark);
-        currentWatermark = mark.getTimestamp();
+        if (mark instanceof TimestampWatermark) {
+            currentWatermark = ((TimestampWatermark) mark).getTimestamp();
+        }
     }
 
     /** Compute memory size from memory faction. */

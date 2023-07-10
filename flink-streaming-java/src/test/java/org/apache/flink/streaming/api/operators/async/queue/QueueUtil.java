@@ -51,7 +51,7 @@ class QueueUtil {
     static List<StreamElement> popCompleted(StreamElementQueue<Integer> queue) {
         final List<StreamElement> completed = new ArrayList<>();
         TimestampedCollector<Integer> collector =
-                new TimestampedCollector<>(new CollectorOutput<>(completed));
+                new TimestampedCollector<>(new CollectorOutput(completed));
         while (queue.hasCompletedElements()) {
             queue.emitCompletedElement(collector);
         }

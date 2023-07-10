@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.runtime.io.recovery;
 
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.core.memory.MemorySegment;
@@ -34,6 +35,7 @@ import org.apache.flink.runtime.io.network.buffer.BufferConsumer;
 import org.apache.flink.runtime.plugable.NonReusingDeserializationDelegate;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.streaming.runtime.streamrecord.GeneralizedStreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -51,6 +53,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -238,13 +241,14 @@ public class DemultiplexingRecordDeserializerTest {
         }
     }
 
-    private List<StreamElement> read(DemultiplexingRecordDeserializer<Long> deserializer)
+    private List<GeneralizedStreamElement> read(DemultiplexingRecordDeserializer<Long> deserializer)
             throws IOException {
-        final NonReusingDeserializationDelegate<StreamElement> delegate =
+        final NonReusingDeserializationDelegate<GeneralizedStreamElement> delegate =
                 new NonReusingDeserializationDelegate<>(
-                        new StreamElementSerializer<>(LongSerializer.INSTANCE));
+                        new GeneralizedStreamElementSerializer<>(
+                                LongSerializer.INSTANCE, new HashMap<>()));
 
-        List<StreamElement> results = new ArrayList<>();
+        List<GeneralizedStreamElement> results = new ArrayList<>();
         RecordDeserializer.DeserializationResult result;
         do {
             result = deserializer.getNextRecord(delegate);
@@ -259,7 +263,7 @@ public class DemultiplexingRecordDeserializerTest {
     private List<Long> readLongs(DemultiplexingRecordDeserializer<Long> deserializer)
             throws IOException {
         return read(deserializer).stream()
-                .map(element -> element.<Long>asRecord().getValue())
+                .map(element -> ((StreamElement) element).<Long>asRecord().getValue())
                 .collect(Collectors.toList());
     }
 

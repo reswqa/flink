@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.util;
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.runtime.operators.testutils.MockEnvironment;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
@@ -81,16 +82,16 @@ public class TwoInputStreamOperatorTestHarness<IN1, IN2, OUT>
     }
 
     public void processWatermark1(Watermark mark) throws Exception {
-        twoInputOperator.processWatermark1(mark);
+        twoInputOperator.processWatermark1(new TimestampWatermark(mark.getTimestamp()));
     }
 
     public void processWatermark2(Watermark mark) throws Exception {
-        twoInputOperator.processWatermark2(mark);
+        twoInputOperator.processWatermark2(new TimestampWatermark(mark.getTimestamp()));
     }
 
     public void processBothWatermarks(Watermark mark) throws Exception {
-        twoInputOperator.processWatermark1(mark);
-        twoInputOperator.processWatermark2(mark);
+        twoInputOperator.processWatermark1(new TimestampWatermark(mark.getTimestamp()));
+        twoInputOperator.processWatermark2(new TimestampWatermark(mark.getTimestamp()));
     }
 
     public void processWatermarkStatus1(WatermarkStatus watermarkStatus) throws Exception {

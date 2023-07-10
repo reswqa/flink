@@ -22,7 +22,11 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.eventtime.IndexedCombinedWatermarkStatus;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.IndexedCombinedGeneralizedWatermarkStatus;
+import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.state.KeyedStateStore;
 import org.apache.flink.api.common.state.State;
 import org.apache.flink.api.common.state.StateDescriptor;
@@ -61,9 +65,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
+import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /**
@@ -110,8 +117,6 @@ public abstract class AbstractStreamOperator<OUT>
 
     protected transient Output<StreamRecord<OUT>> output;
 
-    private transient IndexedCombinedWatermarkStatus combinedWatermark;
-
     /** The runtime context for UDFs. */
     private transient StreamingRuntimeContext runtimeContext;
 
@@ -135,7 +140,7 @@ public abstract class AbstractStreamOperator<OUT>
 
     private transient StreamOperatorStateHandler stateHandler;
 
-    private transient InternalTimeServiceManager<?> timeServiceManager;
+    protected transient InternalTimeServiceManager<?> timeServiceManager;
 
     // --------------- Metrics ---------------------------
 
@@ -147,6 +152,11 @@ public abstract class AbstractStreamOperator<OUT>
     // ---------------- time handler ------------------
 
     protected transient ProcessingTimeService processingTimeService;
+
+    // -----------------generalized watermark-----------
+    private transient Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs;
+
+    protected transient Map<Class<?>, IndexedCombinedGeneralizedWatermarkStatus> combinedWatermarks;
 
     // ------------------------------------------------------------------------
     //  Life Cycle
@@ -165,7 +175,16 @@ public abstract class AbstractStreamOperator<OUT>
                 environment
                         .getMetricGroup()
                         .getOrAddOperator(config.getOperatorID(), config.getOperatorName());
-        this.combinedWatermark = IndexedCombinedWatermarkStatus.forInputsCount(2);
+        this.watermarkSpecs = config.getGeneralizedWatermarkSpecs(this.getUserCodeClassloader());
+
+        this.combinedWatermarks = new HashMap<>();
+        for (Map.Entry<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpec :
+                watermarkSpecs.entrySet()) {
+            IndexedCombinedGeneralizedWatermarkStatus generalizedWatermarkStatus =
+                    IndexedCombinedGeneralizedWatermarkStatus.forInputsCount(
+                            watermarkSpec.getValue(), 2);
+            combinedWatermarks.put(watermarkSpec.getKey(), generalizedWatermarkStatus);
+        }
 
         try {
             Configuration taskManagerConfig = environment.getTaskManagerInfo().getConfiguration();
@@ -605,24 +624,36 @@ public abstract class AbstractStreamOperator<OUT>
                 name, keyedStateBackend.getKeySerializer(), namespaceSerializer, triggerable);
     }
 
-    public void processWatermark(Watermark mark) throws Exception {
-        if (timeServiceManager != null) {
-            timeServiceManager.advanceWatermark(mark);
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (timeServiceManager != null && mark instanceof TimestampWatermark) {
+            timeServiceManager.advanceWatermark(
+                    new Watermark(((TimestampWatermark) mark).getTimestamp()));
         }
         output.emitWatermark(mark);
     }
 
-    private void processWatermark(Watermark mark, int index) throws Exception {
-        if (combinedWatermark.updateWatermark(index, mark.getTimestamp())) {
-            processWatermark(new Watermark(combinedWatermark.getCombinedWatermark()));
+    /** @return true if this watermark is updated for aligning. Otherwise, false. */
+    protected boolean processWatermark(GeneralizedWatermark mark, int index) throws Exception {
+        Class<?> watermarkClazz = mark.getClass();
+        if (mark instanceof ProcessWatermarkWrapper) {
+            watermarkClazz = ((ProcessWatermarkWrapper) mark).getProcessWatermark().getClass();
         }
+
+        IndexedCombinedGeneralizedWatermarkStatus watermarkStatus =
+                checkNotNull(combinedWatermarks.get(watermarkClazz));
+        if (watermarkStatus.updateWatermark(index, mark)) {
+            processWatermark(watermarkStatus.getCombinedWatermark());
+            return true;
+        }
+
+        return false;
     }
 
-    public void processWatermark1(Watermark mark) throws Exception {
+    public void processWatermark1(GeneralizedWatermark mark) throws Exception {
         processWatermark(mark, 0);
     }
 
-    public void processWatermark2(Watermark mark) throws Exception {
+    public void processWatermark2(GeneralizedWatermark mark) throws Exception {
         processWatermark(mark, 1);
     }
 
@@ -632,12 +663,17 @@ public abstract class AbstractStreamOperator<OUT>
 
     private void processWatermarkStatus(WatermarkStatus watermarkStatus, int index)
             throws Exception {
-        boolean wasIdle = combinedWatermark.isIdle();
-        if (combinedWatermark.updateStatus(index, watermarkStatus.isIdle())) {
-            processWatermark(new Watermark(combinedWatermark.getCombinedWatermark()));
-        }
-        if (wasIdle != combinedWatermark.isIdle()) {
-            output.emitWatermarkStatus(watermarkStatus);
+        // TODO we should pass the watermark status to all status. This can be optimized by
+        // maintain a datastruct to unified manage all watermark status.
+        for (IndexedCombinedGeneralizedWatermarkStatus combinedWatermark :
+                combinedWatermarks.values()) {
+            boolean wasIdle = combinedWatermark.isIdle();
+            if (combinedWatermark.updateStatus(index, watermarkStatus.isIdle())) {
+                processWatermark(combinedWatermark.getCombinedWatermark());
+            }
+            if (wasIdle != combinedWatermark.isIdle()) {
+                output.emitWatermarkStatus(watermarkStatus);
+            }
         }
     }
 

@@ -19,8 +19,9 @@
 package org.apache.flink.table.runtime.operators.source;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.connector.RuntimeConverter.Context;
 import org.apache.flink.table.connector.source.DynamicTableSource.DataStructureConverter;
@@ -77,9 +78,11 @@ public final class InputConversionOperator<E> extends TableStreamOperator<RowDat
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        if (propagateWatermark || Watermark.MAX_WATERMARK.equals(mark)) {
-            super.processWatermark(mark);
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            if (propagateWatermark || TimestampWatermark.MAX_WATERMARK.equals(mark)) {
+                super.processWatermark(mark);
+            }
         }
     }
 

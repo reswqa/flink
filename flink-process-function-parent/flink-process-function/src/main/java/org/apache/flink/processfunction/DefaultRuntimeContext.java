@@ -18,6 +18,8 @@
 
 package org.apache.flink.processfunction;
 
+import org.apache.flink.api.common.eventtime.ProcessWatermark;
+import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.MapState;
@@ -33,6 +35,7 @@ import org.apache.flink.processfunction.state.MapStateDeclarationImpl;
 import org.apache.flink.processfunction.state.StateDeclarationConverter;
 import org.apache.flink.processfunction.state.ValueStateDeclarationImpl;
 import org.apache.flink.runtime.jobgraph.JobType;
+import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.util.Preconditions;
 
@@ -52,6 +55,8 @@ public class DefaultRuntimeContext implements RuntimeContext {
 
     private final Supplier<Object> currentKeySupplier;
 
+    private final Output<?> watermarkEmitter;
+
     /**
      * {@link #getCurrentKey()} will return this if it is not null, otherwise return the key from
      * {@link #currentKeySupplier}.
@@ -62,11 +67,13 @@ public class DefaultRuntimeContext implements RuntimeContext {
             Set<StateDeclaration> usedStates,
             OperatorStateStore operatorStateStore,
             StreamingRuntimeContext streamingRuntimeContext,
-            Supplier<Object> currentKeySupplier) {
+            Supplier<Object> currentKeySupplier,
+            Output<?> watermarkEmitter) {
         this.usedStates = usedStates;
         this.operatorStateStore = operatorStateStore;
         this.streamingRuntimeContext = streamingRuntimeContext;
         this.currentKeySupplier = currentKeySupplier;
+        this.watermarkEmitter = watermarkEmitter;
     }
 
     @Override
@@ -177,6 +184,11 @@ public class DefaultRuntimeContext implements RuntimeContext {
         } catch (Exception e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public <T extends ProcessWatermark<T>> void emitWatermark(ProcessWatermark<T> watermark) {
+        watermarkEmitter.emitWatermark(new ProcessWatermarkWrapper(watermark));
     }
 
     @Override

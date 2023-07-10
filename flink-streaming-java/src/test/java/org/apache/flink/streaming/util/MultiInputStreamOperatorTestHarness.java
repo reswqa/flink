@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.util;
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.operators.Input;
 import org.apache.flink.streaming.api.operators.MultipleInputStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
@@ -56,7 +57,10 @@ public class MultiInputStreamOperatorTestHarness<OUT>
     }
 
     public void processWatermark(int idx, Watermark mark) throws Exception {
-        getCastedOperator().getInputs().get(idx).processWatermark(mark);
+        getCastedOperator()
+                .getInputs()
+                .get(idx)
+                .processWatermark(new TimestampWatermark(mark.getTimestamp()));
     }
 
     public void processWatermarkStatus(int idx, WatermarkStatus watermarkStatus) throws Exception {

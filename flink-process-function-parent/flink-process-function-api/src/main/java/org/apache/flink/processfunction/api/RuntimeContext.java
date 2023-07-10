@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.api;
 
+import org.apache.flink.api.common.eventtime.ProcessWatermark;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.ValueState;
@@ -44,6 +45,8 @@ public interface RuntimeContext {
     <K> Optional<K> getCurrentKey();
 
     ExecutionMode getExecutionMode();
+
+    <T extends ProcessWatermark<T>> void emitWatermark(ProcessWatermark<T> watermark);
 
     enum ExecutionMode {
         STREAMING,

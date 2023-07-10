@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.cache.DistributedCache;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.api.common.operators.ResourceSpec;
@@ -123,6 +124,8 @@ public class StreamGraph implements Pipeline {
     private Map<Integer, Tuple3<Integer, StreamPartitioner<?>, StreamExchangeMode>>
             virtualPartitionNodes;
 
+    private Map<Class<?>, GeneralizedWatermarkDeclaration> generalizedWatermarkSpecs;
+
     protected Map<Integer, String> vertexIDtoBrokerID;
     protected Map<Integer, Long> vertexIDtoLoopTimeout;
     private StateBackend stateBackend;
@@ -166,6 +169,7 @@ public class StreamGraph implements Pipeline {
         sources = new HashSet<>();
         sinks = new HashSet<>();
         slotSharingGroupResources = new HashMap<>();
+        generalizedWatermarkSpecs = new HashMap<>();
     }
 
     public ExecutionConfig getExecutionConfig() {
@@ -302,6 +306,17 @@ public class StreamGraph implements Pipeline {
 
     public void setEnableCheckpointsAfterTasksFinish(boolean enableCheckpointsAfterTasksFinish) {
         this.enableCheckpointsAfterTasksFinish = enableCheckpointsAfterTasksFinish;
+    }
+
+    public void setGeneralizedWatermarkSpecs(
+            Map<Class<?>, GeneralizedWatermarkDeclaration> serializerMap) {
+        if (serializerMap != null) {
+            this.generalizedWatermarkSpecs.putAll(serializerMap);
+        }
+    }
+
+    public Map<Class<?>, GeneralizedWatermarkDeclaration> getGeneralizedWatermarkSpecs() {
+        return generalizedWatermarkSpecs;
     }
 
     // Checkpointing

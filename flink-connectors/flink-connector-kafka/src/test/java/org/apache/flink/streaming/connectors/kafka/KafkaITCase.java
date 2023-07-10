@@ -18,6 +18,8 @@
 package org.apache.flink.streaming.connectors.kafka;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.serialization.TypeInformationSerializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -319,17 +321,21 @@ public class KafkaITCase extends KafkaConsumerTestBase {
         }
 
         @Override
-        public void processWatermark(Watermark mark) throws Exception {
-            wmCount++;
+        public void processWatermark(GeneralizedWatermark mark) throws Exception {
+            if (mark instanceof TimestampWatermark) {
+                wmCount++;
 
-            if (lastWM <= mark.getTimestamp()) {
-                lastWM = mark.getTimestamp();
-            } else {
-                throw new RuntimeException("Received watermark higher than the last one");
-            }
+                if (lastWM <= ((TimestampWatermark) mark).getTimestamp()) {
+                    lastWM = ((TimestampWatermark) mark).getTimestamp();
+                } else {
+                    throw new RuntimeException("Received watermark higher than the last one");
+                }
 
-            if (mark.getTimestamp() % 11 != 0 && mark.getTimestamp() != Long.MAX_VALUE) {
-                throw new RuntimeException("Invalid watermark: " + mark.getTimestamp());
+                if (((TimestampWatermark) mark).getTimestamp() % 11 != 0
+                        && ((TimestampWatermark) mark).getTimestamp() != Long.MAX_VALUE) {
+                    throw new RuntimeException(
+                            "Invalid watermark: " + ((TimestampWatermark) mark).getTimestamp());
+                }
             }
         }
 

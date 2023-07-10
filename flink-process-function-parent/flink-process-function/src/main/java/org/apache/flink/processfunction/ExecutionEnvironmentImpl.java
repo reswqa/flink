@@ -21,6 +21,7 @@ package org.apache.flink.processfunction;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -61,7 +62,9 @@ import org.apache.flink.util.function.SupplierFunction;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -75,6 +78,9 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
     private final ExecutionConfig executionConfig = new ExecutionConfig();
 
     private Configuration configuration = new Configuration();
+
+    private final Map<Class<?>, GeneralizedWatermarkDeclaration> generalizedWatermarkSpecs =
+            new HashMap<>();
 
     public static ExecutionEnvironmentImpl newInstance() {
         return new ExecutionEnvironmentImpl();
@@ -258,6 +264,11 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
         this.transformations.add(transformation);
     }
 
+    public void registerGeneralizedWatermark(GeneralizedWatermarkDeclaration watermarkDeclaration) {
+        this.generalizedWatermarkSpecs.put(
+                watermarkDeclaration.getWatermarkClazz(), watermarkDeclaration);
+    }
+
     private void execute(StreamGraph streamGraph) throws Exception {
         final JobClient jobClient = executeAsync(streamGraph);
 
@@ -319,7 +330,8 @@ public class ExecutionEnvironmentImpl extends ExecutionEnvironment {
                         configuration)
                 // TODO Re-Consider should we expose the logic of controlling chains to users.
                 .setChaining(true)
-                .setTimeCharacteristic(DEFAULT_TIME_CHARACTERISTIC);
+                .setTimeCharacteristic(DEFAULT_TIME_CHARACTERISTIC)
+                .setGeneralizedWatermarkSpecs(generalizedWatermarkSpecs);
     }
 
     private PipelineExecutor getPipelineExecutor() {

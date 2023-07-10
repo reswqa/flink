@@ -21,6 +21,7 @@ package org.apache.flink.streaming.util;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
@@ -70,7 +71,6 @@ import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactoryUtil;
 import org.apache.flink.streaming.api.operators.StreamTaskStateInitializer;
 import org.apache.flink.streaming.api.operators.StreamTaskStateInitializerImpl;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.OperatorEventDispatcherImpl;
@@ -282,6 +282,7 @@ public class AbstractStreamOperatorTestHarness<OUT> implements AutoCloseable {
         this.config.setManagedMemoryFractionOperatorOfUseCase(
                 ManagedMemoryUseCase.STATE_BACKEND, 1.0);
         this.config.setManagedMemoryFractionOperatorOfUseCase(ManagedMemoryUseCase.OPERATOR, 1.0);
+        this.config.setGeneralizedWatermarkSpecs(new HashMap<>());
         this.executionConfig = env.getExecutionConfig();
         this.checkpointLock = new Object();
 
@@ -826,7 +827,7 @@ public class AbstractStreamOperatorTestHarness<OUT> implements AutoCloseable {
         }
 
         @Override
-        public void emitWatermark(Watermark mark) {
+        public void emitWatermark(GeneralizedWatermark mark) {
             outputList.add(mark);
         }
 

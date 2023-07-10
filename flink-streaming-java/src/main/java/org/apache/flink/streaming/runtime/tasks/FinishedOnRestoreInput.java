@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.operators.Input;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.RecordWriterOutput;
@@ -42,12 +44,17 @@ public class FinishedOnRestoreInput<IN> implements Input<IN> {
     }
 
     @Override
-    public void processWatermark(Watermark watermark) {
-        if (watermark.getTimestamp() != Watermark.MAX_WATERMARK.getTimestamp()) {
-            throw new IllegalStateException(
-                    String.format(
-                            "We should not receive any watermarks [%s] other than the MAX_WATERMARK if finished on restore",
-                            watermark));
+    public void processWatermark(GeneralizedWatermark watermark) {
+        // FinishedOnRestoreInput only used for source operator, we are not supports trigger
+        // GeneralizedWatermark from source, so this can be ignored for that case.
+        if (watermark instanceof TimestampWatermark) {
+            if (((TimestampWatermark) watermark).getTimestamp()
+                    != Watermark.MAX_WATERMARK.getTimestamp()) {
+                throw new IllegalStateException(
+                        String.format(
+                                "We should not receive any watermarks [%s] other than the MAX_WATERMARK if finished on restore",
+                                watermark));
+            }
         }
         if (++watermarksSeen == inputCount) {
             for (RecordWriterOutput<?> streamOutput : streamOutputs) {

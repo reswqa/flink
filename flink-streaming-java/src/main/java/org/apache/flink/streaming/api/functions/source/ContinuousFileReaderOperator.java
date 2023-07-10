@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.functions.source;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.io.CheckpointableInputFormat;
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.io.RichInputFormat;
@@ -432,7 +433,7 @@ public class ContinuousFileReaderOperator<OUT, T extends TimestampedInputSplit>
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         // we do nothing because we emit our own watermarks if needed.
     }
 

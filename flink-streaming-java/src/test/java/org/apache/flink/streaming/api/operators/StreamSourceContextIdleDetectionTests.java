@@ -95,7 +95,7 @@ public class StreamSourceContextIdleDetectionTests {
                         TimeCharacteristic.EventTime,
                         processingTimeService,
                         new Object(),
-                        new CollectorOutput<>(output),
+                        new CollectorOutput(output),
                         0,
                         idleTimeout,
                         true);
@@ -195,7 +195,7 @@ public class StreamSourceContextIdleDetectionTests {
                         TimeCharacteristic.IngestionTime,
                         processingTimeService,
                         new Object(),
-                        new CollectorOutput<String>(output),
+                        new CollectorOutput(output),
                         watermarkInterval,
                         idleTimeout,
                         true);

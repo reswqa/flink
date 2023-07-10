@@ -19,7 +19,7 @@
 package org.apache.flink.streaming.api.operators;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.api.watermark.Watermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
@@ -73,7 +73,7 @@ public final class TimestampedCollector<T> implements Output<T> {
     }
 
     @Override
-    public void emitWatermark(Watermark mark) {
+    public void emitWatermark(GeneralizedWatermark mark) {
         output.emitWatermark(mark);
     }
 

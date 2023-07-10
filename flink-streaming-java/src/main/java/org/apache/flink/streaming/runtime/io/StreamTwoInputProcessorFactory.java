@@ -20,6 +20,9 @@ package org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.configuration.Configuration;
@@ -43,14 +46,16 @@ import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.OperatorChain;
 import org.apache.flink.streaming.runtime.tasks.StreamTask.CanEmitBatchOfRecordsChecker;
-import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
+import org.apache.flink.streaming.runtime.watermarkstatus.GeneralizedWatermarkAligner;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
 import org.apache.flink.util.function.ThrowingConsumer;
 
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static org.apache.flink.streaming.api.graph.StreamConfig.requiresSorting;
@@ -83,31 +88,51 @@ public class StreamTwoInputProcessorFactory {
 
         taskIOMetricGroup.reuseRecordsInputCounter(numRecordsIn);
         TypeSerializer<IN1> typeSerializer1 = streamConfig.getTypeSerializerIn(0, userClassloader);
+
+        Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs =
+                streamConfig.getGeneralizedWatermarkSpecs(userClassloader);
+
+        Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners1 = new HashMap<>();
+        Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners2 = new HashMap<>();
+        for (Map.Entry<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpec :
+                watermarkSpecs.entrySet()) {
+            GeneralizedWatermarkAligner watermarkAligner1 =
+                    new GeneralizedWatermarkAligner(
+                            checkpointedInputGates[0].getNumberOfInputChannels(),
+                            watermarkSpec.getValue());
+            GeneralizedWatermarkAligner watermarkAligner2 =
+                    new GeneralizedWatermarkAligner(
+                            checkpointedInputGates[1].getNumberOfInputChannels(),
+                            watermarkSpec.getValue());
+            watermarkAligners1.put(watermarkSpec.getKey(), watermarkAligner1);
+            watermarkAligners2.put(watermarkSpec.getKey(), watermarkAligner2);
+        }
+
         StreamTaskInput<IN1> input1 =
                 StreamTaskNetworkInputFactory.create(
                         checkpointedInputGates[0],
                         typeSerializer1,
                         ioManager,
-                        new StatusWatermarkValve(
-                                checkpointedInputGates[0].getNumberOfInputChannels()),
                         0,
                         inflightDataRescalingDescriptor,
                         gatePartitioners,
                         taskInfo,
-                        canEmitBatchOfRecords);
+                        canEmitBatchOfRecords,
+                        watermarkSpecs,
+                        watermarkAligners1);
         TypeSerializer<IN2> typeSerializer2 = streamConfig.getTypeSerializerIn(1, userClassloader);
         StreamTaskInput<IN2> input2 =
                 StreamTaskNetworkInputFactory.create(
                         checkpointedInputGates[1],
                         typeSerializer2,
                         ioManager,
-                        new StatusWatermarkValve(
-                                checkpointedInputGates[1].getNumberOfInputChannels()),
                         1,
                         inflightDataRescalingDescriptor,
                         gatePartitioners,
                         taskInfo,
-                        canEmitBatchOfRecords);
+                        canEmitBatchOfRecords,
+                        watermarkSpecs,
+                        watermarkAligners2);
 
         InputSelectable inputSelectable =
                 streamOperator instanceof InputSelectable ? (InputSelectable) streamOperator : null;
@@ -255,8 +280,11 @@ public class StreamTwoInputProcessorFactory {
         }
 
         @Override
-        public void emitWatermark(Watermark watermark) throws Exception {
-            inputWatermarkGauge.setCurrentWatermark(watermark.getTimestamp());
+        public void emitWatermark(GeneralizedWatermark watermark) throws Exception {
+            if (watermark instanceof TimestampWatermark) {
+                inputWatermarkGauge.setCurrentWatermark(
+                        ((TimestampWatermark) watermark).getTimestamp());
+            }
             if (inputIndex == 0) {
                 if (watermarkBypass == null) {
                     operator.processWatermark1(watermark);
@@ -301,26 +329,33 @@ public class StreamTwoInputProcessorFactory {
             this.streamOutputs = streamOutputs;
         }
 
-        public void processWatermark1(Watermark watermark) {
+        public void processWatermark1(GeneralizedWatermark watermark) {
             receivedFirstMaxWatermark = true;
             checkAndForward(watermark);
         }
 
-        public void processWatermark2(Watermark watermark) {
+        public void processWatermark2(GeneralizedWatermark watermark) {
             receivedSecondMaxWatermark = true;
             checkAndForward(watermark);
         }
 
-        private void checkAndForward(Watermark watermark) {
-            if (watermark.getTimestamp() != Watermark.MAX_WATERMARK.getTimestamp()) {
-                throw new IllegalStateException(
-                        String.format(
-                                "We should not receive any watermarks [%s] other than the MAX_WATERMARK if finished on restore",
-                                watermark));
-            }
-            if (receivedFirstMaxWatermark && receivedSecondMaxWatermark) {
-                for (RecordWriterOutput<?> streamOutput : streamOutputs) {
-                    streamOutput.emitWatermark(watermark);
+        private void checkAndForward(GeneralizedWatermark watermark) {
+            if (watermark instanceof TimestampWatermark) {
+                // TODO not sure if we should emit a special generalized watermark for finished on
+                // restore task.
+                if (((TimestampWatermark) watermark).getTimestamp()
+                        != Watermark.MAX_WATERMARK.getTimestamp()) {
+                    throw new IllegalStateException(
+                            String.format(
+                                    "We should not receive any watermarks [%s] other than the MAX_WATERMARK if finished on restore",
+                                    watermark));
+                }
+                if (receivedFirstMaxWatermark && receivedSecondMaxWatermark) {
+                    for (RecordWriterOutput<?> streamOutput : streamOutputs) {
+                        streamOutput.emitWatermark(
+                                new TimestampWatermark(
+                                        ((TimestampWatermark) watermark).getTimestamp()));
+                    }
                 }
             }
         }

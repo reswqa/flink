@@ -18,6 +18,9 @@
 
 package org.apache.flink.processfunction.operators;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -25,6 +28,7 @@ import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedOneInput;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
+import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
 
@@ -66,12 +70,28 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                         userFunction.usesStates(),
                         getOperatorStateBackend(),
                         getRuntimeContext(),
-                        this::getCurrentKey);
+                        this::getCurrentKey,
+                        output);
     }
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
         userFunction.processRecord(element.getValue(), mainCollector, sideCollector, context);
+    }
+
+    @Override
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (timeServiceManager != null && mark instanceof TimestampWatermark) {
+            timeServiceManager.advanceWatermark(
+                    new Watermark(((TimestampWatermark) mark).getTimestamp()));
+            output.emitWatermark(mark);
+            return;
+        }
+        // weather emit process watermark should leave for user function.
+        if (mark instanceof ProcessWatermarkWrapper) {
+            userFunction.onWatermark(
+                    ((ProcessWatermarkWrapper) mark).getProcessWatermark(), context);
+        }
     }
 
     @Override

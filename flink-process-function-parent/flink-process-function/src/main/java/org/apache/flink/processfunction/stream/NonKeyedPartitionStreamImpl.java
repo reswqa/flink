@@ -60,7 +60,8 @@ public class NonKeyedPartitionStreamImpl<T>
         TypeInformation<OUT> outType =
                 StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
         ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
-
+        StreamUtils.registerGeneralizedWatermarks(
+                processFunction.usesWatermarks(), getEnvironment());
         return transform("Process", outType, operator);
     }
 
@@ -73,6 +74,8 @@ public class NonKeyedPartitionStreamImpl<T>
         TypeInformation<OUT2> secondTOutputType = twoOutputType.f1;
         OutputTag<OUT2> secondOutputTag = new OutputTag<>("Second-Output", secondTOutputType);
 
+        StreamUtils.registerGeneralizedWatermarks(
+                processFunction.usesWatermarks(), getEnvironment());
         TwoOutputProcessOperator<T, OUT1, OUT2> operator =
                 new TwoOutputProcessOperator<>(processFunction, secondOutputTag);
         NonKeyedPartitionStreamImpl<OUT1> firstStream =
@@ -92,6 +95,8 @@ public class NonKeyedPartitionStreamImpl<T>
                         processFunction,
                         getType(),
                         ((NonKeyedPartitionStreamImpl<T_OTHER>) other).getType());
+        StreamUtils.registerGeneralizedWatermarks(
+                processFunction.usesWatermarks(), getEnvironment());
         TwoInputProcessOperator<T, T_OTHER, OUT> processOperator =
                 new TwoInputProcessOperator<>(processFunction);
         Transformation<OUT> outTransformation =
@@ -113,6 +118,8 @@ public class NonKeyedPartitionStreamImpl<T>
                         processFunction,
                         getType(),
                         ((BroadcastStreamImpl<T_OTHER>) other).getType());
+        StreamUtils.registerGeneralizedWatermarks(
+                processFunction.usesWatermarks(), getEnvironment());
         TwoInputProcessOperator<T, T_OTHER, OUT> processOperator =
                 new TwoInputProcessOperator<>(processFunction);
         Transformation<OUT> outTransformation =

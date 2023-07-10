@@ -295,7 +295,7 @@ public class StreamingRuntimeContextTest {
         operator.setup(
                 new MockStreamTaskBuilder(environment).setExecutionConfig(config).build(),
                 streamConfig,
-                new CollectorOutput<>(new ArrayList<>()));
+                new CollectorOutput(new ArrayList<>()));
 
         StreamTaskStateInitializer streamTaskStateManager =
                 new StreamTaskStateInitializerImpl(environment, new MemoryStateBackend());

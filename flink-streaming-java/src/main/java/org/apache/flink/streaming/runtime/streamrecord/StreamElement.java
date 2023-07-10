@@ -19,12 +19,13 @@
 package org.apache.flink.streaming.runtime.streamrecord;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
 
 /** An element in a data stream. Can be a record or a Watermark. */
 @Internal
-public abstract class StreamElement {
+public abstract class StreamElement implements GeneralizedStreamElement {
 
     /**
      * Checks whether this element is a watermark.

@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.util;
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.operators.testutils.MockEnvironment;
@@ -245,11 +246,11 @@ public class OneInputStreamOperatorTestHarness<IN, OUT>
     public void processWatermark(Watermark mark) throws Exception {
         currentWatermark = mark.getTimestamp();
         if (inputs.isEmpty()) {
-            getOneInputOperator().processWatermark(mark);
+            getOneInputOperator().processWatermark(new TimestampWatermark(mark.getTimestamp()));
         } else {
             checkState(inputs.size() == 1);
             Input input = inputs.get(0);
-            input.processWatermark(mark);
+            input.processWatermark(new TimestampWatermark(mark.getTimestamp()));
         }
     }
 

@@ -20,6 +20,8 @@ package org.apache.flink.table.runtime.operators.window.slicing;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
@@ -40,7 +42,6 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.TimestampedCollector;
 import org.apache.flink.streaming.api.operators.Triggerable;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.runtime.operators.TableStreamOperator;
@@ -226,12 +227,14 @@ public final class SlicingWindowOperator<K, W> extends TableStreamOperator<RowDa
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        if (mark.getTimestamp() > currentWatermark) {
-            windowProcessor.advanceProgress(mark.getTimestamp());
-            super.processWatermark(mark);
-        } else {
-            super.processWatermark(new Watermark(currentWatermark));
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            if (((TimestampWatermark) mark).getTimestamp() > currentWatermark) {
+                windowProcessor.advanceProgress(((TimestampWatermark) mark).getTimestamp());
+                super.processWatermark(mark);
+            } else {
+                super.processWatermark(new TimestampWatermark(currentWatermark));
+            }
         }
     }
 

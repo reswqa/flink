@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.api.function;
 
+import org.apache.flink.api.common.eventtime.ProcessWatermark;
 import org.apache.flink.processfunction.api.RuntimeContext;
 
 import java.util.function.Consumer;
@@ -60,4 +61,17 @@ public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFun
      * <p>Note: This will NOT be called in STREAMING execution mode.
      */
     default void endOfSecondInputPartition(Consumer<OUT> output, RuntimeContext ctx) {}
+
+    default void onWatermark(
+            ProcessWatermark<?> watermark, RuntimeContext ctx, WatermarkType watermarkType) {}
+
+    /** This enum is used to mark where the watermark from. */
+    enum WatermarkType {
+        /** This watermark is from first input. */
+        FIRST,
+        /** This watermark is from second input. */
+        SECOND,
+        /** This watermark is from aligned all input. */
+        ALL
+    }
 }

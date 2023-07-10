@@ -18,6 +18,7 @@
 
 package org.apache.flink.test.streaming.runtime;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.operators.ProcessingTimeService.ProcessingTimeCallback;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.runtime.client.JobExecutionException;
@@ -29,7 +30,6 @@ import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.TimerException;
 import org.apache.flink.test.util.AbstractTestBase;
@@ -200,7 +200,7 @@ public class StreamTaskTimerITCase extends AbstractTestBase {
         }
 
         @Override
-        public void processWatermark(Watermark mark) throws Exception {
+        public void processWatermark(GeneralizedWatermark mark) throws Exception {
             if (!semaphore.tryAcquire()) {
                 Assert.fail("Concurrent invocation of operator functions.");
             }
@@ -275,12 +275,12 @@ public class StreamTaskTimerITCase extends AbstractTestBase {
         }
 
         @Override
-        public void processWatermark1(Watermark mark) throws Exception {
+        public void processWatermark1(GeneralizedWatermark mark) throws Exception {
             // ignore
         }
 
         @Override
-        public void processWatermark2(Watermark mark) throws Exception {
+        public void processWatermark2(GeneralizedWatermark mark) throws Exception {
             // ignore
         }
     }

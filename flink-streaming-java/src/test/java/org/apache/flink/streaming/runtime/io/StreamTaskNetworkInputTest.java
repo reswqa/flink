@@ -18,6 +18,8 @@
 
 package org.apache.flink.streaming.runtime.io;
 
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
@@ -42,7 +44,6 @@ import org.apache.flink.runtime.mailbox.SyncMailboxExecutor;
 import org.apache.flink.runtime.operators.testutils.DummyCheckpointInvokable;
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput.DataOutput;
 import org.apache.flink.streaming.runtime.io.checkpointing.CheckpointBarrierTracker;
 import org.apache.flink.streaming.runtime.io.checkpointing.CheckpointedInputGate;
@@ -53,7 +54,6 @@ import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.TestSubtaskCheckpointCoordinator;
-import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
 import org.apache.flink.util.clock.SystemClock;
 
@@ -156,9 +156,10 @@ public class StreamTaskNetworkInputTest {
                                 new SyncMailboxExecutor()),
                         inSerializer,
                         ioManager,
-                        new StatusWatermarkValve(numInputChannels),
                         0,
-                        () -> false);
+                        () -> false,
+                        Collections.EMPTY_MAP,
+                        Collections.EMPTY_MAP);
 
         inputGate.sendEvent(
                 new CheckpointBarrier(
@@ -243,9 +244,10 @@ public class StreamTaskNetworkInputTest {
                         createCheckpointedInputGate(inputGate.getInputGate()),
                         inSerializer,
                         ioManager,
-                        new StatusWatermarkValve(numInputChannels),
                         0,
-                        () -> true);
+                        () -> true,
+                        Collections.EMPTY_MAP,
+                        Collections.EMPTY_MAP);
         VerifyRecordsDataOutput<Long> output = new VerifyRecordsDataOutput<>();
 
         // Test for records are processed in batches
@@ -280,9 +282,10 @@ public class StreamTaskNetworkInputTest {
                         createCheckpointedInputGate(inputGate.getInputGate()),
                         inSerializer,
                         ioManager,
-                        new StatusWatermarkValve(numInputChannels),
                         0,
-                        canEmitBatchOfRecords::get);
+                        canEmitBatchOfRecords::get,
+                        Collections.EMPTY_MAP,
+                        Collections.EMPTY_MAP);
 
         VerifyRecordsDataOutput<Long> output = new VerifyRecordsDataOutput<>();
 
@@ -333,9 +336,10 @@ public class StreamTaskNetworkInputTest {
                 createCheckpointedInputGate(new MockInputGate(1, buffers, false)),
                 LongSerializer.INSTANCE,
                 ioManager,
-                new StatusWatermarkValve(1),
                 0,
-                () -> false);
+                () -> false,
+                Collections.EMPTY_MAP,
+                Collections.EMPTY_MAP);
     }
 
     private static CheckpointedInputGate createCheckpointedInputGate(InputGate inputGate) {
@@ -368,7 +372,7 @@ public class StreamTaskNetworkInputTest {
 
     private static class TestRecordDeserializer
             extends SpillingAdaptiveSpanningRecordDeserializer<
-                    DeserializationDelegate<StreamElement>> {
+                    DeserializationDelegate<GeneralizedStreamElement>> {
 
         private boolean cleared = false;
 
@@ -392,7 +396,7 @@ public class StreamTaskNetworkInputTest {
         public void emitRecord(StreamRecord<T> record) {}
 
         @Override
-        public void emitWatermark(Watermark watermark) {}
+        public void emitWatermark(GeneralizedWatermark watermark) {}
 
         @Override
         public void emitWatermarkStatus(WatermarkStatus watermarkStatus) {}
@@ -425,10 +429,11 @@ public class StreamTaskNetworkInputTest {
             super(
                     createCheckpointedInputGate(inputGate.getInputGate()),
                     inSerializer,
-                    new StatusWatermarkValve(numInputChannels),
                     0,
                     deserializers,
-                    () -> false);
+                    () -> false,
+                    Collections.emptyMap(),
+                    Collections.emptyMap());
         }
 
         @Override

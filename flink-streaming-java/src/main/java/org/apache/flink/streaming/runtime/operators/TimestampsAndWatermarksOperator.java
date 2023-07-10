@@ -17,8 +17,10 @@
 
 package org.apache.flink.streaming.runtime.operators;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.NoWatermarksGenerator;
 import org.apache.flink.api.common.eventtime.TimestampAssigner;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.eventtime.Watermark;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;
@@ -117,12 +119,14 @@ public class TimestampsAndWatermarksOperator<T> extends AbstractStreamOperator<T
      * except for the "end of time" watermark.
      */
     @Override
-    public void processWatermark(org.apache.flink.streaming.api.watermark.Watermark mark)
-            throws Exception {
-        // if we receive a Long.MAX_VALUE watermark we forward it since it is used
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        // if we receive a max watermark we forward it since it is used
         // to signal the end of input and to not block watermark progress downstream
-        if (mark.getTimestamp() == Long.MAX_VALUE) {
-            wmOutput.emitWatermark(Watermark.MAX_WATERMARK);
+        if (mark instanceof TimestampWatermark) {
+            if (((TimestampWatermark) mark).getTimestamp()
+                    == TimestampWatermark.MAX_WATERMARK.getTimestamp()) {
+                wmOutput.emitWatermark(Watermark.MAX_WATERMARK);
+            }
         }
     }
 
@@ -167,7 +171,8 @@ public class TimestampsAndWatermarksOperator<T> extends AbstractStreamOperator<T
 
             markActive();
 
-            output.emitWatermark(new org.apache.flink.streaming.api.watermark.Watermark(ts));
+            // This convert watermark from api module to streaming module.
+            output.emitWatermark(new TimestampWatermark(ts));
         }
 
         @Override

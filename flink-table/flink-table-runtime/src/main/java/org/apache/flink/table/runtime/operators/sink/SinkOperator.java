@@ -18,13 +18,14 @@
 
 package org.apache.flink.table.runtime.operators.sink;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
@@ -74,9 +75,11 @@ public class SinkOperator extends AbstractUdfStreamOperator<Object, SinkFunction
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         super.processWatermark(mark);
-        this.currentWatermark = mark.getTimestamp();
+        if (mark instanceof TimestampWatermark) {
+            this.currentWatermark = ((TimestampWatermark) mark).getTimestamp();
+        }
     }
 
     private class SimpleContext implements SinkFunction.Context {

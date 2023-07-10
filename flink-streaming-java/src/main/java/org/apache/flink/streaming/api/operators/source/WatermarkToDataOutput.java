@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.operators.source;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.eventtime.Watermark;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput;
@@ -75,8 +76,7 @@ public final class WatermarkToDataOutput implements WatermarkOutput {
         try {
             markActiveInternally();
 
-            output.emitWatermark(
-                    new org.apache.flink.streaming.api.watermark.Watermark(newWatermark));
+            output.emitWatermark(new TimestampWatermark(newWatermark));
         } catch (ExceptionInChainedOperatorException e) {
             throw e;
         } catch (Exception e) {

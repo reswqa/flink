@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.util;
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.runtime.checkpoint.OperatorSubtaskState;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -36,6 +37,7 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** Utils for working with the various test harnesses. */
 public class TestHarnessUtil {
@@ -76,7 +78,10 @@ public class TestHarnessUtil {
             Object nextEx = exIt.next();
             Object nextAct = actIt.next();
             if (nextEx instanceof Watermark) {
-                assertEquals(nextEx, nextAct);
+                assertTrue(nextAct instanceof TimestampWatermark);
+                assertEquals(
+                        ((Watermark) nextEx).getTimestamp(),
+                        ((TimestampWatermark) nextAct).getTimestamp());
             }
         }
 

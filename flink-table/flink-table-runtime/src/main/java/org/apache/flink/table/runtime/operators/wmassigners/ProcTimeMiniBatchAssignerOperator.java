@@ -18,6 +18,8 @@
 
 package org.apache.flink.table.runtime.operators.wmassigners;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.operators.ProcessingTimeService;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
@@ -77,7 +79,7 @@ public class ProcTimeMiniBatchAssignerOperator extends AbstractStreamOperator<Ro
         if (currentBatch > currentWatermark) {
             currentWatermark = currentBatch;
             // emit
-            output.emitWatermark(new Watermark(currentBatch));
+            output.emitWatermark(new TimestampWatermark(currentBatch));
         }
         output.collect(element);
     }
@@ -89,7 +91,7 @@ public class ProcTimeMiniBatchAssignerOperator extends AbstractStreamOperator<Ro
         if (currentBatch > currentWatermark) {
             currentWatermark = currentBatch;
             // emit
-            output.emitWatermark(new Watermark(currentBatch));
+            output.emitWatermark(new TimestampWatermark(currentBatch));
         }
         getProcessingTimeService().registerTimer(currentBatch + intervalMs, this);
     }
@@ -99,12 +101,15 @@ public class ProcTimeMiniBatchAssignerOperator extends AbstractStreamOperator<Ro
      * rely only on the {@link AssignerWithPeriodicWatermarks} to emit watermarks from here).
      */
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         // if we receive a Long.MAX_VALUE watermark we forward it since it is used
         // to signal the end of input and to not block watermark progress downstream
-        if (mark.getTimestamp() == Long.MAX_VALUE && currentWatermark != Long.MAX_VALUE) {
-            currentWatermark = Long.MAX_VALUE;
-            output.emitWatermark(mark);
+        if (mark instanceof TimestampWatermark) {
+            if (((TimestampWatermark) mark).getTimestamp() == Long.MAX_VALUE
+                    && currentWatermark != Long.MAX_VALUE) {
+                currentWatermark = Long.MAX_VALUE;
+                output.emitWatermark(mark);
+            }
         }
     }
 }

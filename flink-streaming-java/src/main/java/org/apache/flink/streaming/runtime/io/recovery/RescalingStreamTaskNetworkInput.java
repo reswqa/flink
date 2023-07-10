@@ -19,6 +19,8 @@ package org.apache.flink.streaming.runtime.io.recovery;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.InflightDataRescalingDescriptor;
@@ -39,10 +41,9 @@ import org.apache.flink.streaming.runtime.io.StreamTaskNetworkInput;
 import org.apache.flink.streaming.runtime.io.checkpointing.CheckpointedInputGate;
 import org.apache.flink.streaming.runtime.partitioner.ConfigurableStreamPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
-import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.StreamTask.CanEmitBatchOfRecordsChecker;
-import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
+import org.apache.flink.streaming.runtime.watermarkstatus.GeneralizedWatermarkAligner;
 
 import org.apache.flink.shaded.guava30.com.google.common.collect.Maps;
 
@@ -91,16 +92,16 @@ public final class RescalingStreamTaskNetworkInput<T>
             CheckpointedInputGate checkpointedInputGate,
             TypeSerializer<T> inputSerializer,
             IOManager ioManager,
-            StatusWatermarkValve statusWatermarkValve,
             int inputIndex,
             InflightDataRescalingDescriptor inflightDataRescalingDescriptor,
             Function<Integer, StreamPartitioner<?>> gatePartitioners,
             TaskInfo taskInfo,
-            CanEmitBatchOfRecordsChecker canEmitBatchOfRecords) {
+            CanEmitBatchOfRecordsChecker canEmitBatchOfRecords,
+            Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs,
+            Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners) {
         super(
                 checkpointedInputGate,
                 inputSerializer,
-                statusWatermarkValve,
                 inputIndex,
                 getRecordDeserializers(
                         checkpointedInputGate,
@@ -109,7 +110,9 @@ public final class RescalingStreamTaskNetworkInput<T>
                         inflightDataRescalingDescriptor,
                         gatePartitioners,
                         taskInfo),
-                canEmitBatchOfRecords);
+                canEmitBatchOfRecords,
+                watermarkSpecs,
+                watermarkAligners);
         this.ioManager = ioManager;
 
         LOG.info(
@@ -161,9 +164,10 @@ public final class RescalingStreamTaskNetworkInput<T>
                 checkpointedInputGate,
                 inputSerializer,
                 ioManager,
-                statusWatermarkValve,
                 inputIndex,
-                canEmitBatchOfRecords);
+                canEmitBatchOfRecords,
+                watermarkSpecs,
+                watermarkAligners);
     }
 
     protected DemultiplexingRecordDeserializer<T> getActiveSerializer(
@@ -246,7 +250,8 @@ public final class RescalingStreamTaskNetworkInput<T>
 
     static class DeserializerFactory
             implements Function<
-                    Integer, RecordDeserializer<DeserializationDelegate<StreamElement>>> {
+                    Integer,
+                    RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>>> {
         private final IOManager ioManager;
 
         public DeserializerFactory(IOManager ioManager) {
@@ -254,7 +259,7 @@ public final class RescalingStreamTaskNetworkInput<T>
         }
 
         @Override
-        public RecordDeserializer<DeserializationDelegate<StreamElement>> apply(
+        public RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>> apply(
                 Integer totalChannels) {
             return new SpillingAdaptiveSpanningRecordDeserializer<>(
                     ioManager.getSpillingDirectoriesPaths(),

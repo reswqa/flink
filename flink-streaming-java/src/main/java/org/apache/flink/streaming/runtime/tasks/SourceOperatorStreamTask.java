@@ -19,6 +19,8 @@
 package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.connector.source.ExternallyInducedSourceReader;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
@@ -209,7 +211,7 @@ public class SourceOperatorStreamTask<T> extends StreamTask<T, SourceOperator<T,
 
     @Override
     protected void advanceToEndOfEventTime() {
-        output.emitWatermark(Watermark.MAX_WATERMARK);
+        output.emitWatermark(new TimestampWatermark(Watermark.MAX_WATERMARK.getTimestamp()));
     }
 
     @Override
@@ -315,12 +317,14 @@ public class SourceOperatorStreamTask<T> extends StreamTask<T, SourceOperator<T,
         }
 
         @Override
-        public void emitWatermark(Watermark watermark) {
-            long watermarkTimestamp = watermark.getTimestamp();
-            if (inputWatermarkGauge != null) {
-                inputWatermarkGauge.setCurrentWatermark(watermarkTimestamp);
+        public void emitWatermark(GeneralizedWatermark watermark) {
+            if (watermark instanceof TimestampWatermark) {
+                long watermarkTimestamp = ((TimestampWatermark) watermark).getTimestamp();
+                if (inputWatermarkGauge != null) {
+                    inputWatermarkGauge.setCurrentWatermark(watermarkTimestamp);
+                }
+                metricGroup.watermarkEmitted(watermarkTimestamp);
             }
-            metricGroup.watermarkEmitted(watermarkTimestamp);
             output.emitWatermark(watermark);
         }
 

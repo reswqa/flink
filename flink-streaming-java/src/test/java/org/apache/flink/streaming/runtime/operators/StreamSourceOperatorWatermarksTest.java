@@ -154,7 +154,7 @@ public class StreamSourceOperatorWatermarksTest {
                 TimeCharacteristic.IngestionTime,
                 processingTimeService,
                 task.getCheckpointLock(),
-                new CollectorOutput<String>(output),
+                new CollectorOutput(output),
                 operator.getExecutionConfig().getAutoWatermarkInterval(),
                 -1,
                 true);

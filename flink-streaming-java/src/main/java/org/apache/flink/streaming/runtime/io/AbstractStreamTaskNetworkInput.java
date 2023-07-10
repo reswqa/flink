@@ -17,6 +17,10 @@
 
 package org.apache.flink.streaming.runtime.io;
 
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.event.AbstractEvent;
@@ -28,10 +32,10 @@ import org.apache.flink.runtime.io.network.partition.consumer.EndOfChannelStateE
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.runtime.plugable.NonReusingDeserializationDelegate;
 import org.apache.flink.streaming.runtime.io.checkpointing.CheckpointedInputGate;
+import org.apache.flink.streaming.runtime.streamrecord.GeneralizedStreamElementSerializer;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
-import org.apache.flink.streaming.runtime.streamrecord.StreamElementSerializer;
 import org.apache.flink.streaming.runtime.tasks.StreamTask.CanEmitBatchOfRecordsChecker;
-import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
+import org.apache.flink.streaming.runtime.watermarkstatus.GeneralizedWatermarkAligner;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,6 +43,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -49,15 +54,13 @@ import static org.apache.flink.util.Preconditions.checkState;
  * RecordDeserializer}.
  */
 public abstract class AbstractStreamTaskNetworkInput<
-                T, R extends RecordDeserializer<DeserializationDelegate<StreamElement>>>
+                T, R extends RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>>>
         implements StreamTaskInput<T> {
     protected final CheckpointedInputGate checkpointedInputGate;
-    protected final DeserializationDelegate<StreamElement> deserializationDelegate;
+    protected final DeserializationDelegate<GeneralizedStreamElement> deserializationDelegate;
     protected final TypeSerializer<T> inputSerializer;
     protected final Map<InputChannelInfo, R> recordDeserializers;
     protected final Map<InputChannelInfo, Integer> flattenedChannelIndices = new HashMap<>();
-    /** Valve that controls how watermarks and watermark statuses are forwarded. */
-    protected final StatusWatermarkValve statusWatermarkValve;
 
     protected final int inputIndex;
     private InputChannelInfo lastChannel = null;
@@ -65,25 +68,40 @@ public abstract class AbstractStreamTaskNetworkInput<
 
     protected final CanEmitBatchOfRecordsChecker canEmitBatchOfRecords;
 
+    protected final Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs;
+
+    protected final Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners;
+
     public AbstractStreamTaskNetworkInput(
             CheckpointedInputGate checkpointedInputGate,
             TypeSerializer<T> inputSerializer,
-            StatusWatermarkValve statusWatermarkValve,
             int inputIndex,
             Map<InputChannelInfo, R> recordDeserializers,
-            CanEmitBatchOfRecordsChecker canEmitBatchOfRecords) {
+            CanEmitBatchOfRecordsChecker canEmitBatchOfRecords,
+            Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs,
+            Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners) {
         super();
         this.checkpointedInputGate = checkpointedInputGate;
-        deserializationDelegate =
+        this.watermarkAligners = watermarkAligners;
+        this.watermarkSpecs = watermarkSpecs;
+
+        this.deserializationDelegate =
                 new NonReusingDeserializationDelegate<>(
-                        new StreamElementSerializer<>(inputSerializer));
+                        new GeneralizedStreamElementSerializer<>(
+                                inputSerializer,
+                                watermarkSpecs.entrySet().stream()
+                                        .collect(
+                                                Collectors.toMap(
+                                                        Map.Entry::getKey,
+                                                        e ->
+                                                                e.getValue()
+                                                                        .getWatermarkTypeSerializer()))));
         this.inputSerializer = inputSerializer;
 
         for (InputChannelInfo i : checkpointedInputGate.getChannelInfos()) {
             flattenedChannelIndices.put(i, flattenedChannelIndices.size());
         }
 
-        this.statusWatermarkValve = checkNotNull(statusWatermarkValve);
         this.inputIndex = inputIndex;
         this.recordDeserializers = checkNotNull(recordDeserializers);
         this.canEmitBatchOfRecords = checkNotNull(canEmitBatchOfRecords);
@@ -107,7 +125,13 @@ public abstract class AbstractStreamTaskNetworkInput<
                 }
 
                 if (result.isFullRecord()) {
-                    processElement(deserializationDelegate.getInstance(), output);
+                    GeneralizedStreamElement instance = deserializationDelegate.getInstance();
+                    if (instance instanceof StreamElement) {
+                        processElement((StreamElement) instance, output);
+                    } else {
+                        // generalized watermark.
+                        processGeneralizedWatermark((GeneralizedWatermark) instance, output);
+                    }
                     if (canEmitBatchOfRecords.check()) {
                         continue;
                     }
@@ -141,19 +165,34 @@ public abstract class AbstractStreamTaskNetworkInput<
         }
     }
 
+    private void processGeneralizedWatermark(GeneralizedWatermark watermark, DataOutput<T> output)
+            throws Exception {
+        Class<?> watermarkClazz = watermark.getClass();
+        if (watermark instanceof ProcessWatermarkWrapper) {
+            watermarkClazz = ((ProcessWatermarkWrapper) watermark).getProcessWatermark().getClass();
+        }
+        watermarkAligners
+                .get(watermarkClazz)
+                .inputWatermark(watermark, flattenedChannelIndices.get(lastChannel), output);
+    }
+
     private void processElement(StreamElement recordOrMark, DataOutput<T> output) throws Exception {
         if (recordOrMark.isRecord()) {
             output.emitRecord(recordOrMark.asRecord());
         } else if (recordOrMark.isWatermark()) {
-            statusWatermarkValve.inputWatermark(
-                    recordOrMark.asWatermark(), flattenedChannelIndices.get(lastChannel), output);
+            throw new UnsupportedOperationException(
+                    "This should never have happened as we have already transformed this to timestampWatermark");
         } else if (recordOrMark.isLatencyMarker()) {
             output.emitLatencyMarker(recordOrMark.asLatencyMarker());
         } else if (recordOrMark.isWatermarkStatus()) {
-            statusWatermarkValve.inputWatermarkStatus(
-                    recordOrMark.asWatermarkStatus(),
-                    flattenedChannelIndices.get(lastChannel),
-                    output);
+            // TODO we should pass the watermark status to all aligner. This can be optimized by
+            // maintain a datastruct to unified manage all watermark status.
+            for (GeneralizedWatermarkAligner watermarkAligner : watermarkAligners.values()) {
+                watermarkAligner.inputWatermarkStatus(
+                        recordOrMark.asWatermarkStatus(),
+                        flattenedChannelIndices.get(lastChannel),
+                        output);
+            }
         } else {
             throw new UnsupportedOperationException("Unknown type of StreamElement");
         }

@@ -18,8 +18,9 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.metrics.Gauge;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.RecordWriterOutput;
 import org.apache.flink.streaming.runtime.metrics.WatermarkGauge;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
@@ -47,8 +48,10 @@ public class FinishedOnRestoreMainOperatorOutput<OUT> implements WatermarkGaugeE
     }
 
     @Override
-    public void emitWatermark(Watermark mark) {
-        watermarkGauge.setCurrentWatermark(mark.getTimestamp());
+    public void emitWatermark(GeneralizedWatermark mark) {
+        if (mark instanceof TimestampWatermark) {
+            watermarkGauge.setCurrentWatermark(((TimestampWatermark) mark).getTimestamp());
+        }
         for (RecordWriterOutput<?> streamOutput : streamOutputs) {
             streamOutput.emitWatermark(mark);
         }

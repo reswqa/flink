@@ -18,9 +18,9 @@
 package org.apache.flink.streaming.connectors.kafka.shuffle;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.api.operators.StreamSink;
-import org.apache.flink.streaming.api.watermark.Watermark;
 
 /**
  * A customized {@link StreamOperator} for executing {@link FlinkKafkaShuffleProducer} that handle
@@ -36,7 +36,7 @@ class StreamKafkaShuffleSink<IN> extends StreamSink<IN> {
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         super.processWatermark(mark);
         ((FlinkKafkaShuffleProducer) userFunction).invoke(mark);
     }

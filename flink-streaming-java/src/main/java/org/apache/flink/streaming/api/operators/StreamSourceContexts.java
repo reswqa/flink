@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.operators;
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.operators.ProcessingTimeService.ProcessingTimeCallback;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
@@ -279,7 +280,7 @@ public class StreamSourceContexts {
                 // in case we jumped some watermarks, recompute the next watermark time
                 final long watermarkTime = lastRecordTime - (lastRecordTime % watermarkInterval);
                 nextWatermarkTime = watermarkTime + watermarkInterval;
-                output.emitWatermark(new Watermark(watermarkTime));
+                output.emitWatermark(new TimestampWatermark(watermarkTime));
 
                 // we do not need to register another timer here
                 // because the emitting task will do so.
@@ -302,7 +303,7 @@ public class StreamSourceContexts {
         @Override
         protected void processAndEmitWatermark(Watermark mark) {
             nextWatermarkTime = Long.MAX_VALUE;
-            output.emitWatermark(mark);
+            output.emitWatermark(new TimestampWatermark(mark.getTimestamp()));
 
             // we can shutdown the watermark timer now, no watermarks will be needed any more.
             // Note that this procedure actually doesn't need to be synchronized with the lock,
@@ -369,7 +370,7 @@ public class StreamSourceContexts {
                             final long watermarkTime =
                                     currentTime - (currentTime % watermarkInterval);
 
-                            output.emitWatermark(new Watermark(watermarkTime));
+                            output.emitWatermark(new TimestampWatermark(watermarkTime));
                             nextWatermarkTime = watermarkTime + watermarkInterval;
                         }
                     }
@@ -425,7 +426,7 @@ public class StreamSourceContexts {
 
         @Override
         protected void processAndEmitWatermark(Watermark mark) {
-            output.emitWatermark(mark);
+            output.emitWatermark(new TimestampWatermark(mark.getTimestamp()));
         }
 
         @Override

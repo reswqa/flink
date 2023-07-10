@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.api.function;
 
+import org.apache.flink.api.common.eventtime.ProcessWatermarkDeclaration;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 
@@ -27,6 +28,10 @@ import java.util.Set;
 public interface ProcessFunction extends Function {
     // Explicitly declares states upfront. See FLIP-22.
     default Set<StateDeclaration> usesStates() {
+        return Collections.emptySet();
+    }
+
+    default Set<ProcessWatermarkDeclaration> usesWatermarks() {
         return Collections.emptySet();
     }
 }

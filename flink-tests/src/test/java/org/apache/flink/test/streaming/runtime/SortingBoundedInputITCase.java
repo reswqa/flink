@@ -19,6 +19,7 @@
 package org.apache.flink.test.streaming.runtime;
 
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.Watermark;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;
@@ -681,7 +682,7 @@ public class SortingBoundedInputITCase extends AbstractTestBase {
         }
 
         @Override
-        public void processWatermark(org.apache.flink.streaming.api.watermark.Watermark mark) {}
+        public void processWatermark(GeneralizedWatermark mark) {}
 
         @Override
         public void processLatencyMarker(LatencyMarker latencyMarker) {}

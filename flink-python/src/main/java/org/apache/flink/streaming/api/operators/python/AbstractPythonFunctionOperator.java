@@ -19,6 +19,8 @@
 package org.apache.flink.streaming.api.operators.python;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.python.env.PythonEnvironmentManager;
 import org.apache.flink.python.metric.process.FlinkMetricContainer;
@@ -160,7 +162,7 @@ public abstract class AbstractPythonFunctionOperator<OUT> extends AbstractStream
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         // Due to the asynchronous communication with the SDK harness,
         // a bundle might still be in progress and not all items have
         // yet been received from the SDK harness. If we just set this
@@ -184,34 +186,37 @@ public abstract class AbstractPythonFunctionOperator<OUT> extends AbstractStream
         // Approach 1) is the easiest and gives better latency, yet 2)
         // gives better throughput due to the bundle not getting cut on
         // every watermark. So we have implemented 2) below.
+        if (mark instanceof TimestampWatermark) {
+            if (((TimestampWatermark) mark).getTimestamp() == Long.MAX_VALUE) {
+                invokeFinishBundle();
+                processElementsOfCurrentKeyIfNeeded(null);
+                advanceWatermark(new Watermark(((TimestampWatermark) mark).getTimestamp()));
+                output.emitWatermark(mark);
+            } else if (isBundleFinished()) {
+                advanceWatermark(new Watermark(((TimestampWatermark) mark).getTimestamp()));
+                output.emitWatermark(mark);
+            } else {
+                // It is not safe to advance the output watermark yet, so add a hold on the current
+                // output watermark.
+                bundleFinishedCallback =
+                        () -> {
+                            try {
+                                // avoid invoking bundleFinishedCallback repeatedly in
+                                // advanceWatermark
+                                // which will invoke finishBundle(which will finally invoke
+                                // bundleFinishedCallback)
+                                bundleFinishedCallback = null;
 
-        if (mark.getTimestamp() == Long.MAX_VALUE) {
-            invokeFinishBundle();
-            processElementsOfCurrentKeyIfNeeded(null);
-            advanceWatermark(mark);
-            output.emitWatermark(mark);
-        } else if (isBundleFinished()) {
-            advanceWatermark(mark);
-            output.emitWatermark(mark);
-        } else {
-            // It is not safe to advance the output watermark yet, so add a hold on the current
-            // output watermark.
-            bundleFinishedCallback =
-                    () -> {
-                        try {
-                            // avoid invoking bundleFinishedCallback repeatedly in advanceWatermark
-                            // which will invoke finishBundle(which will finally invoke
-                            // bundleFinishedCallback)
-                            bundleFinishedCallback = null;
-
-                            advanceWatermark(mark);
-                            // at this point the bundle is finished, allow the watermark to pass
-                            output.emitWatermark(mark);
-                        } catch (Exception e) {
-                            throw new RuntimeException(
-                                    "Failed to process watermark after finished bundle.", e);
-                        }
-                    };
+                                advanceWatermark(
+                                        new Watermark(((TimestampWatermark) mark).getTimestamp()));
+                                // at this point the bundle is finished, allow the watermark to pass
+                                output.emitWatermark(mark);
+                            } catch (Exception e) {
+                                throw new RuntimeException(
+                                        "Failed to process watermark after finished bundle.", e);
+                            }
+                        };
+            }
         }
     }
 

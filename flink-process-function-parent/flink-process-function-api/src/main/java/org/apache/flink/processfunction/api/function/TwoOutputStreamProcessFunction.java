@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.api.function;
 
+import org.apache.flink.api.common.eventtime.ProcessWatermark;
 import org.apache.flink.processfunction.api.RuntimeContext;
 
 import java.util.function.Consumer;
@@ -42,4 +43,6 @@ public interface TwoOutputStreamProcessFunction<IN, OUT1, OUT2> extends ProcessF
      */
     default void endOfPartition(
             Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx) {}
+
+    default void onWatermark(ProcessWatermark<?> watermark, RuntimeContext ctx) {}
 }

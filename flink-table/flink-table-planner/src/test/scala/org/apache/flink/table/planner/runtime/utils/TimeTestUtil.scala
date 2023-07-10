@@ -17,6 +17,7 @@
  */
 package org.apache.flink.table.planner.runtime.utils
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark
 import org.apache.flink.api.common.state.{ListState, ListStateDescriptor}
 import org.apache.flink.api.common.typeinfo.Types
 import org.apache.flink.runtime.state.{StateInitializationContext, StateSnapshotContext}
@@ -85,7 +86,7 @@ object TimeTestUtil {
       }
 
       if (currentWatermark > 0) {
-        output.emitWatermark(new Watermark(currentWatermark))
+        output.emitWatermark(new TimestampWatermark(currentWatermark))
       }
     }
 
@@ -95,7 +96,7 @@ object TimeTestUtil {
           output.collect(new StreamRecord[T](t._2, t._1))
         case Right(w) =>
           currentWatermark = w
-          output.emitWatermark(new Watermark(w))
+          output.emitWatermark(new TimestampWatermark(w))
       }
     }
 

@@ -20,6 +20,8 @@ package org.apache.flink.streaming.runtime.watermarkstatus;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput.DataOutput;
 import org.apache.flink.streaming.runtime.watermarkstatus.HeapPriorityQueue.HeapPriorityQueueElement;
@@ -83,8 +85,8 @@ public class StatusWatermarkValve {
 
     /**
      * Feed a {@link Watermark} into the valve. If the input triggers the valve to output a new
-     * Watermark, {@link DataOutput#emitWatermark(Watermark)} will be called to process the new
-     * Watermark.
+     * Watermark, {@link DataOutput#emitWatermark(GeneralizedWatermark)}} will be called to process
+     * the new Watermark.
      *
      * @param watermark the watermark to feed to the valve
      * @param channelIndex the index of the channel that the fed watermark belongs to (index
@@ -120,8 +122,8 @@ public class StatusWatermarkValve {
     /**
      * Feed a {@link WatermarkStatus} into the valve. This may trigger the valve to output either a
      * new Watermark Status, for which {@link DataOutput#emitWatermarkStatus(WatermarkStatus)} will
-     * be called, or a new Watermark, for which {@link DataOutput#emitWatermark(Watermark)} will be
-     * called.
+     * be called, or a new Watermark, for which {@link
+     * DataOutput#emitWatermark(GeneralizedWatermark)}} will be called.
      *
      * @param watermarkStatus the watermark status to feed to the valve
      * @param channelIndex the index of the channel that the fed watermark status belongs to (index
@@ -197,7 +199,7 @@ public class StatusWatermarkValve {
         // from some remaining aligned channel, and is also larger than the last output watermark
         if (hasAlignedChannels && alignedChannelStatuses.peek().watermark > lastOutputWatermark) {
             lastOutputWatermark = alignedChannelStatuses.peek().watermark;
-            output.emitWatermark(new Watermark(lastOutputWatermark));
+            output.emitWatermark(new TimestampWatermark(lastOutputWatermark));
         }
     }
 
@@ -247,7 +249,7 @@ public class StatusWatermarkValve {
 
         if (maxWatermark > lastOutputWatermark) {
             lastOutputWatermark = maxWatermark;
-            output.emitWatermark(new Watermark(lastOutputWatermark));
+            output.emitWatermark(new TimestampWatermark(lastOutputWatermark));
         }
     }
 

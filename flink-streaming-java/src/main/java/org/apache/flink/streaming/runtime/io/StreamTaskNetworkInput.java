@@ -19,6 +19,8 @@
 package org.apache.flink.streaming.runtime.io;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.CheckpointFailureReason;
@@ -29,8 +31,8 @@ import org.apache.flink.runtime.io.network.api.serialization.SpillingAdaptiveSpa
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.checkpointing.CheckpointedInputGate;
-import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.tasks.StreamTask.CanEmitBatchOfRecordsChecker;
+import org.apache.flink.streaming.runtime.watermarkstatus.GeneralizedWatermarkAligner;
 import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
 
@@ -59,29 +61,31 @@ public final class StreamTaskNetworkInput<T>
         extends AbstractStreamTaskNetworkInput<
                 T,
                 SpillingAdaptiveSpanningRecordDeserializer<
-                        DeserializationDelegate<StreamElement>>> {
+                        DeserializationDelegate<GeneralizedStreamElement>>> {
 
     public StreamTaskNetworkInput(
             CheckpointedInputGate checkpointedInputGate,
             TypeSerializer<T> inputSerializer,
             IOManager ioManager,
-            StatusWatermarkValve statusWatermarkValve,
             int inputIndex,
-            CanEmitBatchOfRecordsChecker canEmitBatchOfRecords) {
+            CanEmitBatchOfRecordsChecker canEmitBatchOfRecords,
+            Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs,
+            Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners) {
         super(
                 checkpointedInputGate,
                 inputSerializer,
-                statusWatermarkValve,
                 inputIndex,
                 getRecordDeserializers(checkpointedInputGate, ioManager),
-                canEmitBatchOfRecords);
+                canEmitBatchOfRecords,
+                watermarkSpecs,
+                watermarkAligners);
     }
 
     // Initialize one deserializer per input channel
     private static Map<
                     InputChannelInfo,
                     SpillingAdaptiveSpanningRecordDeserializer<
-                            DeserializationDelegate<StreamElement>>>
+                            DeserializationDelegate<GeneralizedStreamElement>>>
             getRecordDeserializers(
                     CheckpointedInputGate checkpointedInputGate, IOManager ioManager) {
         return checkpointedInputGate.getChannelInfos().stream()
@@ -99,7 +103,7 @@ public final class StreamTaskNetworkInput<T>
         for (Map.Entry<
                         InputChannelInfo,
                         SpillingAdaptiveSpanningRecordDeserializer<
-                                DeserializationDelegate<StreamElement>>>
+                                DeserializationDelegate<GeneralizedStreamElement>>>
                 e : recordDeserializers.entrySet()) {
 
             try {

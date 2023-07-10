@@ -19,6 +19,8 @@
 package org.apache.flink.streaming.api.operators.async;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
@@ -225,7 +227,7 @@ public class AsyncWaitOperator<IN, OUT>
                 if (element.isRecord()) {
                     processElement(element.<IN>asRecord());
                 } else if (element.isWatermark()) {
-                    processWatermark(element.asWatermark());
+                    processWatermark(new TimestampWatermark(element.asWatermark().getTimestamp()));
                 } else if (element.isLatencyMarker()) {
                     processLatencyMarker(element.asLatencyMarker());
                 } else {
@@ -276,13 +278,17 @@ public class AsyncWaitOperator<IN, OUT>
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        addToWorkQueue(mark);
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        // TODO supports generalized watermark for asyncWaitOperator, maybe we need abstract a base
+        // class for both generalized watermark and streamElement.
+        if (mark instanceof TimestampWatermark) {
+            addToWorkQueue(new Watermark(((TimestampWatermark) mark).getTimestamp()));
 
-        // watermarks are always completed
-        // if there is no prior element, we can directly emit them
-        // this also avoids watermarks being held back until the next element has been processed
-        outputCompletedElement();
+            // watermarks are always completed
+            // if there is no prior element, we can directly emit them
+            // this also avoids watermarks being held back until the next element has been processed
+            outputCompletedElement();
+        }
     }
 
     @Override
@@ -384,8 +390,8 @@ public class AsyncWaitOperator<IN, OUT>
      * Outputs one completed element. Watermarks are always completed if it's their turn to be
      * processed.
      *
-     * <p>This method will be called from {@link #processWatermark(Watermark)} and from a mail
-     * processing the result of an async function call.
+     * <p>This method will be called from {@link #processWatermark(GeneralizedWatermark)}} and from
+     * a mail processing the result of an async function call.
      */
     private void outputCompletedElement() {
         if (queue.hasCompletedElements()) {

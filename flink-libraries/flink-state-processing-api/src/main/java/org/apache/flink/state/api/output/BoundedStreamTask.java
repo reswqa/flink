@@ -18,6 +18,7 @@
 
 package org.apache.flink.state.api.output;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.state.api.functions.Timestamper;
@@ -27,7 +28,6 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactoryUtil;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.RecordProcessorUtils;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -134,7 +134,7 @@ class BoundedStreamTask<IN, OUT, OP extends OneInputStreamOperator<IN, OUT> & Bo
         }
 
         @Override
-        public void emitWatermark(Watermark mark) {}
+        public void emitWatermark(GeneralizedWatermark mark) {}
 
         @Override
         public void emitWatermarkStatus(WatermarkStatus watermarkStatus) {}

@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.api.operators;
 
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -44,7 +45,7 @@ public interface Input<IN> {
      *
      * @see org.apache.flink.streaming.api.watermark.Watermark
      */
-    void processWatermark(Watermark mark) throws Exception;
+    void processWatermark(GeneralizedWatermark mark) throws Exception;
 
     /**
      * Processes a {@link WatermarkStatus} that arrived on this input of the {@link

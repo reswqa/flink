@@ -17,10 +17,11 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.operators.Output;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.metrics.WatermarkGauge;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -44,8 +45,10 @@ class BroadcastingOutputCollector<T> implements WatermarkGaugeExposingOutput<Str
     }
 
     @Override
-    public void emitWatermark(Watermark mark) {
-        watermarkGauge.setCurrentWatermark(mark.getTimestamp());
+    public void emitWatermark(GeneralizedWatermark mark) {
+        if (mark instanceof TimestampWatermark) {
+            watermarkGauge.setCurrentWatermark(((TimestampWatermark) mark).getTimestamp());
+        }
         for (Output<StreamRecord<T>> output : outputs) {
             output.emitWatermark(mark);
         }

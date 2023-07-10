@@ -18,12 +18,13 @@
 
 package org.apache.flink.table.runtime.operators.bundle;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.functions.util.FunctionUtils;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.runtime.context.ExecutionContextImpl;
 import org.apache.flink.table.runtime.operators.bundle.trigger.BundleTrigger;
@@ -140,8 +141,10 @@ public abstract class AbstractMapBundleOperator<K, V, IN, OUT> extends AbstractS
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        finishBundle();
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            finishBundle();
+        }
         super.processWatermark(mark);
     }
 

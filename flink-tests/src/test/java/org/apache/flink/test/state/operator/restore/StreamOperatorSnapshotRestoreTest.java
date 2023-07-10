@@ -19,6 +19,7 @@
 package org.apache.flink.test.state.operator.restore;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.state.ValueState;
@@ -55,7 +56,6 @@ import org.apache.flink.streaming.api.operators.KeyContext;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.OperatorSnapshotFinalizer;
 import org.apache.flink.streaming.api.operators.StreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
 import org.apache.flink.streaming.runtime.tasks.StreamTaskCancellationContext;
@@ -305,7 +305,7 @@ public class StreamOperatorSnapshotRestoreTest extends TestLogger {
         }
 
         @Override
-        public void processWatermark(Watermark mark) {}
+        public void processWatermark(GeneralizedWatermark mark) {}
 
         @Override
         public void snapshotState(StateSnapshotContext context) throws Exception {

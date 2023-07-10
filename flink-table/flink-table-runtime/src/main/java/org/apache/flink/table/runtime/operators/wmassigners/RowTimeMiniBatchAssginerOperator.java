@@ -18,10 +18,11 @@
 
 package org.apache.flink.table.runtime.operators.wmassigners;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.table.data.RowData;
 
@@ -77,23 +78,26 @@ public class RowTimeMiniBatchAssginerOperator extends AbstractStreamOperator<Row
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark watermark) throws Exception {
         // if we receive a Long.MAX_VALUE watermark we forward it since it is used
         // to signal the end of input and to not block watermark progress downstream
-        if (mark.getTimestamp() == Long.MAX_VALUE && currentWatermark != Long.MAX_VALUE) {
-            currentWatermark = Long.MAX_VALUE;
-            output.emitWatermark(mark);
-            return;
-        }
+        if (watermark instanceof TimestampWatermark) {
+            TimestampWatermark mark = (TimestampWatermark) watermark;
+            if (mark.getTimestamp() == Long.MAX_VALUE && currentWatermark != Long.MAX_VALUE) {
+                currentWatermark = Long.MAX_VALUE;
+                output.emitWatermark(mark);
+                return;
+            }
 
-        currentWatermark = Math.max(currentWatermark, mark.getTimestamp());
-        if (currentWatermark >= nextWatermark) {
-            advanceWatermark();
+            currentWatermark = Math.max(currentWatermark, mark.getTimestamp());
+            if (currentWatermark >= nextWatermark) {
+                advanceWatermark();
+            }
         }
     }
 
     private void advanceWatermark() {
-        output.emitWatermark(new Watermark(currentWatermark));
+        output.emitWatermark(new TimestampWatermark(currentWatermark));
         long start = getMiniBatchStart(currentWatermark, minibatchInterval);
         long end = start + minibatchInterval - 1;
         nextWatermark = end > currentWatermark ? end : end + minibatchInterval;

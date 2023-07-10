@@ -17,6 +17,8 @@
 
 package org.apache.flink.test.streaming.runtime;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -131,9 +133,12 @@ public class SideOutputITCase extends AbstractTestBase implements Serializable {
             }
 
             @Override
-            public void processWatermark(Watermark mark) throws Exception {
+            public void processWatermark(GeneralizedWatermark mark) throws Exception {
                 super.processWatermark(mark);
-                output.collect(new StreamRecord<>("WM:" + mark.getTimestamp()));
+                if (mark instanceof TimestampWatermark) {
+                    output.collect(
+                            new StreamRecord<>("WM:" + ((TimestampWatermark) mark).getTimestamp()));
+                }
             }
         }
 

@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.runtime.io.recovery;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.GeneralizedStreamElement;
 import org.apache.flink.runtime.checkpoint.InflightDataRescalingDescriptor;
 import org.apache.flink.runtime.checkpoint.channel.InputChannelInfo;
 import org.apache.flink.runtime.io.network.api.SubtaskConnectionDescriptor;
@@ -52,7 +53,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * channels.
  */
 class DemultiplexingRecordDeserializer<T>
-        implements RecordDeserializer<DeserializationDelegate<StreamElement>> {
+        implements RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>> {
     public static final DemultiplexingRecordDeserializer UNMAPPED =
             new DemultiplexingRecordDeserializer(Collections.emptyMap());
     private final Map<SubtaskConnectionDescriptor, VirtualChannel<T>> channels;
@@ -60,35 +61,41 @@ class DemultiplexingRecordDeserializer<T>
     private VirtualChannel<T> currentVirtualChannel;
 
     static class VirtualChannel<T> {
-        private final RecordDeserializer<DeserializationDelegate<StreamElement>> deserializer;
+        private final RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>>
+                deserializer;
         private final Predicate<StreamRecord<T>> recordFilter;
         Watermark lastWatermark = Watermark.UNINITIALIZED;
         WatermarkStatus watermarkStatus = WatermarkStatus.ACTIVE;
         private DeserializationResult lastResult;
 
         VirtualChannel(
-                RecordDeserializer<DeserializationDelegate<StreamElement>> deserializer,
+                RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>> deserializer,
                 Predicate<StreamRecord<T>> recordFilter) {
             this.deserializer = deserializer;
             this.recordFilter = recordFilter;
         }
 
-        public DeserializationResult getNextRecord(DeserializationDelegate<StreamElement> delegate)
-                throws IOException {
+        public DeserializationResult getNextRecord(
+                DeserializationDelegate<GeneralizedStreamElement> delegate) throws IOException {
             do {
                 lastResult = deserializer.getNextRecord(delegate);
 
                 if (lastResult.isFullRecord()) {
-                    final StreamElement element = delegate.getInstance();
-                    // test if record belongs to this subtask if it comes from ambiguous channel
-                    if (element.isRecord() && recordFilter.test(element.asRecord())) {
-                        return lastResult;
-                    } else if (element.isWatermark()) {
-                        lastWatermark = element.asWatermark();
-                        return lastResult;
-                    } else if (element.isWatermarkStatus()) {
-                        watermarkStatus = element.asWatermarkStatus();
-                        return lastResult;
+                    final GeneralizedStreamElement instance = delegate.getInstance();
+                    if (instance instanceof StreamElement) {
+                        StreamElement element = (StreamElement) instance;
+                        // test if record belongs to this subtask if it comes from ambiguous channel
+                        if (element.isRecord() && recordFilter.test(element.asRecord())) {
+                            return lastResult;
+                        } else if (element.isWatermark()) {
+                            lastWatermark = element.asWatermark();
+                            return lastResult;
+                        } else if (element.isWatermarkStatus()) {
+                            watermarkStatus = element.asWatermarkStatus();
+                            return lastResult;
+                        }
+                    } else {
+                        // TODO handle rescaling for generalized watermark.
                     }
                 }
                 // loop is only re-executed for filtered full records
@@ -147,39 +154,46 @@ class DemultiplexingRecordDeserializer<T>
 
     /** Summarizes the status and watermarks of all virtual channels. */
     @Override
-    public DeserializationResult getNextRecord(DeserializationDelegate<StreamElement> delegate)
-            throws IOException {
+    public DeserializationResult getNextRecord(
+            DeserializationDelegate<GeneralizedStreamElement> delegate) throws IOException {
         DeserializationResult result;
         do {
             result = currentVirtualChannel.getNextRecord(delegate);
 
             if (result.isFullRecord()) {
-                final StreamElement element = delegate.getInstance();
-                if (element.isRecord() || element.isLatencyMarker()) {
-                    return result;
-                } else if (element.isWatermark()) {
-                    // basically, do not emit a watermark if not all virtual channel are past it
-                    final Watermark minWatermark =
-                            channels.values().stream()
-                                    .map(virtualChannel -> virtualChannel.lastWatermark)
-                                    .min(Comparator.comparing(Watermark::getTimestamp))
-                                    .orElseThrow(
-                                            () ->
-                                                    new IllegalStateException(
-                                                            "Should always have a watermark"));
-                    // at least one virtual channel has no watermark, don't emit any watermark yet
-                    if (minWatermark.equals(Watermark.UNINITIALIZED)) {
-                        continue;
+                GeneralizedStreamElement instance = delegate.getInstance();
+                if (instance instanceof StreamElement) {
+                    StreamElement element = (StreamElement) instance;
+                    if (element.isRecord() || element.isLatencyMarker()) {
+                        return result;
+                    } else if (element.isWatermark()) {
+                        // basically, do not emit a watermark if not all virtual channel are past it
+                        final Watermark minWatermark =
+                                channels.values().stream()
+                                        .map(virtualChannel -> virtualChannel.lastWatermark)
+                                        .min(Comparator.comparing(Watermark::getTimestamp))
+                                        .orElseThrow(
+                                                () ->
+                                                        new IllegalStateException(
+                                                                "Should always have a watermark"));
+                        // at least one virtual channel has no watermark, don't emit any watermark
+                        // yet
+                        if (minWatermark.equals(Watermark.UNINITIALIZED)) {
+                            continue;
+                        }
+                        delegate.setInstance(minWatermark);
+                        return result;
+                    } else if (element.isWatermarkStatus()) {
+                        // summarize statuses across all virtual channels
+                        // duplicate statuses are filtered in StatusWatermarkValve
+                        if (channels.values().stream()
+                                .anyMatch(d -> d.watermarkStatus.isActive())) {
+                            delegate.setInstance(WatermarkStatus.ACTIVE);
+                        }
+                        return result;
                     }
-                    delegate.setInstance(minWatermark);
-                    return result;
-                } else if (element.isWatermarkStatus()) {
-                    // summarize statuses across all virtual channels
-                    // duplicate statuses are filtered in StatusWatermarkValve
-                    if (channels.values().stream().anyMatch(d -> d.watermarkStatus.isActive())) {
-                        delegate.setInstance(WatermarkStatus.ACTIVE);
-                    }
-                    return result;
+                } else {
+                    // TODO handle rescaling for generalized watermark.
                 }
             }
 
@@ -195,7 +209,7 @@ class DemultiplexingRecordDeserializer<T>
     static <T> DemultiplexingRecordDeserializer<T> create(
             InputChannelInfo channelInfo,
             InflightDataRescalingDescriptor rescalingDescriptor,
-            Function<Integer, RecordDeserializer<DeserializationDelegate<StreamElement>>>
+            Function<Integer, RecordDeserializer<DeserializationDelegate<GeneralizedStreamElement>>>
                     deserializerFactory,
             Function<InputChannelInfo, Predicate<StreamRecord<T>>> recordFilterFactory) {
         int[] oldSubtaskIndexes =

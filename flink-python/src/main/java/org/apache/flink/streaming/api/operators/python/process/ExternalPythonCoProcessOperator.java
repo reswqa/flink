@@ -18,6 +18,8 @@
 package org.apache.flink.streaming.api.operators.python.process;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
@@ -26,7 +28,6 @@ import org.apache.flink.python.util.ProtoUtils;
 import org.apache.flink.streaming.api.functions.python.DataStreamPythonFunctionInfo;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
 import org.apache.flink.streaming.api.runners.python.beam.BeamDataStreamPythonFunctionRunner;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 import static org.apache.flink.python.Constants.STATELESS_FUNCTION_URN;
@@ -121,9 +122,11 @@ public class ExternalPythonCoProcessOperator<IN1, IN2, OUT>
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
         super.processWatermark(mark);
-        currentWatermark = mark.getTimestamp();
+        if (mark instanceof TimestampWatermark) {
+            currentWatermark = ((TimestampWatermark) mark).getTimestamp();
+        }
     }
 
     @Override

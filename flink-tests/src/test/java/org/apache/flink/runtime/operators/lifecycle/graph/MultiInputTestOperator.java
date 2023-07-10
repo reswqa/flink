@@ -17,6 +17,8 @@
 
 package org.apache.flink.runtime.operators.lifecycle.graph;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.operators.ProcessingTimeService.ProcessingTimeCallback;
 import org.apache.flink.runtime.operators.lifecycle.command.TestCommand;
 import org.apache.flink.runtime.operators.lifecycle.event.CheckpointCompletedEvent;
@@ -35,10 +37,10 @@ import org.apache.flink.streaming.api.operators.Input;
 import org.apache.flink.streaming.api.operators.MultipleInputStreamOperator;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamOperatorParameters;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
+import org.apache.flink.util.Preconditions;
 
 import java.util.HashMap;
 import java.util.List;
@@ -203,10 +205,15 @@ class MultiInputTestOperator extends AbstractStreamOperatorV2<TestDataElement>
         }
 
         @Override
-        public void processWatermark(Watermark mark) throws Exception {
+        public void processWatermark(GeneralizedWatermark mark) throws Exception {
+            Preconditions.checkState(mark instanceof TimestampWatermark);
             eventQueue.add(
                     new WatermarkReceivedEvent(
-                            operatorId, subtaskIndex, attemptNumber, mark.getTimestamp(), id));
+                            operatorId,
+                            subtaskIndex,
+                            attemptNumber,
+                            ((TimestampWatermark) mark).getTimestamp(),
+                            id));
             output.emitWatermark(mark);
         }
 

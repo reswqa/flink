@@ -23,6 +23,7 @@ import org.apache.flink.api.common.BatchShuffleMode;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.cache.DistributedCache;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
 import org.apache.flink.api.common.operators.ResourceSpec;
 import org.apache.flink.api.common.operators.util.SlotSharingGroupUtils;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -180,6 +181,8 @@ public class StreamGraphGenerator {
     private long defaultBufferTimeout =
             ExecutionOptions.BUFFER_TIMEOUT_INTERVAL.defaultValue().toMillis();
 
+    private Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs;
+
     private boolean shouldExecuteInBatchMode;
 
     @SuppressWarnings("rawtypes")
@@ -267,6 +270,12 @@ public class StreamGraphGenerator {
 
     public StreamGraphGenerator setChaining(boolean chaining) {
         this.chaining = chaining;
+        return this;
+    }
+
+    public StreamGraphGenerator setGeneralizedWatermarkSpecs(
+            Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs) {
+        this.watermarkSpecs = watermarkSpecs;
         return this;
     }
 
@@ -371,6 +380,7 @@ public class StreamGraphGenerator {
         graph.setEnableCheckpointsAfterTasksFinish(
                 configuration.get(
                         ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH));
+        graph.setGeneralizedWatermarkSpecs(watermarkSpecs);
         setDynamic(graph);
 
         if (shouldExecuteInBatchMode) {

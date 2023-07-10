@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
 import org.apache.flink.runtime.checkpoint.CheckpointMetricsBuilder;
@@ -336,7 +337,8 @@ public class MultipleInputStreamTask<OUT>
     @Override
     protected void advanceToEndOfEventTime() throws Exception {
         for (Output<StreamRecord<?>> sourceOutput : operatorChain.getChainedSourceOutputs()) {
-            sourceOutput.emitWatermark(Watermark.MAX_WATERMARK);
+            sourceOutput.emitWatermark(
+                    new TimestampWatermark(Watermark.MAX_WATERMARK.getTimestamp()));
         }
     }
 }

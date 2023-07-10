@@ -20,6 +20,9 @@ package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
 import org.apache.flink.metrics.Counter;
@@ -30,7 +33,6 @@ import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.Input;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.sort.SortingDataInput;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.io.PushingAsyncDataInput.DataOutput;
 import org.apache.flink.streaming.runtime.io.RecordProcessorUtils;
 import org.apache.flink.streaming.runtime.io.StreamOneInputProcessor;
@@ -43,7 +45,7 @@ import org.apache.flink.streaming.runtime.io.checkpointing.InputProcessorUtil;
 import org.apache.flink.streaming.runtime.metrics.WatermarkGauge;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
-import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
+import org.apache.flink.streaming.runtime.watermarkstatus.GeneralizedWatermarkAligner;
 import org.apache.flink.streaming.runtime.watermarkstatus.WatermarkStatus;
 import org.apache.flink.util.function.ThrowingConsumer;
 
@@ -53,7 +55,9 @@ import javax.annotation.Nullable;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.flink.streaming.api.graph.StreamConfig.requiresSorting;
@@ -189,7 +193,18 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
 
     private StreamTaskInput<IN> createTaskInput(CheckpointedInputGate inputGate) {
         int numberOfInputChannels = inputGate.getNumberOfInputChannels();
-        StatusWatermarkValve statusWatermarkValve = new StatusWatermarkValve(numberOfInputChannels);
+
+        Map<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpecs =
+                configuration.getGeneralizedWatermarkSpecs(getUserCodeClassLoader());
+
+        Map<Class<?>, GeneralizedWatermarkAligner> watermarkAligners = new HashMap<>();
+        for (Map.Entry<Class<?>, GeneralizedWatermarkDeclaration> watermarkSpec :
+                watermarkSpecs.entrySet()) {
+            GeneralizedWatermarkAligner watermarkAligner =
+                    new GeneralizedWatermarkAligner(
+                            numberOfInputChannels, watermarkSpec.getValue());
+            watermarkAligners.put(watermarkSpec.getKey(), watermarkAligner);
+        }
 
         TypeSerializer<IN> inSerializer =
                 configuration.getTypeSerializerIn1(getUserCodeClassLoader());
@@ -198,7 +213,6 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
                 inputGate,
                 inSerializer,
                 getEnvironment().getIOManager(),
-                statusWatermarkValve,
                 0,
                 getEnvironment().getTaskStateManager().getInputRescalingDescriptor(),
                 gateIndex ->
@@ -207,7 +221,9 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
                                 .get(gateIndex)
                                 .getPartitioner(),
                 getEnvironment().getTaskInfo(),
-                getCanEmitBatchOfRecords());
+                getCanEmitBatchOfRecords(),
+                watermarkSpecs,
+                watermarkAligners);
     }
 
     /**
@@ -238,8 +254,10 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
         }
 
         @Override
-        public void emitWatermark(Watermark watermark) throws Exception {
-            watermarkGauge.setCurrentWatermark(watermark.getTimestamp());
+        public void emitWatermark(GeneralizedWatermark watermark) throws Exception {
+            if (watermark instanceof TimestampWatermark) {
+                watermarkGauge.setCurrentWatermark(((TimestampWatermark) watermark).getTimestamp());
+            }
             operator.processWatermark(watermark);
         }
 

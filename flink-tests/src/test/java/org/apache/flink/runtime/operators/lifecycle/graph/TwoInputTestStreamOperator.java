@@ -17,6 +17,8 @@
 
 package org.apache.flink.runtime.operators.lifecycle.graph;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.operators.ProcessingTimeService.ProcessingTimeCallback;
 import org.apache.flink.runtime.operators.lifecycle.command.TestCommand;
 import org.apache.flink.runtime.operators.lifecycle.event.CheckpointCompletedEvent;
@@ -32,7 +34,6 @@ import org.apache.flink.runtime.state.StateSnapshotContext;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 
 import java.util.HashMap;
@@ -122,26 +123,30 @@ class TwoInputTestStreamOperator extends AbstractStreamOperator<TestDataElement>
     }
 
     @Override
-    public void processWatermark1(Watermark mark) throws Exception {
-        collectEvent(
-                new WatermarkReceivedEvent(
-                        operatorID,
-                        getRuntimeContext().getIndexOfThisSubtask(),
-                        getRuntimeContext().getAttemptNumber(),
-                        mark.getTimestamp(),
-                        1));
+    public void processWatermark1(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            collectEvent(
+                    new WatermarkReceivedEvent(
+                            operatorID,
+                            getRuntimeContext().getIndexOfThisSubtask(),
+                            getRuntimeContext().getAttemptNumber(),
+                            ((TimestampWatermark) mark).getTimestamp(),
+                            1));
+        }
         super.processWatermark1(mark);
     }
 
     @Override
-    public void processWatermark2(Watermark mark) throws Exception {
-        collectEvent(
-                new WatermarkReceivedEvent(
-                        operatorID,
-                        getRuntimeContext().getIndexOfThisSubtask(),
-                        getRuntimeContext().getAttemptNumber(),
-                        mark.getTimestamp(),
-                        2));
+    public void processWatermark2(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            collectEvent(
+                    new WatermarkReceivedEvent(
+                            operatorID,
+                            getRuntimeContext().getIndexOfThisSubtask(),
+                            getRuntimeContext().getAttemptNumber(),
+                            ((TimestampWatermark) mark).getTimestamp(),
+                            2));
+        }
         super.processWatermark2(mark);
     }
 

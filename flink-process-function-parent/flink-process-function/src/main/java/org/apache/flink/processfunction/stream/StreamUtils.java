@@ -1,10 +1,13 @@
 package org.apache.flink.processfunction.stream;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.ProcessWatermarkDeclaration;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
@@ -24,6 +27,7 @@ import org.apache.flink.streaming.runtime.translators.PfSinkTransformationTransl
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.Set;
 
 /** Utils for all streams. */
 public class StreamUtils {
@@ -201,5 +205,14 @@ public class StreamUtils {
                         underlyingMapField.get(translatorMap);
 
         underlyingMap.put(PfSinkTransformation.class, new PfSinkTransformationTranslator<>());
+    }
+
+    public static void registerGeneralizedWatermarks(
+            Set<ProcessWatermarkDeclaration> processWatermarkDeclarations,
+            ExecutionEnvironmentImpl environment) {
+        for (ProcessWatermarkDeclaration watermarkDeclaration : processWatermarkDeclarations) {
+            environment.registerGeneralizedWatermark(
+                    GeneralizedWatermarkDeclaration.fromProcessWatermark(watermarkDeclaration));
+        }
     }
 }

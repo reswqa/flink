@@ -20,6 +20,7 @@ package org.apache.flink.test.checkpointing;
 
 import org.apache.flink.FlinkVersion;
 import org.apache.flink.api.common.accumulators.IntCounter;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.ValueState;
@@ -39,7 +40,6 @@ import org.apache.flink.streaming.api.operators.InternalTimer;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.Triggerable;
-import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.test.checkpointing.utils.MigrationTestUtils;
 import org.apache.flink.test.checkpointing.utils.SnapshotMigrationTestBase;
@@ -386,7 +386,7 @@ public class StatefulJobSnapshotMigrationITCase extends SnapshotMigrationTestBas
         public void onProcessingTime(InternalTimer<Long, Long> timer) {}
 
         @Override
-        public void processWatermark(Watermark mark) {
+        public void processWatermark(GeneralizedWatermark mark) {
             output.emitWatermark(mark);
         }
     }

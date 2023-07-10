@@ -19,6 +19,8 @@ package org.apache.flink.streaming.api.graph;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermarkDeclaration;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.configuration.ConfigOption;
@@ -91,6 +93,8 @@ public class StreamConfig implements Serializable {
     private static final String INPUTS = "inputs";
     private static final String TYPE_SERIALIZER_OUT_1 = "typeSerializer_out";
     private static final String TYPE_SERIALIZER_SIDEOUT_PREFIX = "typeSerializer_sideout_";
+
+    private static final String GENERALIZED_WATERMARK_SPEC = "generalized_watermark_spec";
     private static final String ITERATON_WAIT = "iterationWait";
     private static final String OP_NONCHAINED_OUTPUTS = "opNonChainedOutputs";
     private static final String VERTEX_NONCHAINED_OUTPUTS = "vertexNonChainedOutputs";
@@ -289,6 +293,25 @@ public class StreamConfig implements Serializable {
 
     public void setTypeSerializerOut(TypeSerializer<?> serializer) {
         setTypeSerializer(TYPE_SERIALIZER_OUT_1, serializer);
+    }
+
+    // TODO This should be a job-level config, not operator-level.
+    public void setGeneralizedWatermarkSpecs(
+            Map<Class<?>, GeneralizedWatermarkDeclaration> serializerMap) {
+        // always register timestamp watermark to keep previously behavior.
+        serializerMap.put(TimestampWatermark.class, TimestampWatermark.DECLARATION);
+        toBeSerializedConfigObjects.put(GENERALIZED_WATERMARK_SPEC, serializerMap);
+    }
+
+    public Map<Class<?>, GeneralizedWatermarkDeclaration> getGeneralizedWatermarkSpecs(
+            ClassLoader cl) {
+        try {
+            return InstantiationUtil.readObjectFromConfig(
+                    this.config, GENERALIZED_WATERMARK_SPEC, cl);
+        } catch (Exception e) {
+            throw new StreamTaskException(
+                    "Could not instantiate generalized watermark serializers.", e);
+        }
     }
 
     public <T> TypeSerializer<T> getTypeSerializerOut(ClassLoader cl) {

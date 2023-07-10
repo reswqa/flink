@@ -18,6 +18,8 @@
 
 package org.apache.flink.table.runtime.operators.join;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.streaming.api.functions.co.KeyedCoProcessFunction;
 import org.apache.flink.streaming.api.operators.InternalTimeServiceManager;
 import org.apache.flink.streaming.api.operators.co.KeyedCoProcessOperator;
@@ -34,7 +36,7 @@ public class KeyedCoProcessOperatorWithWatermarkDelay<K, IN1, IN2, OUT>
 
     private static final long serialVersionUID = -7435774708099223442L;
 
-    private final Consumer<Watermark> emitter;
+    private final Consumer<TimestampWatermark> emitter;
 
     public KeyedCoProcessOperatorWithWatermarkDelay(
             KeyedCoProcessFunction<K, IN1, IN2, OUT> flatMapper, long watermarkDelay) {
@@ -44,24 +46,30 @@ public class KeyedCoProcessOperatorWithWatermarkDelay<K, IN1, IN2, OUT>
         if (watermarkDelay == 0) {
             // emits watermark without delay
             emitter =
-                    (Consumer<Watermark> & Serializable)
-                            (Watermark mark) -> output.emitWatermark(mark);
+                    (Consumer<TimestampWatermark> & Serializable)
+                            (TimestampWatermark mark) -> output.emitWatermark(mark);
         } else {
             // emits watermark with delay
             emitter =
-                    (Consumer<Watermark> & Serializable)
-                            (Watermark mark) ->
+                    (Consumer<TimestampWatermark> & Serializable)
+                            (TimestampWatermark mark) ->
                                     output.emitWatermark(
-                                            new Watermark(mark.getTimestamp() - watermarkDelay));
+                                            new TimestampWatermark(
+                                                    mark.getTimestamp() - watermarkDelay));
         }
     }
 
     @Override
-    public void processWatermark(Watermark mark) throws Exception {
-        Optional<InternalTimeServiceManager<?>> timeServiceManager = getTimeServiceManager();
-        if (timeServiceManager.isPresent()) {
-            timeServiceManager.get().advanceWatermark(mark);
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (mark instanceof TimestampWatermark) {
+            Optional<InternalTimeServiceManager<?>> timeServiceManager = getTimeServiceManager();
+            if (timeServiceManager.isPresent()) {
+                timeServiceManager
+                        .get()
+                        .advanceWatermark(
+                                new Watermark(((TimestampWatermark) mark).getTimestamp()));
+            }
+            emitter.accept((TimestampWatermark) mark);
         }
-        emitter.accept(mark);
     }
 }

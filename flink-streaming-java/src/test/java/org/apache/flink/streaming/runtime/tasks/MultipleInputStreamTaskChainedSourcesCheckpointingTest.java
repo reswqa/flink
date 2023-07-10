@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.TimestampAssigner;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -620,7 +621,7 @@ public class MultipleInputStreamTaskChainedSourcesCheckpointingTest {
             }
 
             @Override
-            public void processWatermark(Watermark mark) throws Exception {
+            public void processWatermark(GeneralizedWatermark mark) throws Exception {
                 throw new IllegalStateException(MESSAGE);
             }
 

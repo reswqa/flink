@@ -20,6 +20,8 @@ package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.state.ListState;
@@ -1106,8 +1108,11 @@ public class OneInputStreamTaskTest extends TestLogger {
         }
 
         @Override
-        public void processWatermark(Watermark mark) {
-            output.emitWatermark(new Watermark(mark.getTimestamp() * 2));
+        public void processWatermark(GeneralizedWatermark mark) {
+            if (mark instanceof TimestampWatermark) {
+                output.emitWatermark(
+                        new TimestampWatermark(((TimestampWatermark) mark).getTimestamp() * 2));
+            }
         }
     }
 
@@ -1283,14 +1288,15 @@ public class OneInputStreamTaskTest extends TestLogger {
         protected void handleElement(StreamRecord<String> element) {
             long timestamp = Long.valueOf(element.getValue());
             if (timestamp > lastWatermark) {
-                output.emitWatermark(new Watermark(timestamp));
+                output.emitWatermark(new TimestampWatermark(timestamp));
                 lastWatermark = timestamp;
             }
         }
 
         @Override
-        protected void handleWatermark(Watermark mark) {
-            if (mark.equals(Watermark.MAX_WATERMARK)) {
+        protected void handleWatermark(GeneralizedWatermark mark) {
+            if (mark instanceof TimestampWatermark
+                    && mark.equals(TimestampWatermark.MAX_WATERMARK)) {
                 output.emitWatermark(mark);
                 lastWatermark = Long.MAX_VALUE;
             }
@@ -1328,7 +1334,7 @@ public class OneInputStreamTaskTest extends TestLogger {
         }
 
         @Override
-        public void processWatermark(Watermark mark) throws Exception {
+        public void processWatermark(GeneralizedWatermark mark) throws Exception {
             if (!expectForwardedWatermarks) {
                 throw new Exception(
                         "Received a "
@@ -1343,7 +1349,7 @@ public class OneInputStreamTaskTest extends TestLogger {
             // do nothing
         }
 
-        protected void handleWatermark(Watermark mark) {
+        protected void handleWatermark(GeneralizedWatermark mark) {
             output.emitWatermark(mark);
         }
     }

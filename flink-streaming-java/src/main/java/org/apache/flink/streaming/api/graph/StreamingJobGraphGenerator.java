@@ -1095,6 +1095,8 @@ public class StreamingJobGraphGenerator {
 
         config.setTypeSerializerOut(vertex.getTypeSerializerOut());
 
+        config.setGeneralizedWatermarkSpecs(streamGraph.getGeneralizedWatermarkSpecs());
+
         config.setStreamOperatorFactory(vertex.getOperatorFactory());
 
         config.setTimeCharacteristic(streamGraph.getTimeCharacteristic());

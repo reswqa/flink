@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.api.operators.sort;
 
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.channel.ChannelStateWriter;
 import org.apache.flink.streaming.api.watermark.Watermark;
@@ -52,7 +53,8 @@ final class CollectionDataInput<E> implements StreamTaskInput<E> {
             if (streamElement instanceof StreamRecord) {
                 output.emitRecord(streamElement.asRecord());
             } else if (streamElement instanceof Watermark) {
-                output.emitWatermark(streamElement.asWatermark());
+                output.emitWatermark(
+                        new TimestampWatermark(streamElement.asWatermark().getTimestamp()));
             } else {
                 throw new IllegalStateException("Unsupported element type: " + streamElement);
             }

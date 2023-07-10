@@ -18,12 +18,16 @@
 
 package org.apache.flink.processfunction.operators;
 
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
+import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
+import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.processfunction.DefaultRuntimeContext;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
+import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.Preconditions;
 
@@ -51,7 +55,8 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
                         userFunction.usesStates(),
                         getOperatorStateBackend(),
                         getRuntimeContext(),
-                        this::getCurrentKey);
+                        this::getCurrentKey,
+                        output);
     }
 
     @Override
@@ -62,6 +67,36 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
     @Override
     public void processElement2(StreamRecord<IN2> element) throws Exception {
         userFunction.processSecondInputRecord(element.getValue(), collector, context);
+    }
+
+    @Override
+    public void processWatermark(GeneralizedWatermark mark) throws Exception {
+        if (timeServiceManager != null && mark instanceof TimestampWatermark) {
+            timeServiceManager.advanceWatermark(
+                    new Watermark(((TimestampWatermark) mark).getTimestamp()));
+            output.emitWatermark(mark);
+        }
+    }
+
+    @Override
+    protected boolean processWatermark(GeneralizedWatermark mark, int index) throws Exception {
+        boolean isAligned = super.processWatermark(mark, index);
+        if (mark instanceof ProcessWatermarkWrapper) {
+            if (isAligned) {
+                userFunction.onWatermark(
+                        ((ProcessWatermarkWrapper) mark).getProcessWatermark(),
+                        context,
+                        TwoInputStreamProcessFunction.WatermarkType.ALL);
+            } else {
+                userFunction.onWatermark(
+                        ((ProcessWatermarkWrapper) mark).getProcessWatermark(),
+                        context,
+                        index == 0
+                                ? TwoInputStreamProcessFunction.WatermarkType.FIRST
+                                : TwoInputStreamProcessFunction.WatermarkType.SECOND);
+            }
+        }
+        return isAligned;
     }
 
     protected Consumer<OUT> getOutputCollector() {

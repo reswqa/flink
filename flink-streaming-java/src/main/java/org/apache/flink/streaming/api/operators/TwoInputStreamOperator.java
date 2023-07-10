@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.api.operators;
 
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.LatencyMarker;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
@@ -54,7 +55,7 @@ public interface TwoInputStreamOperator<IN1, IN2, OUT> extends StreamOperator<OU
      *
      * @see org.apache.flink.streaming.api.watermark.Watermark
      */
-    void processWatermark1(Watermark mark) throws Exception;
+    void processWatermark1(GeneralizedWatermark mark) throws Exception;
 
     /**
      * Processes a {@link Watermark} that arrived on the second input of this two-input operator.
@@ -62,7 +63,7 @@ public interface TwoInputStreamOperator<IN1, IN2, OUT> extends StreamOperator<OU
      *
      * @see org.apache.flink.streaming.api.watermark.Watermark
      */
-    void processWatermark2(Watermark mark) throws Exception;
+    void processWatermark2(GeneralizedWatermark mark) throws Exception;
 
     /**
      * Processes a {@link LatencyMarker} that arrived on the first input of this two-input operator.
