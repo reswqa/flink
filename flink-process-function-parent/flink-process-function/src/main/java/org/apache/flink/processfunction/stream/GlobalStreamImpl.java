@@ -19,9 +19,11 @@
 package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.functions.NullByteKeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
@@ -32,6 +34,7 @@ import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
+import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
@@ -59,9 +62,20 @@ public class GlobalStreamImpl<T>
             SingleStreamProcessFunction<T, OUT> processFunction) {
         TypeInformation<OUT> outType =
                 StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
-        ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
 
-        return transform("Global Process", outType, operator);
+        if (processFunction instanceof InternalWindowFunction) {
+            // Transform to keyed stream.
+            KeyedPartitionStreamImpl<Byte, T> keyedStream =
+                    new KeyedPartitionStreamImpl<>(
+                            this, getTransformation(), new NullByteKeySelector<>(), Types.BYTE);
+            Transformation<OUT> outTransformation =
+                    keyedStream.transformWindow(outType, processFunction);
+            outTransformation.setParallelism(1, true);
+            return new GlobalStreamImpl<>(keyedStream.environment, outTransformation);
+        } else {
+            ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
+            return transform("Global Process", outType, operator);
+        }
     }
 
     @Override

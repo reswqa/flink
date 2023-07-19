@@ -19,6 +19,8 @@
 package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.state.ListStateDescriptor;
+import org.apache.flink.api.common.state.ReducingStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.dag.Transformation;
@@ -38,10 +40,14 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndTwoNonKeyedPartitionStreams;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
+import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
+import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
+import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoOutputProcessOperator;
+import org.apache.flink.processfunction.operators.WindowProcessOperator;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
 import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
@@ -92,6 +98,9 @@ public class KeyedPartitionStreamImpl<K, V>
                 keyType);
     }
 
+    /**
+     * This can construct a keyed stream directly without partitionTransformation to avoid shuffle.
+     */
     public KeyedPartitionStreamImpl(
             DataStream<V> dataStream,
             Transformation<V> partitionTransformation,
@@ -115,6 +124,8 @@ public class KeyedPartitionStreamImpl<K, V>
             transform =
                     (Transformation<OUT>)
                             transformReduce((SingleStreamReduceFunction<V>) processFunction);
+        } else if (processFunction instanceof InternalWindowFunction) {
+            transform = transformWindow(outType, processFunction);
         } else {
             Configuration configuration = getEnvironment().getConfiguration();
             boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
@@ -125,6 +136,60 @@ public class KeyedPartitionStreamImpl<K, V>
         }
 
         return new NonKeyedPartitionStreamImpl<>(environment, transform);
+    }
+
+    public <OUT> Transformation<OUT> transformWindow(
+            TypeInformation<OUT> outType, SingleStreamProcessFunction<V, OUT> processFunction) {
+        Transformation<OUT> transform;
+        if (processFunction instanceof InternalReduceWindowFunction) {
+            InternalReduceWindowFunction<V, ?> internalWindowFunction =
+                    (InternalReduceWindowFunction<V, ?>) processFunction;
+            WindowAssigner<V, ?> assigner = internalWindowFunction.getAssigner();
+            ReducingStateDescriptor<V> stateDesc =
+                    new ReducingStateDescriptor<>(
+                            "window-reduce-state",
+                            // TODO We can directly pass Functions.ReduceFunction after remove old
+                            // datastream api.
+                            (ReduceFunction<V>) internalWindowFunction.getReduceFunction()::reduce,
+                            getType().createSerializer(environment.getExecutionConfig()));
+
+            WindowProcessOperator windowProcessOperator =
+                    new WindowProcessOperator(
+                            internalWindowFunction,
+                            assigner,
+                            internalWindowFunction.getTrigger(),
+                            assigner.getWindowSerializer(environment.getExecutionConfig()),
+                            keyType.createSerializer(environment.getExecutionConfig()),
+                            stateDesc,
+                            0L,
+                            null,
+                            false);
+            transform = oneInputTransformWithOperator("Window", outType, windowProcessOperator);
+        } else if (processFunction instanceof InternalWindowFunction) {
+            InternalWindowFunction<V, ?, OUT, ?> internalWindowFunction =
+                    (InternalWindowFunction<V, ?, OUT, ?>) processFunction;
+            WindowAssigner<V, ?> assigner = internalWindowFunction.getAssigner();
+            ListStateDescriptor<V> stateDesc =
+                    new ListStateDescriptor<>(
+                            "window-iterator-state",
+                            getType().createSerializer(environment.getExecutionConfig()));
+
+            WindowProcessOperator windowProcessOperator =
+                    new WindowProcessOperator(
+                            internalWindowFunction,
+                            assigner,
+                            internalWindowFunction.getTrigger(),
+                            assigner.getWindowSerializer(environment.getExecutionConfig()),
+                            keyType.createSerializer(environment.getExecutionConfig()),
+                            stateDesc,
+                            0L,
+                            null,
+                            false);
+            transform = oneInputTransformWithOperator("Window", outType, windowProcessOperator);
+        } else {
+            throw new IllegalArgumentException("Unsupported window function " + processFunction);
+        }
+        return transform;
     }
 
     @Override

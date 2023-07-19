@@ -28,8 +28,6 @@ import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nullable;
 
-import java.util.function.Consumer;
-
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Operator for {@link SingleStreamProcessFunction} in {@link KeyedPartitionStream}. */
@@ -97,11 +95,12 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
+        outputCollector.setTimestamp(element);
         userFunction.processRecord(element.getValue(), outputCollector, context);
     }
 
     @Override
-    protected Consumer<OUT> getOutputCollector() {
+    protected OutputCollector getOutputCollector() {
         return outKeySelector != null ? new KeyCheckedCollector() : new OutputCollector();
     }
 

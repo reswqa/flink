@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.stream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -32,9 +33,11 @@ import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
+import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
+import org.apache.flink.processfunction.windows.ParallelismAwareKeySelector;
 import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
@@ -59,10 +62,24 @@ public class NonKeyedPartitionStreamImpl<T>
             SingleStreamProcessFunction<T, OUT> processFunction) {
         TypeInformation<OUT> outType =
                 StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
-        ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
         StreamUtils.registerGeneralizedWatermarks(
                 processFunction.usesWatermarks(), getEnvironment());
-        return transform("Process", outType, operator);
+
+        if (processFunction instanceof InternalWindowFunction) {
+            // Transform to keyed stream.
+            KeyedPartitionStreamImpl<Integer, T> keyedStream =
+                    new KeyedPartitionStreamImpl<>(
+                            this,
+                            getTransformation(),
+                            new ParallelismAwareKeySelector<>(),
+                            Types.INT);
+            Transformation<OUT> outTransformation =
+                    keyedStream.transformWindow(outType, processFunction);
+            return new NonKeyedPartitionStreamImpl<>(keyedStream.environment, outTransformation);
+        } else {
+            ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
+            return transform("Process", outType, operator);
+        }
     }
 
     @Override

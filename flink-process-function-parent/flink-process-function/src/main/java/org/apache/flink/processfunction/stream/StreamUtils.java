@@ -12,6 +12,10 @@ import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctio
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.WindowProcessFunction;
+import org.apache.flink.processfunction.api.windowing.window.Window;
+import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
+import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
@@ -50,6 +54,22 @@ public class StreamUtils {
                 || processFunction instanceof SingleStreamReduceFunction) {
             //noinspection unchecked
             outType = (TypeInformation<OUT>) inTypeInformation;
+        } else if (processFunction instanceof InternalReduceWindowFunction) {
+            //noinspection unchecked
+            outType = (TypeInformation<OUT>) inTypeInformation;
+        } else if (processFunction instanceof InternalWindowFunction) {
+            // Iterator window function.
+            outType =
+                    TypeExtractor.getUnaryOperatorReturnType(
+                            ((InternalWindowFunction<IN, ?, OUT, ?>) processFunction)
+                                    .getWindowProcessFunction(),
+                            SingleStreamProcessFunction.class,
+                            0,
+                            1,
+                            new int[] {1, 0},
+                            null,
+                            "windowFunction",
+                            false);
         } else {
             outType =
                     TypeExtractor.getUnaryOperatorReturnType(
@@ -214,5 +234,20 @@ public class StreamUtils {
             environment.registerGeneralizedWatermark(
                     GeneralizedWatermarkDeclaration.fromProcessWatermark(watermarkDeclaration));
         }
+    }
+
+    public static <IN, OUT, W extends Window> TypeInformation<OUT> getWindowFunctionReturnType(
+            WindowProcessFunction<IN, OUT, W> function,
+            TypeInformation<IN> inType,
+            String functionName) {
+        return TypeExtractor.getUnaryOperatorReturnType(
+                function,
+                SingleStreamProcessFunction.class,
+                0,
+                1,
+                new int[] {1, 0},
+                inType,
+                functionName,
+                false);
     }
 }

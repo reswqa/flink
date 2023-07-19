@@ -28,6 +28,33 @@ import org.apache.flink.processfunction.api.state.StateDeclaration;
 
 /** Utils to convert {@link StateDeclaration} to {@link StateDescriptor}. */
 public class StateDeclarationConverter {
+    public static StateDescriptor<?, ?> getStateDescriptor(StateDeclaration stateDeclaration) {
+        if (stateDeclaration instanceof ListStateDeclarationImpl) {
+            return new ListStateDescriptor<>(
+                    stateDeclaration.getName(),
+                    TypeInformationUtils.fromTypeDescriptor(
+                            ((ListStateDeclarationImpl<?>) stateDeclaration)
+                                    .getElementTypeDescriptor()));
+        } else if (stateDeclaration instanceof MapStateDeclarationImpl) {
+            return new MapStateDescriptor<>(
+                    stateDeclaration.getName(),
+                    TypeInformationUtils.fromTypeDescriptor(
+                            ((MapStateDeclarationImpl<?, ?>) stateDeclaration)
+                                    .getKeyTypeDescriptor()),
+                    TypeInformationUtils.fromTypeDescriptor(
+                            ((MapStateDeclarationImpl<?, ?>) stateDeclaration)
+                                    .getValueTypeDescriptor()));
+        } else if (stateDeclaration instanceof ValueStateDeclarationImpl) {
+            return new ValueStateDescriptor<>(
+                    stateDeclaration.getName(),
+                    TypeInformationUtils.fromTypeDescriptor(
+                            ((ValueStateDeclarationImpl<?>) stateDeclaration).getTypeDescriptor()));
+        } else {
+            throw new IllegalArgumentException(
+                    "state declaration : " + stateDeclaration + " is not supported at the moment.");
+        }
+    }
+
     public static <T> ListStateDescriptor<T> getListStateDescriptor(
             ListStateDeclarationImpl<T> stateDeclaration) {
         //noinspection unchecked

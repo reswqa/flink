@@ -40,7 +40,7 @@ public class ProcessOperator<IN, OUT>
 
     protected transient DefaultRuntimeContext context;
 
-    protected transient Consumer<OUT> outputCollector;
+    protected transient OutputCollector outputCollector;
 
     public ProcessOperator(SingleStreamProcessFunction<IN, OUT> userFunction) {
         super(userFunction);
@@ -63,6 +63,7 @@ public class ProcessOperator<IN, OUT>
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
+        outputCollector.setTimestamp(element);
         userFunction.processRecord(element.getValue(), outputCollector, context);
     }
 
@@ -72,10 +73,11 @@ public class ProcessOperator<IN, OUT>
             if (timeServiceManager != null) {
                 timeServiceManager.advanceWatermark(
                         new Watermark(((TimestampWatermark) mark).getTimestamp()));
-                return;
             }
+            // TODO should we trigger userFunction.onWatermark also for timestamp watermark?
             // always push timestamp watermark to output be keep the original behavior.
             output.emitWatermark(mark);
+            return;
         }
         // weather emit process watermark should leave for user function.
         if (mark instanceof ProcessWatermarkWrapper) {
@@ -84,7 +86,7 @@ public class ProcessOperator<IN, OUT>
         }
     }
 
-    protected Consumer<OUT> getOutputCollector() {
+    protected OutputCollector getOutputCollector() {
         return new OutputCollector();
     }
 
@@ -98,7 +100,23 @@ public class ProcessOperator<IN, OUT>
 
     protected class OutputCollector implements Consumer<OUT> {
 
-        private final StreamRecord<OUT> reuse = new StreamRecord<>(null);
+        protected final StreamRecord<OUT> reuse = new StreamRecord<>(null);
+
+        public void setTimestamp(StreamRecord<?> timestampBase) {
+            if (timestampBase.hasTimestamp()) {
+                reuse.setTimestamp(timestampBase.getTimestamp());
+            } else {
+                reuse.eraseTimestamp();
+            }
+        }
+
+        public void setAbsoluteTimestamp(long timestamp) {
+            reuse.setTimestamp(timestamp);
+        }
+
+        public void eraseTimestamp() {
+            reuse.eraseTimestamp();
+        }
 
         @Override
         public void accept(OUT outputRecord) {
