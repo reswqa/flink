@@ -201,14 +201,13 @@ public class HsMemoryDataManager implements HsSpillingInfoProvider, HsMemoryData
         handleDecision(Optional.of(decision));
     }
 
-    public void setOutputMetrics(
-            HsOutputMetrics metrics, TimerGauge hardBackPressuredTimePerSecond) {
+    public void setOutputMetrics(HsOutputMetrics metrics) {
         // HsOutputMetrics is not thread-safe. It can be shared by all the subpartitions because it
         // is expected always updated from the producer task's mailbox thread.
         for (int i = 0; i < numSubpartitions; i++) {
             getSubpartitionMemoryDataManager(i).setOutputMetrics(metrics);
         }
-        this.hardBackPressuredTimePerSecond = hardBackPressuredTimePerSecond;
+        this.hardBackPressuredTimePerSecond = metrics.getHardBackpressureTimerGauge();
     }
 
     // ------------------------------------

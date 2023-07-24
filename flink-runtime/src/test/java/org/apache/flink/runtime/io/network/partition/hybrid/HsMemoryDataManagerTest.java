@@ -24,7 +24,6 @@ import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.NetworkBufferPool;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsFileDataIndex.SpilledBuffer;
 import org.apache.flink.runtime.io.network.partition.hybrid.HsSpillingStrategy.Decision;
-import org.apache.flink.runtime.metrics.TimerGauge;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -279,7 +278,7 @@ class HsMemoryDataManagerTest {
                         dataFilePath,
                         null,
                         1000);
-        memoryDataManager.setOutputMetrics(createTestingOutputMetrics(), new TimerGauge());
+        memoryDataManager.setOutputMetrics(createTestingOutputMetrics());
         return memoryDataManager;
     }
 
