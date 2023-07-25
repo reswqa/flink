@@ -90,7 +90,10 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         // weather emit process watermark should leave for user function.
         if (mark instanceof ProcessWatermarkWrapper) {
             userFunction.onWatermark(
-                    ((ProcessWatermarkWrapper) mark).getProcessWatermark(), context);
+                    ((ProcessWatermarkWrapper) mark).getProcessWatermark(),
+                    getMainCollector(),
+                    getSideCollector(),
+                    context);
         }
     }
 

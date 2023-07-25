@@ -82,7 +82,9 @@ public class ProcessOperator<IN, OUT>
         // weather emit process watermark should leave for user function.
         if (mark instanceof ProcessWatermarkWrapper) {
             userFunction.onWatermark(
-                    ((ProcessWatermarkWrapper) mark).getProcessWatermark(), context);
+                    ((ProcessWatermarkWrapper) mark).getProcessWatermark(),
+                    outputCollector,
+                    context);
         }
     }
 

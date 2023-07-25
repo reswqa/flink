@@ -63,7 +63,10 @@ public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFun
     default void endOfSecondInputPartition(Consumer<OUT> output, RuntimeContext ctx) {}
 
     default void onWatermark(
-            ProcessWatermark<?> watermark, RuntimeContext ctx, WatermarkType watermarkType) {}
+            ProcessWatermark<?> watermark,
+            RuntimeContext ctx,
+            Consumer<OUT> output,
+            WatermarkType watermarkType) {}
 
     /** This enum is used to mark where the watermark from. */
     enum WatermarkType {

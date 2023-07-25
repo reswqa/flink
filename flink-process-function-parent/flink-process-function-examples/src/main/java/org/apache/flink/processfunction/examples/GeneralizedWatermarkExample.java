@@ -81,7 +81,9 @@ public class GeneralizedWatermarkExample {
 
                             @Override
                             public void onWatermark(
-                                    ProcessWatermark<?> watermark, RuntimeContext context) {
+                                    ProcessWatermark<?> watermark,
+                                    Consumer<Integer> output,
+                                    RuntimeContext context) {
                                 if (watermark instanceof MyWatermark)
                                     System.out.println(
                                             "received watermark value : "

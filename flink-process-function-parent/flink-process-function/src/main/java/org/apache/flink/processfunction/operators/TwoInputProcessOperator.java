@@ -86,11 +86,13 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
                 userFunction.onWatermark(
                         ((ProcessWatermarkWrapper) mark).getProcessWatermark(),
                         context,
+                        getOutputCollector(),
                         TwoInputStreamProcessFunction.WatermarkType.ALL);
             } else {
                 userFunction.onWatermark(
                         ((ProcessWatermarkWrapper) mark).getProcessWatermark(),
                         context,
+                        getOutputCollector(),
                         index == 0
                                 ? TwoInputStreamProcessFunction.WatermarkType.FIRST
                                 : TwoInputStreamProcessFunction.WatermarkType.SECOND);

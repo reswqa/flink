@@ -44,5 +44,9 @@ public interface TwoOutputStreamProcessFunction<IN, OUT1, OUT2> extends ProcessF
     default void endOfPartition(
             Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx) {}
 
-    default void onWatermark(ProcessWatermark<?> watermark, RuntimeContext ctx) {}
+    default void onWatermark(
+            ProcessWatermark<?> watermark,
+            Consumer<OUT1> output1,
+            Consumer<OUT2> output2,
+            RuntimeContext ctx) {}
 }

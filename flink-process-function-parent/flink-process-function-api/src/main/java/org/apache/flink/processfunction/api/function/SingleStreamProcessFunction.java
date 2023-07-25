@@ -42,5 +42,6 @@ public interface SingleStreamProcessFunction<IN, OUT> extends ProcessFunction {
      */
     default void endOfPartition(Consumer<OUT> output, RuntimeContext ctx) {}
 
-    default void onWatermark(ProcessWatermark<?> watermark, RuntimeContext ctx) {}
+    default void onWatermark(
+            ProcessWatermark<?> watermark, Consumer<OUT> output, RuntimeContext ctx) {}
 }
