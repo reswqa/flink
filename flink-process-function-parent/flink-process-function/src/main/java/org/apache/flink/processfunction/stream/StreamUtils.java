@@ -63,7 +63,7 @@ public class StreamUtils {
                     TypeExtractor.getUnaryOperatorReturnType(
                             ((InternalWindowFunction<IN, ?, OUT, ?>) processFunction)
                                     .getWindowProcessFunction(),
-                            SingleStreamProcessFunction.class,
+                            WindowProcessFunction.class,
                             0,
                             1,
                             new int[] {1, 0},

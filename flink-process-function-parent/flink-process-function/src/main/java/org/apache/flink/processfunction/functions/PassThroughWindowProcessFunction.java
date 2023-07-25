@@ -25,9 +25,11 @@ import org.apache.flink.processfunction.api.windowing.window.Window;
 import java.util.function.Consumer;
 
 public class PassThroughWindowProcessFunction<IN, W extends Window>
-        extends WindowProcessFunction<IN, IN, W> {
+        implements WindowProcessFunction<IN, IN, W> {
     @Override
-    public void processRecord(IN record, Consumer<IN> output, RuntimeContext ctx) throws Exception {
+    public void processRecord(
+            IN record, Consumer<IN> output, RuntimeContext ctx, WindowContext<W> windowContext)
+            throws Exception {
         output.accept(record);
     }
 }

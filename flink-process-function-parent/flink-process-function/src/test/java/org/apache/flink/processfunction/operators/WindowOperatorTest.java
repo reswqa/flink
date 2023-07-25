@@ -84,10 +84,9 @@ class WindowOperatorTest implements Serializable {
                                                     public void processRecord(
                                                             Iterable<Long> record,
                                                             Consumer<String> output,
-                                                            RuntimeContext ctx)
+                                                            RuntimeContext ctx,
+                                                            WindowContext<Window> windowContext)
                                                             throws Exception {
-                                                        WindowContext<Window> windowContext =
-                                                                getWindowContext();
                                                         Window window = windowContext.window();
                                                         // handle records;
                                                         List<Long> collect =
@@ -191,22 +190,17 @@ class WindowOperatorTest implements Serializable {
                                                         Time.seconds(5),
                                                         Windows.TimeWindows.TimeType.EVENT))
                                         .reduce(
-                                                new BatchStreamingUnifiedFunctions.ReduceFunction<
-                                                        Integer>() {
-                                                    @Override
-                                                    public Integer reduce(
-                                                            Integer value1, Integer value2)
-                                                            throws Exception {
-                                                        return value1 + value2;
-                                                    }
-                                                },
+                                                (BatchStreamingUnifiedFunctions.ReduceFunction<
+                                                                Integer>)
+                                                        Integer::sum,
                                                 new WindowProcessFunction<
                                                         Integer, Integer, Window>() {
                                                     @Override
                                                     public void processRecord(
                                                             Integer record,
                                                             Consumer<Integer> output,
-                                                            RuntimeContext ctx)
+                                                            RuntimeContext ctx,
+                                                            WindowContext<Window> windowContext)
                                                             throws Exception {
                                                         output.accept(record);
                                                     }
@@ -270,7 +264,8 @@ class WindowOperatorTest implements Serializable {
                                                     public void processRecord(
                                                             Integer record,
                                                             Consumer<Integer> output,
-                                                            RuntimeContext ctx)
+                                                            RuntimeContext ctx,
+                                                            WindowContext<Window> windowContext)
                                                             throws Exception {
                                                         output.accept(record);
                                                     }
@@ -336,7 +331,8 @@ class WindowOperatorTest implements Serializable {
                                                     public void processRecord(
                                                             Integer record,
                                                             Consumer<Integer> output,
-                                                            RuntimeContext ctx)
+                                                            RuntimeContext ctx,
+                                                            WindowContext<Window> windowContext)
                                                             throws Exception {
                                                         output.accept(record);
                                                     }

@@ -57,12 +57,11 @@ public class WindowExample {
                                                     public void processRecord(
                                                             Iterable<Integer> record,
                                                             Consumer<String> output,
-                                                            RuntimeContext ctx)
+                                                            RuntimeContext ctx,
+                                                            WindowContext<Window> windowContext)
                                                             throws Exception {
-                                                        WindowContext<Window> windowContext =
-                                                                getWindowContext();
                                                         Window window = windowContext.window();
-                                                        // handle records;
+                                                        // handle records.
                                                     }
                                                 }));
         process.sinkTo(

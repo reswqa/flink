@@ -18,37 +18,26 @@
 
 package org.apache.flink.processfunction.api.function;
 
+import org.apache.flink.api.common.eventtime.ProcessWatermarkDeclaration;
+import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /** Special process function for window. */
-public abstract class WindowProcessFunction<IN, OUT, W extends Window>
-        implements SingleStreamProcessFunction<IN, OUT> {
+public interface WindowProcessFunction<IN, OUT, W extends Window> extends Function {
 
-    private WindowContext<W> windowContext;
-
-    public void setContext(WindowContext<W> context) {
-        this.windowContext = context;
-    }
-
-    public WindowContext<W> getWindowContext() {
-        if (this.windowContext != null) {
-            return this.windowContext;
-        } else {
-            throw new IllegalStateException("The window context has not been initialized.");
-        }
-    }
-
-    public Set<StateDeclaration> useWindowStates() {
-        return Collections.emptySet();
-    }
+    void processRecord(
+            IN record, Consumer<OUT> output, RuntimeContext ctx, WindowContext<W> windowContext)
+            throws Exception;
 
     /**
      * Callback when a window is about to be cleaned up. It is the time to deletes any state in the
@@ -56,11 +45,22 @@ public abstract class WindowProcessFunction<IN, OUT, W extends Window>
      * {@code allowedLateness}).
      *
      * @param window The window which is to be cleared.
-     * @throws Exception The function may throw exceptions to fail the program and trigger recovery.
      */
-    public void endOfWindow(W window) throws Exception {}
+    default void endOfWindow(W window) throws Exception {}
 
-    public interface WindowContext<W> {
+    default Set<StateDeclaration> useWindowStates() {
+        return Collections.emptySet();
+    }
+
+    default Set<StateDeclaration> usesStates() {
+        return Collections.emptySet();
+    }
+
+    default Set<ProcessWatermarkDeclaration> usesWatermarks() {
+        return Collections.emptySet();
+    }
+
+    interface WindowContext<W> {
         /** Returns the window that is being evaluated. */
         W window();
 

@@ -190,7 +190,6 @@ public class WindowProcessOperator<K, IN, ACC, OUT, W extends Window>
         triggerContext = new WindowTriggerContext(null, null);
         windowFunctionContext = new WindowFunctionContext();
         windowStateStore = new WindowStateStore();
-        windowFunction.setContext(windowFunctionContext);
 
         windowAssignerContext = new InternalWindowAssignerContext();
 
@@ -528,7 +527,7 @@ public class WindowProcessOperator<K, IN, ACC, OUT, W extends Window>
             outputCollector.setAbsoluteTimestamp(((TimeWindow) window).maxTimeStamp());
         }
         windowFunctionContext.window = window;
-        windowFunction.processRecord(contents, outputCollector, context);
+        windowFunction.processRecord(contents, outputCollector, context, windowFunctionContext);
     }
 
     /**
