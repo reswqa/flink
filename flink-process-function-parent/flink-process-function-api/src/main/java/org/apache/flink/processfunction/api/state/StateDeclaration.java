@@ -23,6 +23,7 @@ import java.io.Serializable;
 /** {@link StateDeclaration} represents a declaration of the specific state used. */
 public interface StateDeclaration extends Serializable {
 
+    /** Get the name of this state. */
     String getName();
 
     RedistributionMode getRedistributionMode();
@@ -30,6 +31,9 @@ public interface StateDeclaration extends Serializable {
     interface ListStateDeclaration extends StateDeclaration {
         RedistributionStrategy getRedistributionStrategy();
 
+        /**
+         * {@link RedistributionStrategy} used to guide the assignment of states during rescaling.
+         */
         enum RedistributionStrategy {
             SPLIT,
             UNION
@@ -40,9 +44,29 @@ public interface StateDeclaration extends Serializable {
 
     interface MapStateDeclaration extends StateDeclaration {}
 
+    /**
+     * {@link RedistributionMode} is used to indicate whether this state supports redistribution
+     * between partitions. and how to proceed with redistribution.
+     */
     enum RedistributionMode {
+        /**
+         * Not supports redistribution.
+         *
+         * <p>For example : KeyedState is bind to a specific keyGroup, so it is can't support
+         * redistribution between partitions.
+         */
         NONE,
+
+        /**
+         * This state can be safely redistributed between different partitions, and the specific
+         * redistribution strategy is determined by the state itself.
+         *
+         * <p>For example: ListState's redistribution algorithm is determined by {@link
+         * ListStateDeclaration.RedistributionStrategy}.
+         */
         REDISTRIBUTABLE,
+
+        /** Sharing the same state between different partitions during rescaling. */
         IDENTICAL
     }
 }
