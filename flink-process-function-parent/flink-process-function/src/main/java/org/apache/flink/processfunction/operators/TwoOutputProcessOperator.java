@@ -71,6 +71,7 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                         getOperatorStateBackend(),
                         getRuntimeContext(),
                         this::getCurrentKey,
+                        this::registerProcessingTimer,
                         output);
     }
 
@@ -111,6 +112,11 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     public Consumer<OUT_SIDE> getSideCollector() {
         return new SideOutputCollector();
+    }
+
+    protected void registerProcessingTimer(long timeStamp) {
+        throw new UnsupportedOperationException(
+                "Only triggerable keyed operator supports register processing timer.");
     }
 
     protected class MainOutputCollector implements Consumer<OUT_MAIN> {

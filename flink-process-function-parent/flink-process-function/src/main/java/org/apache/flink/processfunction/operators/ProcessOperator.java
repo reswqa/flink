@@ -57,6 +57,7 @@ public class ProcessOperator<IN, OUT>
                         getOperatorStateBackend(),
                         getRuntimeContext(),
                         this::getCurrentKey,
+                        this::registerProcessingTimer,
                         output);
         outputCollector = getOutputCollector();
     }
@@ -90,6 +91,11 @@ public class ProcessOperator<IN, OUT>
 
     protected OutputCollector getOutputCollector() {
         return new OutputCollector();
+    }
+
+    protected void registerProcessingTimer(long timeStamp) {
+        throw new UnsupportedOperationException(
+                "Only triggerable keyed operator supports register processing timer.");
     }
 
     @Override

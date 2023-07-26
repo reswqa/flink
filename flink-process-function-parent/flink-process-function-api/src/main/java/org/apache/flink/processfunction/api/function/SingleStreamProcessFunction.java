@@ -44,4 +44,6 @@ public interface SingleStreamProcessFunction<IN, OUT> extends ProcessFunction {
 
     default void onWatermark(
             ProcessWatermark<?> watermark, Consumer<OUT> output, RuntimeContext ctx) {}
+
+    default void onProcessingTimer(long timestamp, Consumer<OUT> output, RuntimeContext ctx) {}
 }

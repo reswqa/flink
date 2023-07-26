@@ -48,6 +48,8 @@ public interface RuntimeContext {
 
     <T extends ProcessWatermark<T>> void emitWatermark(ProcessWatermark<T> watermark);
 
+    void registerProcessingTimer(long timestamp);
+
     enum ExecutionMode {
         STREAMING,
         BATCH

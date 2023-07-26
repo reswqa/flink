@@ -56,6 +56,7 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
                         getOperatorStateBackend(),
                         getRuntimeContext(),
                         this::getCurrentKey,
+                        this::registerProcessingTimer,
                         output);
     }
 
@@ -103,6 +104,11 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
 
     protected Consumer<OUT> getOutputCollector() {
         return new OutputCollector();
+    }
+
+    protected void registerProcessingTimer(long timestamp) {
+        throw new UnsupportedOperationException(
+                "Only triggerable keyed operator supports register processing timer.");
     }
 
     @Override

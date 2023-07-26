@@ -21,6 +21,11 @@ package org.apache.flink.processfunction.operators;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
+import org.apache.flink.runtime.state.VoidNamespace;
+import org.apache.flink.runtime.state.VoidNamespaceSerializer;
+import org.apache.flink.streaming.api.operators.InternalTimer;
+import org.apache.flink.streaming.api.operators.InternalTimerService;
+import org.apache.flink.streaming.api.operators.Triggerable;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.OutputTag;
@@ -33,13 +38,16 @@ import java.util.function.Consumer;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
-        extends TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE> {
+        extends TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
+        implements Triggerable<KEY, VoidNamespace> {
 
     @Nullable private final KeySelector<OUT_MAIN, KEY> mainOutKeySelector;
 
     @Nullable private final KeySelector<OUT_SIDE, KEY> sideOutKeySelector;
 
     @Nullable private transient InputKeyListener inputKeyListener;
+
+    private transient InternalTimerService<VoidNamespace> timerService;
 
     private final boolean sortInput;
 
@@ -72,6 +80,10 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
                                     sideCollector,
                                     context);
         }
+
+        this.timerService =
+                getInternalTimerService(
+                        "two input process timer", VoidNamespaceSerializer.INSTANCE, this);
     }
 
     @Override
@@ -118,6 +130,22 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
         return mainOutKeySelector != null && sideOutKeySelector != null
                 ? new KeyCheckedOutputCollector<>(new SideOutputCollector(), sideOutKeySelector)
                 : new SideOutputCollector();
+    }
+
+    @Override
+    protected void registerProcessingTimer(long timestamp) {
+        timerService.registerProcessingTimeTimer(VoidNamespace.INSTANCE, timestamp);
+    }
+
+    @Override
+    public void onEventTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
+        // do nothing atm.
+    }
+
+    @Override
+    public void onProcessingTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
+        userFunction.onProcessingTimer(
+                timer.getTimestamp(), getMainCollector(), getSideCollector(), context);
     }
 
     private class KeyCheckedOutputCollector<T> implements Consumer<T> {

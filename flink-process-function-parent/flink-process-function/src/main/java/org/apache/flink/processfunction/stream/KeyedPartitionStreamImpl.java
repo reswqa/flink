@@ -47,6 +47,7 @@ import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoOutputProcessOperator;
+import org.apache.flink.processfunction.operators.TriggerableKeyedProcessOperator;
 import org.apache.flink.processfunction.operators.WindowProcessOperator;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
 import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
@@ -131,7 +132,7 @@ public class KeyedPartitionStreamImpl<K, V>
             boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
             // universal process
             KeyedProcessOperator<K, V, OUT> operator =
-                    new KeyedProcessOperator<>(processFunction, sortInputs);
+                    new TriggerableKeyedProcessOperator<>(processFunction, sortInputs);
             transform = oneInputTransformWithOperator("KeyedProcess", outType, operator);
         }
 
@@ -266,7 +267,7 @@ public class KeyedPartitionStreamImpl<K, V>
         boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         // TODO Supports checking key for non-process operator(i.e. ReduceOperator).
         KeyedProcessOperator<K, V, OUT> operator =
-                new KeyedProcessOperator<>(
+                new TriggerableKeyedProcessOperator<>(
                         processFunction, sortInputs, checkNotNull(newKeySelector));
         Transformation<OUT> transform =
                 oneInputTransformWithOperator("KeyedProcess", outType, operator);

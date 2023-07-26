@@ -43,6 +43,7 @@ import javax.annotation.Nullable;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** The default implementations of {@link RuntimeContext}. */
@@ -57,6 +58,8 @@ public class DefaultRuntimeContext implements RuntimeContext {
 
     private final Output<?> watermarkEmitter;
 
+    private final Consumer<Long> processingTimerRegister;
+
     /**
      * {@link #getCurrentKey()} will return this if it is not null, otherwise return the key from
      * {@link #currentKeySupplier}.
@@ -68,12 +71,14 @@ public class DefaultRuntimeContext implements RuntimeContext {
             OperatorStateStore operatorStateStore,
             StreamingRuntimeContext streamingRuntimeContext,
             Supplier<Object> currentKeySupplier,
+            Consumer<Long> processingTimerRegister,
             Output<?> watermarkEmitter) {
         this.usedStates = usedStates;
         this.operatorStateStore = operatorStateStore;
         this.streamingRuntimeContext = streamingRuntimeContext;
         this.currentKeySupplier = currentKeySupplier;
         this.watermarkEmitter = watermarkEmitter;
+        this.processingTimerRegister = processingTimerRegister;
     }
 
     @Override
@@ -189,6 +194,11 @@ public class DefaultRuntimeContext implements RuntimeContext {
     @Override
     public <T extends ProcessWatermark<T>> void emitWatermark(ProcessWatermark<T> watermark) {
         watermarkEmitter.emitWatermark(new ProcessWatermarkWrapper(watermark));
+    }
+
+    @Override
+    public void registerProcessingTimer(long timestamp) {
+        processingTimerRegister.accept(timestamp);
     }
 
     @Override

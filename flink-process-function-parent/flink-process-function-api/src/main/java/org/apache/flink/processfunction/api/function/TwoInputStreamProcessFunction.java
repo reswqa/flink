@@ -68,6 +68,8 @@ public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFun
             Consumer<OUT> output,
             WatermarkType watermarkType) {}
 
+    default void onProcessingTimer(long timestamp, Consumer<OUT> output, RuntimeContext ctx) {}
+
     /** This enum is used to mark where the watermark from. */
     enum WatermarkType {
         /** This watermark is from first input. */
