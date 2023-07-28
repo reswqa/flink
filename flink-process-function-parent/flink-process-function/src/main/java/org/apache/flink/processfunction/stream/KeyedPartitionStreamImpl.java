@@ -45,9 +45,9 @@ import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
-import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoOutputProcessOperator;
 import org.apache.flink.processfunction.operators.TriggerableKeyedProcessOperator;
+import org.apache.flink.processfunction.operators.TriggerableTwoInputKeyedProcessOperator;
 import org.apache.flink.processfunction.operators.WindowProcessOperator;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
 import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
@@ -318,8 +318,8 @@ public class KeyedPartitionStreamImpl<K, V>
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
         Configuration configuration = getEnvironment().getConfiguration();
         boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
-        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
+        TriggerableTwoInputKeyedProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                new TriggerableTwoInputKeyedProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Keyed-TwoInput-Process",
@@ -343,8 +343,9 @@ public class KeyedPartitionStreamImpl<K, V>
 
         Configuration configuration = getEnvironment().getConfiguration();
         boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
-        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs, newKeySelector);
+        TriggerableTwoInputKeyedProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                new TriggerableTwoInputKeyedProcessOperator<>(
+                        processFunction, sortInputs, newKeySelector);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Keyed-TwoInput-Process",
@@ -374,8 +375,8 @@ public class KeyedPartitionStreamImpl<K, V>
                         ((BroadcastStreamImpl<T_OTHER>) other).getType());
         Configuration configuration = getEnvironment().getConfiguration();
         boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
-        KeyedTwoInputProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
+        TriggerableTwoInputKeyedProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                new TriggerableTwoInputKeyedProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Broadcast-Keyed-TwoInput-Process",

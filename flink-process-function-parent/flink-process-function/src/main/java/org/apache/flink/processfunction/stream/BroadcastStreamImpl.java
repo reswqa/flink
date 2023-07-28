@@ -28,7 +28,7 @@ import org.apache.flink.processfunction.api.stream.BroadcastStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
-import org.apache.flink.processfunction.operators.KeyedTwoInputProcessOperator;
+import org.apache.flink.processfunction.operators.TriggerableTwoInputKeyedProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.BroadcastPartitioner;
@@ -59,8 +59,8 @@ public class BroadcastStreamImpl<T> extends DataStream<T> implements BroadcastSt
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
         Configuration configuration = getEnvironment().getConfiguration();
         boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
-        KeyedTwoInputProcessOperator<K, T, T_OTHER, OUT> processOperator =
-                new KeyedTwoInputProcessOperator<>(processFunction, sortInputs);
+        TriggerableTwoInputKeyedProcessOperator<K, T, T_OTHER, OUT> processOperator =
+                new TriggerableTwoInputKeyedProcessOperator<>(processFunction, sortInputs);
         Transformation<OUT> outTransformation =
                 StreamUtils.getTwoInputTransform(
                         "Broadcast-Keyed-TwoInput-Process",
