@@ -20,12 +20,15 @@ package org.apache.flink.processfunction.functions;
 
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
 import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import javax.annotation.Nullable;
+
+import java.util.Set;
 
 public class InternalReduceWindowFunction<IN, W extends Window>
         extends InternalWindowFunction<IN, IN, IN, W> {
@@ -43,5 +46,10 @@ public class InternalReduceWindowFunction<IN, W extends Window>
 
     public BatchStreamingUnifiedFunctions.ReduceFunction<IN> getReduceFunction() {
         return reduceFunction;
+    }
+
+    @Override
+    public Set<StateDeclaration> usesStates() {
+        return getWindowProcessFunction().usesStates();
     }
 }

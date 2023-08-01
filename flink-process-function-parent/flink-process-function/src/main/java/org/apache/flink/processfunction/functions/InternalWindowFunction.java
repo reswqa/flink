@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.functions;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
 import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
@@ -28,6 +29,7 @@ import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import javax.annotation.Nullable;
 
+import java.util.Set;
 import java.util.function.Consumer;
 
 /** This is only a container for window related things. */
@@ -73,5 +75,10 @@ public class InternalWindowFunction<IN, ACC, OUT, W extends Window>
 
     public WindowProcessFunction<ACC, OUT, W> getWindowProcessFunction() {
         return windowProcessFunction;
+    }
+
+    @Override
+    public Set<StateDeclaration> usesStates() {
+        return windowProcessFunction.usesStates();
     }
 }

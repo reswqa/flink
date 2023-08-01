@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.functions;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
+import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
 import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
@@ -29,6 +30,7 @@ import org.apache.flink.processfunction.windows.utils.Unions.TaggedUnion;
 
 import javax.annotation.Nullable;
 
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class InternalTwoInputWindowFunction<IN1, IN2, ACC1, ACC2, OUT, W extends Window>
@@ -67,6 +69,11 @@ public class InternalTwoInputWindowFunction<IN1, IN2, ACC1, ACC2, OUT, W extends
 
     public TwoInputWindowProcessFunction<ACC1, ACC2, OUT, W> getWindowProcessFunction() {
         return windowProcessFunction;
+    }
+
+    @Override
+    public Set<StateDeclaration> usesStates() {
+        return windowProcessFunction.usesStates();
     }
 
     public WindowAssigner<TaggedUnion<IN1, IN2>, W> getAssigner() {
