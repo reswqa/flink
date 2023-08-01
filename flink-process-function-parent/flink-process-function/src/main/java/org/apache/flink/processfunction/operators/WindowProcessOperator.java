@@ -430,6 +430,11 @@ public class WindowProcessOperator<K, IN, ACC, OUT, W extends Window>
     }
 
     @Override
+    public void endInput() {
+        super.endInput();
+    }
+
+    @Override
     public void processWatermark(GeneralizedWatermark mark) throws Exception {
         if (mark instanceof TimestampWatermark) {
             if (timeServiceManager != null) {

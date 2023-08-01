@@ -41,13 +41,16 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.Proce
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndTwoNonKeyedPartitionStreams;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
+import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
+import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
 import org.apache.flink.processfunction.operators.KeyedProcessOperator;
 import org.apache.flink.processfunction.operators.KeyedTwoOutputProcessOperator;
 import org.apache.flink.processfunction.operators.TriggerableKeyedProcessOperator;
 import org.apache.flink.processfunction.operators.TriggerableTwoInputKeyedProcessOperator;
+import org.apache.flink.processfunction.operators.TwoInputWindowProcessOperator;
 import org.apache.flink.processfunction.operators.WindowProcessOperator;
 import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl.NonKeyedTwoOutputStream;
 import org.apache.flink.streaming.api.datastream.CustomSinkOperatorUidHashes;
@@ -62,6 +65,8 @@ import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.OutputTag;
+
+import java.util.Collections;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -119,6 +124,8 @@ public class KeyedPartitionStreamImpl<K, V>
         outType = StreamUtils.getOutputTypeForProcessFunction(processFunction, getType());
 
         Transformation<OUT> transform;
+        Configuration configuration = getEnvironment().getConfiguration();
+        boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
         if (processFunction instanceof SingleStreamReduceFunction) {
             // reduce process
             //noinspection unchecked
@@ -126,10 +133,8 @@ public class KeyedPartitionStreamImpl<K, V>
                     (Transformation<OUT>)
                             transformReduce((SingleStreamReduceFunction<V>) processFunction);
         } else if (processFunction instanceof InternalWindowFunction) {
-            transform = transformWindow(outType, processFunction);
+            transform = transformWindow(outType, processFunction, sortInputs);
         } else {
-            Configuration configuration = getEnvironment().getConfiguration();
-            boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
             // universal process
             KeyedProcessOperator<K, V, OUT> operator =
                     new TriggerableKeyedProcessOperator<>(processFunction, sortInputs);
@@ -139,8 +144,52 @@ public class KeyedPartitionStreamImpl<K, V>
         return new NonKeyedPartitionStreamImpl<>(environment, transform);
     }
 
+    public <OUT, OTHER_V> Transformation<OUT> transformTwoInputWindow(
+            TypeInformation<OUT> outType,
+            TwoInputStreamProcessFunction<V, OTHER_V, OUT> processFunction,
+            KeyedPartitionStreamImpl<K, OTHER_V> otherStream,
+            boolean sortInputs) {
+        // for iterable window.
+        if (processFunction instanceof InternalTwoInputWindowFunction) {
+            InternalTwoInputWindowFunction<V, OTHER_V, ?, ?, OUT, ?> internalWindowFunction =
+                    (InternalTwoInputWindowFunction<V, OTHER_V, ?, ?, OUT, ?>) processFunction;
+            WindowAssigner<TaggedUnion<V, OTHER_V>, ?> assigner =
+                    internalWindowFunction.getAssigner();
+            ListStateDescriptor<V> leftStateDesc =
+                    new ListStateDescriptor<>(
+                            "two-input-window-iterator-left-state",
+                            getType().createSerializer(environment.getExecutionConfig()));
+            ListStateDescriptor<V> rightStateDesc =
+                    new ListStateDescriptor<>(
+                            "two-input-window-iterator-right-state",
+                            getType().createSerializer(environment.getExecutionConfig()));
+
+            TwoInputWindowProcessOperator windowProcessOperator =
+                    new TwoInputWindowProcessOperator(
+                            internalWindowFunction,
+                            assigner,
+                            internalWindowFunction.getTrigger(),
+                            assigner.getWindowSerializer(environment.getExecutionConfig()),
+                            leftStateDesc,
+                            rightStateDesc,
+                            sortInputs,
+                            0,
+                            null,
+                            null,
+                            Collections.EMPTY_LIST,
+                            Collections.EMPTY_LIST);
+            return StreamUtils.getTwoInputTransform(
+                    "Keyed-TwoInput-Window", this, otherStream, outType, windowProcessOperator);
+        } else {
+            throw new UnsupportedOperationException(
+                    processFunction + "is not supported as two input window.");
+        }
+    }
+
     public <OUT> Transformation<OUT> transformWindow(
-            TypeInformation<OUT> outType, SingleStreamProcessFunction<V, OUT> processFunction) {
+            TypeInformation<OUT> outType,
+            SingleStreamProcessFunction<V, OUT> processFunction,
+            boolean sortInputs) {
         Transformation<OUT> transform;
         if (processFunction instanceof InternalReduceWindowFunction) {
             InternalReduceWindowFunction<V, ?> internalWindowFunction =
@@ -164,7 +213,7 @@ public class KeyedPartitionStreamImpl<K, V>
                             stateDesc,
                             0L,
                             null,
-                            false);
+                            sortInputs);
             transform = oneInputTransformWithOperator("Window", outType, windowProcessOperator);
         } else if (processFunction instanceof InternalWindowFunction) {
             InternalWindowFunction<V, ?, OUT, ?> internalWindowFunction =
@@ -185,7 +234,7 @@ public class KeyedPartitionStreamImpl<K, V>
                             stateDesc,
                             0L,
                             null,
-                            false);
+                            sortInputs);
             transform = oneInputTransformWithOperator("Window", outType, windowProcessOperator);
         } else {
             throw new IllegalArgumentException("Unsupported window function " + processFunction);
@@ -316,17 +365,29 @@ public class KeyedPartitionStreamImpl<K, V>
                         processFunction,
                         getType(),
                         ((KeyedPartitionStreamImpl<K, T_OTHER>) other).getType());
+
         Configuration configuration = getEnvironment().getConfiguration();
         boolean sortInputs = configuration.get(ExecutionOptions.SORT_INPUTS);
-        TriggerableTwoInputKeyedProcessOperator<K, V, T_OTHER, OUT> processOperator =
-                new TriggerableTwoInputKeyedProcessOperator<>(processFunction, sortInputs);
-        Transformation<OUT> outTransformation =
-                StreamUtils.getTwoInputTransform(
-                        "Keyed-TwoInput-Process",
-                        this,
-                        (KeyedPartitionStreamImpl<K, T_OTHER>) other,
-                        outTypeInfo,
-                        processOperator);
+
+        Transformation<OUT> outTransformation;
+        if (processFunction instanceof InternalTwoInputWindowFunction) {
+            outTransformation =
+                    transformTwoInputWindow(
+                            outTypeInfo,
+                            processFunction,
+                            (KeyedPartitionStreamImpl<K, T_OTHER>) other,
+                            sortInputs);
+        } else {
+            TriggerableTwoInputKeyedProcessOperator<K, V, T_OTHER, OUT> processOperator =
+                    new TriggerableTwoInputKeyedProcessOperator<>(processFunction, sortInputs);
+            outTransformation =
+                    StreamUtils.getTwoInputTransform(
+                            "Keyed-TwoInput-Process",
+                            this,
+                            (KeyedPartitionStreamImpl<K, T_OTHER>) other,
+                            outTypeInfo,
+                            processOperator);
+        }
         return new NonKeyedPartitionStreamImpl<>(environment, outTransformation);
     }
 

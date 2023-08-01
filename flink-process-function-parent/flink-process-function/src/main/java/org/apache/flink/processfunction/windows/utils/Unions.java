@@ -19,7 +19,6 @@
 package org.apache.flink.processfunction.windows.utils;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.SerializerContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
@@ -27,66 +26,13 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 
 import java.io.IOException;
-import java.util.Objects;
 
 public class Unions {
-    // ------------------------------------------------------------------------
-    //  Data type and type information for Tagged Union
-    // ------------------------------------------------------------------------
-
-    /** Internal class for implementing tagged union co-group. */
     @Internal
-    public static class TaggedUnion<T1, T2> {
-        private final T1 one;
-        private final T2 two;
-
-        private TaggedUnion(T1 one, T2 two) {
-            this.one = one;
-            this.two = two;
-        }
-
-        public boolean isOne() {
-            return one != null;
-        }
-
-        public boolean isTwo() {
-            return two != null;
-        }
-
-        public T1 getOne() {
-            return one;
-        }
-
-        public T2 getTwo() {
-            return two;
-        }
-
-        public static <T1, T2> TaggedUnion<T1, T2> one(T1 one) {
-            return new TaggedUnion<>(one, null);
-        }
-
-        public static <T1, T2> TaggedUnion<T1, T2> two(T2 two) {
-            return new TaggedUnion<>(null, two);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == this) {
-                return true;
-            }
-
-            if (!(obj instanceof TaggedUnion)) {
-                return false;
-            }
-
-            TaggedUnion other = (TaggedUnion) obj;
-            return Objects.equals(one, other.one) && Objects.equals(two, other.two);
-        }
-    }
-
-    private static class UnionTypeInfo<T1, T2> extends TypeInformation<TaggedUnion<T1, T2>> {
+    public static class UnionTypeInfo<T1, T2> extends TypeInformation<TaggedUnion<T1, T2>> {
         private static final long serialVersionUID = 1L;
 
         private final TypeInformation<T1> oneType;
@@ -167,7 +113,6 @@ public class Unions {
     }
 
     /** {@link TypeSerializer} for {@link TaggedUnion}. */
-    @VisibleForTesting
     @Internal
     public static class UnionSerializer<T1, T2> extends TypeSerializer<TaggedUnion<T1, T2>> {
         private static final long serialVersionUID = 1L;

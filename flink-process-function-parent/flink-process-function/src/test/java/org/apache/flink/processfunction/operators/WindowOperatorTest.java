@@ -377,7 +377,7 @@ class WindowOperatorTest implements Serializable {
         }
     }
 
-    private static class PerElementValueWithTimestampWatermarkGenerator
+    public static class PerElementValueWithTimestampWatermarkGenerator
             implements WatermarkGenerator<ValueWithTimestamp> {
 
         private long maxTimestamp;
@@ -402,7 +402,7 @@ class WindowOperatorTest implements Serializable {
         }
     }
 
-    private static class ValueWithTimestampAssigner
+    public static class ValueWithTimestampAssigner
             implements TimestampAssigner<ValueWithTimestamp> {
 
         @Override
@@ -411,7 +411,7 @@ class WindowOperatorTest implements Serializable {
         }
     }
 
-    private static class ValueWithTimestamp {
+    public static class ValueWithTimestamp {
         private final long timestamp;
 
         private final int value;

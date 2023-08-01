@@ -36,12 +36,12 @@ import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFuncti
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
+import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.state.ListStateDeclarationImpl;
 import org.apache.flink.processfunction.state.StateDeclarationConverter;
 import org.apache.flink.processfunction.windows.ParallelismAwareKeySelector;
-import org.apache.flink.processfunction.windows.utils.Unions.TaggedUnion;
 import org.apache.flink.processfunction.windows.window.BoundedWindow;
 import org.apache.flink.processfunction.windows.window.TimeWindow;
 import org.apache.flink.runtime.state.internal.InternalAppendingState;
@@ -73,9 +73,6 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
 
     private final StateDescriptor<? extends AppendingState<IN2, ACC2>, ?>
             rightWindowStateDescriptor;
-
-    /** For serializing the key in checkpoints. */
-    protected final TypeSerializer<K> keySerializer;
 
     /** For serializing the window in checkpoints. */
     protected final TypeSerializer<W> windowSerializer;
@@ -138,7 +135,6 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
             WindowAssigner<? super TaggedUnion<IN1, IN2>, W> windowAssigner,
             Trigger<? super TaggedUnion<IN1, IN2>, ? super W> trigger,
             TypeSerializer<W> windowSerializer,
-            TypeSerializer<K> keySerializer,
             StateDescriptor<? extends AppendingState<IN1, ACC1>, ?> windowStateDescriptor1,
             StateDescriptor<? extends AppendingState<IN2, ACC2>, ?> windowStateDescriptor2,
             boolean sortInputs,
@@ -152,7 +148,6 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         this.windowAssigner = windowAssigner;
         this.trigger = trigger;
         this.windowSerializer = windowSerializer;
-        this.keySerializer = keySerializer;
         this.leftWindowStateDescriptor = windowStateDescriptor1;
         this.rightWindowStateDescriptor = windowStateDescriptor2;
         this.allowedLateness = allowedLateness;

@@ -69,7 +69,7 @@ public class GlobalStreamImpl<T>
                     new KeyedPartitionStreamImpl<>(
                             this, getTransformation(), new NullByteKeySelector<>(), Types.BYTE);
             Transformation<OUT> outTransformation =
-                    keyedStream.transformWindow(outType, processFunction);
+                    keyedStream.transformWindow(outType, processFunction, false);
             outTransformation.setParallelism(1, true);
             return new GlobalStreamImpl<>(keyedStream.environment, outTransformation);
         } else {

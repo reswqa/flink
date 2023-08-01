@@ -20,10 +20,13 @@ package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
 import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
+import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import javax.annotation.Nullable;
@@ -35,6 +38,78 @@ public class Windows {
     public static <IN, W extends Window> WindowBuilder<IN, W> builder(
             WindowAssigner<IN, W> windowAssigner) {
         return new WindowBuilder<>(windowAssigner);
+    }
+
+    public static <IN1, IN2, W extends Window> TwoInputWindowBuilder<IN1, IN2, W> twoInputBuilder(
+            WindowAssigner<TaggedUnion<IN1, IN2>, W> windowAssigner) {
+        return new TwoInputWindowBuilder<>(windowAssigner);
+    }
+
+    public static class TwoInputWindowBuilder<IN1, IN2, W extends Window> {
+        private static final Class<?> INSTANCE;
+
+        static {
+            try {
+                INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.WindowsImpl");
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(
+                        "Please ensure that flink-process-function in your class path");
+            }
+        }
+
+        private final WindowAssigner<TaggedUnion<IN1, IN2>, W> assigner;
+
+        private Trigger<TaggedUnion<IN1, IN2>, W> trigger;
+
+        @Nullable private Evictor<TaggedUnion<IN1, IN2>, W> evictor;
+
+        public TwoInputWindowBuilder(WindowAssigner<TaggedUnion<IN1, IN2>, W> assigner) {
+            this.assigner = checkNotNull(assigner);
+            this.trigger = assigner.getDefaultTrigger();
+        }
+
+        public TwoInputWindowBuilder<IN1, IN2, W> withTrigger(
+                Trigger<TaggedUnion<IN1, IN2>, W> trigger) {
+            this.trigger = checkNotNull(trigger);
+            return this;
+        }
+
+        public TwoInputWindowBuilder<IN1, IN2, W> withEvictor(
+                Evictor<TaggedUnion<IN1, IN2>, W> evictor) {
+            this.evictor = checkNotNull(evictor);
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <OUT> TwoInputStreamProcessFunction<IN1, IN2, OUT> apply(
+                TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W>
+                        windowProcessFunction) {
+            try {
+                return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
+                        INSTANCE.getMethod(
+                                        "apply",
+                                        TwoInputWindowProcessFunction.class,
+                                        WindowAssigner.class,
+                                        Trigger.class,
+                                        Evictor.class)
+                                .invoke(null, windowProcessFunction, assigner, trigger, evictor);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public WindowAssigner<TaggedUnion<IN1, IN2>, W> getAssigner() {
+            return assigner;
+        }
+
+        public Trigger<TaggedUnion<IN1, IN2>, W> getTrigger() {
+            return trigger;
+        }
+
+        @Nullable
+        public Evictor<TaggedUnion<IN1, IN2>, W> getEvictor() {
+            return evictor;
+        }
     }
 
     public static class WindowBuilder<IN, W extends Window> {

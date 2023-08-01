@@ -9,12 +9,16 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.processfunction.ExecutionEnvironmentImpl;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
+import org.apache.flink.processfunction.api.function.JoinFunction;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.window.Window;
+import org.apache.flink.processfunction.builtin.JoinedWindowProcessFunction;
 import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
+import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
@@ -89,6 +93,42 @@ public class StreamUtils {
             TwoInputStreamProcessFunction<IN1, IN2, OUT> processFunction,
             TypeInformation<IN1> in1TypeInformation,
             TypeInformation<IN2> in2TypeInformation) {
+        // for window
+        if (processFunction instanceof InternalTwoInputWindowFunction) {
+            TwoInputWindowProcessFunction<?, ?, OUT, ?> windowProcessFunction =
+                    ((InternalTwoInputWindowFunction<IN1, IN2, ?, ?, OUT, ?>) processFunction)
+                            .getWindowProcessFunction();
+            if (windowProcessFunction instanceof JoinedWindowProcessFunction) {
+                JoinFunction<?, ?, ?> joinFunction =
+                        ((JoinedWindowProcessFunction<?, ?, ?, ?>) windowProcessFunction)
+                                .getJoinFunction();
+                return TypeExtractor.getBinaryOperatorReturnType(
+                        joinFunction,
+                        JoinFunction.class,
+                        0,
+                        1,
+                        2,
+                        new int[] {2, 0},
+                        null,
+                        null,
+                        Utils.getCallLocationName(),
+                        false);
+            } else {
+                return TypeExtractor.getBinaryOperatorReturnType(
+                        ((InternalTwoInputWindowFunction<IN1, IN2, ?, ?, OUT, ?>) processFunction)
+                                .getWindowProcessFunction(),
+                        TwoInputWindowProcessFunction.class,
+                        0,
+                        1,
+                        2,
+                        new int[] {2, 0},
+                        null,
+                        null,
+                        Utils.getCallLocationName(),
+                        false);
+            }
+        }
+
         return TypeExtractor.getBinaryOperatorReturnType(
                 processFunction,
                 TwoInputStreamProcessFunction.class,
@@ -99,7 +139,7 @@ public class StreamUtils {
                 in1TypeInformation,
                 in2TypeInformation,
                 Utils.getCallLocationName(),
-                true);
+                false);
     }
 
     public static <IN1, IN2, OUT> Transformation<OUT> getTwoInputTransform(

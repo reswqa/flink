@@ -25,8 +25,8 @@ import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
 import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
+import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-import org.apache.flink.processfunction.windows.utils.Unions.TaggedUnion;
 
 import javax.annotation.Nullable;
 

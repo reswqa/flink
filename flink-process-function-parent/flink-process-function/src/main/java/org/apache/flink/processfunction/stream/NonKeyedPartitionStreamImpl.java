@@ -33,6 +33,7 @@ import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
+import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
@@ -74,7 +75,7 @@ public class NonKeyedPartitionStreamImpl<T>
                             new ParallelismAwareKeySelector<>(),
                             Types.INT);
             Transformation<OUT> outTransformation =
-                    keyedStream.transformWindow(outType, processFunction);
+                    keyedStream.transformWindow(outType, processFunction, false);
             return new NonKeyedPartitionStreamImpl<>(keyedStream.environment, outTransformation);
         } else {
             ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
@@ -107,6 +108,12 @@ public class NonKeyedPartitionStreamImpl<T>
     public <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
+        if (processFunction instanceof InternalTwoInputWindowFunction) {
+            //  TODO support this.
+            throw new UnsupportedOperationException(
+                    "Two input window is not supported for non-keyed stream now.");
+        }
+
         TypeInformation<OUT> outTypeInfo =
                 StreamUtils.getOutputTypeForTwoInputProcessFunction(
                         processFunction,
