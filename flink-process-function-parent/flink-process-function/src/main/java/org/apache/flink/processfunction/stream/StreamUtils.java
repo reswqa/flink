@@ -16,10 +16,10 @@ import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFuncti
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-import org.apache.flink.processfunction.builtin.JoinedWindowProcessFunction;
 import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
 import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
+import org.apache.flink.processfunction.functions.JoinedWindowProcessFunction;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;

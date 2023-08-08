@@ -48,17 +48,25 @@ public class Joins {
 
         @SuppressWarnings("unchecked")
         public <OUT> TwoInputStreamProcessFunction<IN1, IN2, OUT> join(
-                JoinFunction<IN1, IN2, OUT> joinFunction) {
+                JoinFunction<IN1, IN2, OUT> joinFunction, JoinType joinType) {
             try {
                 return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
                         INSTANCE.getMethod(
                                         "join",
                                         JoinFunction.class,
+                                        JoinType.class,
                                         Windows.TwoInputWindowBuilder.class)
-                                .invoke(null, joinFunction, windowBuilder);
+                                .invoke(null, joinFunction, joinType, windowBuilder);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public enum JoinType {
+        INNER,
+        LEFT_OUTER,
+        RIGHT_OUTER,
+        FULL_OUTER
     }
 }

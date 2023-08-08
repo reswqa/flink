@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.builtin;
+package org.apache.flink.processfunction.functions;
 
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.JoinFunction;
@@ -29,7 +29,7 @@ public class JoinedWindowProcessFunction<IN1, IN2, OUT, W extends Window>
         implements TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W> {
     private final JoinFunction<IN1, IN2, OUT> joinFunction;
 
-    JoinedWindowProcessFunction(JoinFunction<IN1, IN2, OUT> joinFunction) {
+    public JoinedWindowProcessFunction(JoinFunction<IN1, IN2, OUT> joinFunction) {
         this.joinFunction = joinFunction;
     }
 

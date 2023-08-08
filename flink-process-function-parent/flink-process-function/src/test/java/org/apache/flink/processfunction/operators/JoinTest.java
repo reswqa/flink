@@ -119,7 +119,8 @@ class JoinTest implements Serializable {
                                                                 "joined: (%s, %s)",
                                                                 leftRecord, rightRecord));
                                             }
-                                        }))
+                                        },
+                                        Joins.JoinType.INNER))
                 .sinkTo(Sinks.consumer((x) -> System.out.println(x)));
         env.execute();
     }
