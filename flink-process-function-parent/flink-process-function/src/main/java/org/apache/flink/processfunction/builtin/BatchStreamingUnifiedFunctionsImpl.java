@@ -19,9 +19,11 @@
 package org.apache.flink.processfunction.builtin;
 
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
+import org.apache.flink.processfunction.functions.SingleStreamUnionFunction;
 
 public class BatchStreamingUnifiedFunctionsImpl {
     public static <IN, OUT> SingleStreamProcessFunction<IN, OUT> map(
@@ -45,5 +47,11 @@ public class BatchStreamingUnifiedFunctionsImpl {
                             T>
                     reduceFunc) {
         return new SingleStreamReduceFunction<>(reduceFunc);
+    }
+
+    @SafeVarargs
+    public static <T> SingleStreamProcessFunction<T, T> union(
+            NonKeyedPartitionStream<T>... streams) {
+        return new SingleStreamUnionFunction<>(streams);
     }
 }

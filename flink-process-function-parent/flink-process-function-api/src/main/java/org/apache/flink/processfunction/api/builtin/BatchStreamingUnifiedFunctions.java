@@ -37,12 +37,10 @@
 package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
 import java.io.Serializable;
-import java.util.function.Consumer;
 
 /** This class provides some built-in functions for convenience. */
 public final class BatchStreamingUnifiedFunctions {
@@ -90,18 +88,18 @@ public final class BatchStreamingUnifiedFunctions {
         }
     }
 
-    public static <T> TwoInputStreamProcessFunction<T, T, T> union() {
-        return new TwoInputStreamProcessFunction<T, T, T>() {
-            @Override
-            public void processFirstInputRecord(T record, Consumer<T> output, RuntimeContext ctx) {
-                output.accept(record);
-            }
-
-            @Override
-            public void processSecondInputRecord(T record, Consumer<T> output, RuntimeContext ctx) {
-                output.accept(record);
-            }
-        };
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
+    public static <T> SingleStreamProcessFunction<T, T> union(
+            NonKeyedPartitionStream<T>... streams) {
+        // TODO supports this on keyedStream.
+        try {
+            return (SingleStreamProcessFunction<T, T>)
+                    INSTANCE.getMethod("union", NonKeyedPartitionStream[].class)
+                            .invoke(null, (Object) streams);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @FunctionalInterface

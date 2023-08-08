@@ -35,6 +35,7 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
+import org.apache.flink.processfunction.functions.SingleStreamUnionFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
@@ -45,9 +46,13 @@ import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.PfSinkTransformation;
+import org.apache.flink.streaming.api.transformations.UnionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.OutputTag;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class NonKeyedPartitionStreamImpl<T>
         extends ProcessConfigurableDataStream<
@@ -77,6 +82,12 @@ public class NonKeyedPartitionStreamImpl<T>
             Transformation<OUT> outTransformation =
                     keyedStream.transformWindow(outType, processFunction, false);
             return new NonKeyedPartitionStreamImpl<>(keyedStream.environment, outTransformation);
+        } else if (processFunction instanceof SingleStreamUnionFunction) {
+            NonKeyedPartitionStream<T>[] streams =
+                    ((SingleStreamUnionFunction<T>) processFunction).getStreams();
+            // We have known that union has same input and output type.
+            // noinspection unchecked
+            return (NonKeyedPartitionStreamImpl<OUT>) union(streams);
         } else {
             ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
             return transform("Process", outType, operator);
@@ -219,6 +230,29 @@ public class NonKeyedPartitionStreamImpl<T>
         environment.addOperator(resultTransform);
 
         return returnStream;
+    }
+
+    @SafeVarargs
+    public final NonKeyedPartitionStreamImpl<T> union(NonKeyedPartitionStream<T>... streams) {
+        List<Transformation<T>> unionedTransforms = new ArrayList<>();
+        unionedTransforms.add(this.transformation);
+
+        for (NonKeyedPartitionStream<T> newStream : streams) {
+            NonKeyedPartitionStreamImpl<T> newStreamImpl =
+                    // This is safety as we only have one implementation for streams.
+                    (NonKeyedPartitionStreamImpl<T>) newStream;
+            if (!getType().equals(newStreamImpl.getType())) {
+                throw new IllegalArgumentException(
+                        "Cannot union streams of different types: "
+                                + getType()
+                                + " and "
+                                + newStreamImpl.getType());
+            }
+
+            unionedTransforms.add(newStreamImpl.getTransformation());
+        }
+        return new NonKeyedPartitionStreamImpl<>(
+                environment, new UnionTransformation<>(unionedTransforms));
     }
 
     static class NonKeyedTwoOutputStream<OUT1, OUT2>
