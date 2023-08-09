@@ -24,12 +24,9 @@ import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFuncti
 import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
-import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-
-import javax.annotation.Nullable;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -61,8 +58,6 @@ public class Windows {
 
         private Trigger<TaggedUnion<IN1, IN2>, W> trigger;
 
-        @Nullable private Evictor<TaggedUnion<IN1, IN2>, W> evictor;
-
         public TwoInputWindowBuilder(WindowAssigner<TaggedUnion<IN1, IN2>, W> assigner) {
             this.assigner = checkNotNull(assigner);
             this.trigger = assigner.getDefaultTrigger();
@@ -71,12 +66,6 @@ public class Windows {
         public TwoInputWindowBuilder<IN1, IN2, W> withTrigger(
                 Trigger<TaggedUnion<IN1, IN2>, W> trigger) {
             this.trigger = checkNotNull(trigger);
-            return this;
-        }
-
-        public TwoInputWindowBuilder<IN1, IN2, W> withEvictor(
-                Evictor<TaggedUnion<IN1, IN2>, W> evictor) {
-            this.evictor = checkNotNull(evictor);
             return this;
         }
 
@@ -90,9 +79,8 @@ public class Windows {
                                         "apply",
                                         TwoInputWindowProcessFunction.class,
                                         WindowAssigner.class,
-                                        Trigger.class,
-                                        Evictor.class)
-                                .invoke(null, windowProcessFunction, assigner, trigger, evictor);
+                                        Trigger.class)
+                                .invoke(null, windowProcessFunction, assigner, trigger);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -104,11 +92,6 @@ public class Windows {
 
         public Trigger<TaggedUnion<IN1, IN2>, W> getTrigger() {
             return trigger;
-        }
-
-        @Nullable
-        public Evictor<TaggedUnion<IN1, IN2>, W> getEvictor() {
-            return evictor;
         }
     }
 
@@ -128,8 +111,6 @@ public class Windows {
 
         private Trigger<IN, W> trigger;
 
-        @Nullable private Evictor<IN, W> evictor;
-
         public WindowBuilder(WindowAssigner<IN, W> assigner) {
             this.assigner = checkNotNull(assigner);
             this.trigger = assigner.getDefaultTrigger();
@@ -137,11 +118,6 @@ public class Windows {
 
         public WindowBuilder<IN, W> withTrigger(Trigger<IN, W> trigger) {
             this.trigger = checkNotNull(trigger);
-            return this;
-        }
-
-        public WindowBuilder<IN, W> withEvictor(Evictor<IN, W> evictor) {
-            this.evictor = checkNotNull(evictor);
             return this;
         }
 
@@ -154,9 +130,8 @@ public class Windows {
                                         "reduce",
                                         BatchStreamingUnifiedFunctions.ReduceFunction.class,
                                         WindowAssigner.class,
-                                        Trigger.class,
-                                        Evictor.class)
-                                .invoke(null, reduceFunction, assigner, trigger, evictor);
+                                        Trigger.class)
+                                .invoke(null, reduceFunction, assigner, trigger);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -177,15 +152,13 @@ public class Windows {
                                         BatchStreamingUnifiedFunctions.ReduceFunction.class,
                                         WindowProcessFunction.class,
                                         WindowAssigner.class,
-                                        Trigger.class,
-                                        Evictor.class)
+                                        Trigger.class)
                                 .invoke(
                                         null,
                                         reduceFunction,
                                         windowProcessFunction,
                                         assigner,
-                                        trigger,
-                                        evictor);
+                                        trigger);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -200,9 +173,8 @@ public class Windows {
                                         "process",
                                         WindowProcessFunction.class,
                                         WindowAssigner.class,
-                                        Trigger.class,
-                                        Evictor.class)
-                                .invoke(null, windowProcessFunction, assigner, trigger, evictor);
+                                        Trigger.class)
+                                .invoke(null, windowProcessFunction, assigner, trigger);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

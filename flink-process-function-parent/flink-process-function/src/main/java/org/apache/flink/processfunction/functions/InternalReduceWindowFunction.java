@@ -22,11 +22,8 @@ import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctio
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
-import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-
-import javax.annotation.Nullable;
 
 import java.util.Set;
 
@@ -38,9 +35,8 @@ public class InternalReduceWindowFunction<IN, W extends Window>
             WindowProcessFunction<IN, IN, W> windowProcessFunction,
             WindowAssigner<IN, W> assigner,
             Trigger<IN, W> trigger,
-            BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction,
-            @Nullable Evictor<IN, W> evictor) {
-        super(windowProcessFunction, assigner, trigger, evictor);
+            BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction) {
+        super(windowProcessFunction, assigner, trigger);
         this.reduceFunction = reduceFunction;
     }
 

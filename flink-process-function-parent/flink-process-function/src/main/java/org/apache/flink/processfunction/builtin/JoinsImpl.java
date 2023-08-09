@@ -38,29 +38,25 @@ public class JoinsImpl {
                 return new InternalTwoInputWindowFunction<>(
                         new JoinedWindowProcessFunction<>(joinFunction),
                         windowBuilder.getAssigner(),
-                        windowBuilder.getTrigger(),
-                        windowBuilder.getEvictor());
+                        windowBuilder.getTrigger());
             case LEFT_OUTER:
                 return new InternalTwoInputWindowFunction<>(
                         new OutJoinedWindowProcessFunction.LeftOuterJoinedWindowProcessFunction<>(
                                 joinFunction),
                         windowBuilder.getAssigner(),
-                        windowBuilder.getTrigger(),
-                        windowBuilder.getEvictor());
+                        windowBuilder.getTrigger());
             case RIGHT_OUTER:
                 return new InternalTwoInputWindowFunction<>(
                         new OutJoinedWindowProcessFunction.RightOuterJoinedWindowProcessFunction<>(
                                 joinFunction),
                         windowBuilder.getAssigner(),
-                        windowBuilder.getTrigger(),
-                        windowBuilder.getEvictor());
+                        windowBuilder.getTrigger());
             case FULL_OUTER:
                 return new InternalTwoInputWindowFunction<>(
                         new OutJoinedWindowProcessFunction.FullOuterJoinedWindowProcessFunction<>(
                                 joinFunction),
                         windowBuilder.getAssigner(),
-                        windowBuilder.getTrigger(),
-                        windowBuilder.getEvictor());
+                        windowBuilder.getTrigger());
             default:
                 throw new UnsupportedOperationException("Unsupported join type : " + joinType);
         }

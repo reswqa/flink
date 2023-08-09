@@ -23,11 +23,8 @@ import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
-import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-
-import javax.annotation.Nullable;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -41,17 +38,13 @@ public class InternalWindowFunction<IN, ACC, OUT, W extends Window>
 
     private final Trigger<IN, W> trigger;
 
-    @Nullable Evictor<IN, W> evictor;
-
     public InternalWindowFunction(
             WindowProcessFunction<ACC, OUT, W> windowProcessFunction,
             WindowAssigner<IN, W> assigner,
-            Trigger<IN, W> trigger,
-            @Nullable Evictor<IN, W> evictor) {
+            Trigger<IN, W> trigger) {
         this.windowProcessFunction = windowProcessFunction;
         this.assigner = assigner;
         this.trigger = trigger;
-        this.evictor = evictor;
     }
 
     @Override
@@ -66,11 +59,6 @@ public class InternalWindowFunction<IN, ACC, OUT, W extends Window>
 
     public Trigger<IN, W> getTrigger() {
         return trigger;
-    }
-
-    @Nullable
-    public Evictor<IN, W> getEvictor() {
-        return evictor;
     }
 
     public WindowProcessFunction<ACC, OUT, W> getWindowProcessFunction() {

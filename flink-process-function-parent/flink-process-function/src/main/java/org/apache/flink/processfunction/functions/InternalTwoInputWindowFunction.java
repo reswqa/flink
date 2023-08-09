@@ -23,12 +23,9 @@ import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFuncti
 import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
-import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-
-import javax.annotation.Nullable;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -42,17 +39,13 @@ public class InternalTwoInputWindowFunction<IN1, IN2, ACC1, ACC2, OUT, W extends
 
     private final Trigger<TaggedUnion<IN1, IN2>, W> trigger;
 
-    @Nullable Evictor<TaggedUnion<IN1, IN2>, W> evictor;
-
     public InternalTwoInputWindowFunction(
             TwoInputWindowProcessFunction<ACC1, ACC2, OUT, W> windowProcessFunction,
             WindowAssigner<TaggedUnion<IN1, IN2>, W> assigner,
-            Trigger<TaggedUnion<IN1, IN2>, W> trigger,
-            @Nullable Evictor<TaggedUnion<IN1, IN2>, W> evictor) {
+            Trigger<TaggedUnion<IN1, IN2>, W> trigger) {
         this.windowProcessFunction = windowProcessFunction;
         this.assigner = assigner;
         this.trigger = trigger;
-        this.evictor = evictor;
     }
 
     @Override
@@ -82,10 +75,5 @@ public class InternalTwoInputWindowFunction<IN1, IN2, ACC1, ACC2, OUT, W extends
 
     public Trigger<TaggedUnion<IN1, IN2>, W> getTrigger() {
         return trigger;
-    }
-
-    @Nullable
-    public Evictor<TaggedUnion<IN1, IN2>, W> getEvictor() {
-        return evictor;
     }
 }

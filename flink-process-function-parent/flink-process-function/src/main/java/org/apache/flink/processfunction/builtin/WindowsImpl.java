@@ -24,7 +24,6 @@ import org.apache.flink.processfunction.api.builtin.Windows;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
-import org.apache.flink.processfunction.api.windowing.evictor.Evictor;
 import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
@@ -35,38 +34,29 @@ import org.apache.flink.processfunction.windows.assigner.SlidingProcessingTimeWi
 import org.apache.flink.processfunction.windows.assigner.TumblingEventTimeWindowsAssigner;
 import org.apache.flink.processfunction.windows.assigner.TumblingProcessTimeWindowsAssigner;
 
-import javax.annotation.Nullable;
-
 public class WindowsImpl {
     public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
             BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction,
             WindowAssigner<IN, W> windowAssigner,
-            Trigger<IN, W> trigger,
-            @Nullable Evictor<IN, W> evictor) {
+            Trigger<IN, W> trigger) {
         return new InternalReduceWindowFunction<>(
-                new PassThroughWindowProcessFunction<>(),
-                windowAssigner,
-                trigger,
-                reduceFunction,
-                evictor);
+                new PassThroughWindowProcessFunction<>(), windowAssigner, trigger, reduceFunction);
     }
 
     public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
             BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction,
             WindowProcessFunction<IN, IN, W> windowProcessFunction,
             WindowAssigner<IN, W> windowAssigner,
-            Trigger<IN, W> trigger,
-            @Nullable Evictor<IN, W> evictor) {
+            Trigger<IN, W> trigger) {
         return new InternalReduceWindowFunction<>(
-                windowProcessFunction, windowAssigner, trigger, reduceFunction, evictor);
+                windowProcessFunction, windowAssigner, trigger, reduceFunction);
     }
 
     public static <IN, OUT, W extends Window> SingleStreamProcessFunction<IN, OUT> process(
             WindowProcessFunction<Iterable<IN>, OUT, W> processFunction,
             WindowAssigner<IN, W> windowAssigner,
-            Trigger<IN, W> trigger,
-            @Nullable Evictor<IN, W> evictor) {
-        return new InternalWindowFunction<>(processFunction, windowAssigner, trigger, evictor);
+            Trigger<IN, W> trigger) {
+        return new InternalWindowFunction<>(processFunction, windowAssigner, trigger);
     }
 
     public static class TimeWindowsImpl {
