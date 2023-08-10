@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.examples;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -30,7 +31,6 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public class TwoOutputProcessEndOfPartition {
     public static void main(String[] args) throws Exception {
@@ -54,20 +54,20 @@ public class TwoOutputProcessEndOfPartition {
                                     @Override
                                     public void processRecord(
                                             Integer record,
-                                            Consumer<String> output1,
-                                            Consumer<String> output2,
+                                            Collector<String> output1,
+                                            Collector<String> output2,
                                             RuntimeContext ctx) {
-                                        output1.accept("output1 record: " + record);
-                                        output2.accept("output2 record: " + record);
+                                        output1.collect("output1 record: " + record);
+                                        output2.collect("output2 record: " + record);
                                     }
 
                                     @Override
                                     public void endOfPartition(
-                                            Consumer<String> output1,
-                                            Consumer<String> output2,
+                                            Collector<String> output1,
+                                            Collector<String> output2,
                                             RuntimeContext ctx) {
-                                        output1.accept("output1 EOP");
-                                        output2.accept("output2 EOP");
+                                        output1.collect("output1 EOP");
+                                        output2.collect("output2 EOP");
                                     }
                                 });
         twoOutputStream.getFirst().sinkTo(Sinks.consumer(r -> System.out.println(r)));
@@ -101,23 +101,23 @@ public class TwoOutputProcessEndOfPartition {
                                             @Override
                                             public void processRecord(
                                                     Integer record,
-                                                    Consumer<String> output1,
-                                                    Consumer<String> output2,
+                                                    Collector<String> output1,
+                                                    Collector<String> output2,
                                                     RuntimeContext ctx) {
-                                                output1.accept("output1 record: " + record);
-                                                output2.accept("output2 record: " + record);
+                                                output1.collect("output1 record: " + record);
+                                                output2.collect("output2 record: " + record);
                                             }
 
                                             @Override
                                             public void endOfPartition(
-                                                    Consumer<String> output1,
-                                                    Consumer<String> output2,
+                                                    Collector<String> output1,
+                                                    Collector<String> output2,
                                                     RuntimeContext ctx) {
                                                 Optional<Integer> currentKey = ctx.getCurrentKey();
-                                                output1.accept(
+                                                output1.collect(
                                                         "output1 EOP with key : "
                                                                 + currentKey.get());
-                                                output2.accept(
+                                                output2.collect(
                                                         "output2 EOP with key : "
                                                                 + currentKey.get());
                                             }

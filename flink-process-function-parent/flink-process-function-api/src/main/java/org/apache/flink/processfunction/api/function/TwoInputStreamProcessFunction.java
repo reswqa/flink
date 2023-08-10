@@ -19,15 +19,14 @@
 package org.apache.flink.processfunction.api.function;
 
 import org.apache.flink.api.common.eventtime.ProcessWatermark;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 
-import java.util.function.Consumer;
-
 public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFunction {
-    void processFirstInputRecord(IN1 record, Consumer<OUT> output, RuntimeContext ctx)
+    void processFirstInputRecord(IN1 record, Collector<OUT> output, RuntimeContext ctx)
             throws Exception;
 
-    void processSecondInputRecord(IN2 record, Consumer<OUT> output, RuntimeContext ctx)
+    void processSecondInputRecord(IN2 record, Collector<OUT> output, RuntimeContext ctx)
             throws Exception;
 
     /**
@@ -44,7 +43,7 @@ public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFun
      *
      * <p>Note: This will NOT be called in STREAMING execution mode.
      */
-    default void endOfFirstInputPartition(Consumer<OUT> output, RuntimeContext ctx) {}
+    default void endOfFirstInputPartition(Collector<OUT> output, RuntimeContext ctx) {}
 
     /**
      * This will be called ONLY in BATCH execution mode, allowing the ProcessFunction to emit
@@ -60,15 +59,15 @@ public interface TwoInputStreamProcessFunction<IN1, IN2, OUT> extends ProcessFun
      *
      * <p>Note: This will NOT be called in STREAMING execution mode.
      */
-    default void endOfSecondInputPartition(Consumer<OUT> output, RuntimeContext ctx) {}
+    default void endOfSecondInputPartition(Collector<OUT> output, RuntimeContext ctx) {}
 
     default void onWatermark(
             ProcessWatermark<?> watermark,
             RuntimeContext ctx,
-            Consumer<OUT> output,
+            Collector<OUT> output,
             WatermarkType watermarkType) {}
 
-    default void onProcessingTimer(long timestamp, Consumer<OUT> output, RuntimeContext ctx) {}
+    default void onProcessingTimer(long timestamp, Collector<OUT> output, RuntimeContext ctx) {}
 
     /** This enum is used to mark where the watermark from. */
     enum WatermarkType {

@@ -22,6 +22,7 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -37,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public class KeyedTwoInputProcessWithState {
     public static void main(String[] args) throws Exception {
@@ -69,7 +69,7 @@ public class KeyedTwoInputProcessWithState {
                             // state.
                             @Override
                             public void processFirstInputRecord(
-                                    String record, Consumer<String> output, RuntimeContext ctx)
+                                    String record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
                                 // "key:value"
                                 String key = record.split(":")[0];
@@ -80,17 +80,17 @@ public class KeyedTwoInputProcessWithState {
                                 ValueState<Long> state = stateOptional.get();
                                 if (state.value() == null) {
                                     state.update(value);
-                                    output.accept(key + " : " + value);
+                                    output.collect(key + " : " + value);
                                 } else if (state.value() < value) {
                                     state.update(value);
-                                    output.accept(key + " : " + value);
+                                    output.collect(key + " : " + value);
                                 }
                             }
 
                             @Override
                             public void processSecondInputRecord(
                                     Tuple2<String, Long> record,
-                                    Consumer<String> output,
+                                    Collector<String> output,
                                     RuntimeContext ctx)
                                     throws Exception {
                                 // (key, value)
@@ -101,10 +101,10 @@ public class KeyedTwoInputProcessWithState {
                                 ValueState<Long> state = stateOptional.get();
                                 if (state.value() == null) {
                                     state.update(value);
-                                    output.accept(record.f0 + " : " + record.f1);
+                                    output.collect(record.f0 + " : " + record.f1);
                                 } else if (state.value() < value) {
                                     state.update(value);
-                                    output.accept(record.f0 + " : " + record.f1);
+                                    output.collect(record.f0 + " : " + record.f1);
                                 }
                             }
 

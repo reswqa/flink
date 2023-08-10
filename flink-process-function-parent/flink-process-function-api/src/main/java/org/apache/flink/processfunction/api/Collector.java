@@ -16,19 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.flink.processfunction.functions;
+package org.apache.flink.processfunction.api;
 
-import org.apache.flink.processfunction.api.Collector;
-import org.apache.flink.processfunction.api.RuntimeContext;
-import org.apache.flink.processfunction.api.function.WindowProcessFunction;
-import org.apache.flink.processfunction.api.windowing.window.Window;
+/** This class take response for collecting data to output stream. */
+public interface Collector<OUT> {
+    void collect(OUT record);
 
-public class PassThroughWindowProcessFunction<IN, W extends Window>
-        implements WindowProcessFunction<IN, IN, W> {
-    @Override
-    public void processRecord(
-            IN record, Collector<IN> output, RuntimeContext ctx, WindowContext<W> windowContext)
-            throws Exception {
-        output.collect(record);
-    }
+    void collect(OUT record, long timestamp);
 }

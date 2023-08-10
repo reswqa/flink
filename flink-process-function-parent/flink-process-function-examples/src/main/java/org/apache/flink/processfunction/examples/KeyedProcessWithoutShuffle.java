@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -32,7 +33,6 @@ import org.apache.flink.processfunction.api.stream.KeyedPartitionStream.ProcessC
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public class KeyedProcessWithoutShuffle {
     public static void main(String[] args) throws Exception {
@@ -82,16 +82,16 @@ public class KeyedProcessWithoutShuffle {
                         new TwoInputStreamProcessFunction<Integer, Integer, Integer>() {
                             @Override
                             public void processFirstInputRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept(record + 2);
+                                output.collect(record + 2);
                             }
 
                             @Override
                             public void processSecondInputRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept(record + 2);
+                                output.collect(record + 2);
                             }
                         },
                         v -> v % 2);
@@ -119,11 +119,11 @@ public class KeyedProcessWithoutShuffle {
                                     @Override
                                     public void processRecord(
                                             Integer record,
-                                            Consumer<Integer> output1,
-                                            Consumer<String> output2,
+                                            Collector<Integer> output1,
+                                            Collector<String> output2,
                                             RuntimeContext ctx) {
-                                        output1.accept(record + 2);
-                                        output2.accept(String.valueOf(record + 2));
+                                        output1.collect(record + 2);
+                                        output2.collect(String.valueOf(record + 2));
                                     }
                                 },
                                 v -> v % 2,
@@ -144,10 +144,10 @@ public class KeyedProcessWithoutShuffle {
     private static class EmitRecordWithKeyProcessFunction<T>
             implements SingleStreamProcessFunction<T, String> {
         @Override
-        public void processRecord(T record, Consumer<String> output, RuntimeContext ctx)
+        public void processRecord(T record, Collector<String> output, RuntimeContext ctx)
                 throws Exception {
             Optional<Integer> currentKey = ctx.getCurrentKey();
-            output.accept(String.format("record %s with key %s", record, currentKey.get()));
+            output.collect(String.format("record %s with key %s", record, currentKey.get()));
         }
     }
 }

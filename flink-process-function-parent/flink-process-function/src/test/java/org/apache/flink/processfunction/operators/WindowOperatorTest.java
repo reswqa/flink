@@ -26,6 +26,7 @@ import org.apache.flink.api.common.eventtime.WatermarkGeneratorSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -43,7 +44,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 class WindowOperatorTest implements Serializable {
@@ -83,7 +83,7 @@ class WindowOperatorTest implements Serializable {
                                                     @Override
                                                     public void processRecord(
                                                             Iterable<Long> record,
-                                                            Consumer<String> output,
+                                                            Collector<String> output,
                                                             RuntimeContext ctx,
                                                             WindowContext<Window> windowContext)
                                                             throws Exception {
@@ -94,7 +94,7 @@ class WindowOperatorTest implements Serializable {
                                                                         .collect(
                                                                                 Collectors
                                                                                         .toList());
-                                                        output.accept(collect.toString());
+                                                        output.collect(collect.toString());
                                                     }
                                                 }));
         process.sinkTo(
@@ -198,11 +198,11 @@ class WindowOperatorTest implements Serializable {
                                                     @Override
                                                     public void processRecord(
                                                             Integer record,
-                                                            Consumer<Integer> output,
+                                                            Collector<Integer> output,
                                                             RuntimeContext ctx,
                                                             WindowContext<Window> windowContext)
                                                             throws Exception {
-                                                        output.accept(record);
+                                                        output.collect(record);
                                                     }
                                                 }));
         process.sinkTo(
@@ -263,11 +263,11 @@ class WindowOperatorTest implements Serializable {
                                                     @Override
                                                     public void processRecord(
                                                             Integer record,
-                                                            Consumer<Integer> output,
+                                                            Collector<Integer> output,
                                                             RuntimeContext ctx,
                                                             WindowContext<Window> windowContext)
                                                             throws Exception {
-                                                        output.accept(record);
+                                                        output.collect(record);
                                                     }
                                                 }));
         process.sinkTo(
@@ -330,11 +330,11 @@ class WindowOperatorTest implements Serializable {
                                                     @Override
                                                     public void processRecord(
                                                             Integer record,
-                                                            Consumer<Integer> output,
+                                                            Collector<Integer> output,
                                                             RuntimeContext ctx,
                                                             WindowContext<Window> windowContext)
                                                             throws Exception {
-                                                        output.accept(record);
+                                                        output.collect(record);
                                                     }
                                                 }));
         process.sinkTo(

@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -30,7 +31,6 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 public class WindowExample {
     public static void main(String[] args) throws Exception {
@@ -56,7 +56,7 @@ public class WindowExample {
                                                     @Override
                                                     public void processRecord(
                                                             Iterable<Integer> record,
-                                                            Consumer<String> output,
+                                                            Collector<String> output,
                                                             RuntimeContext ctx,
                                                             WindowContext<Window> windowContext)
                                                             throws Exception {

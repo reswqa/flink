@@ -19,13 +19,12 @@
 package org.apache.flink.processfunction.api.function;
 
 import org.apache.flink.api.common.eventtime.ProcessWatermark;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
-
-import java.util.function.Consumer;
 
 public interface TwoOutputStreamProcessFunction<IN, OUT1, OUT2> extends ProcessFunction {
     void processRecord(
-            IN record, Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx);
+            IN record, Collector<OUT1> output1, Collector<OUT2> output2, RuntimeContext ctx);
 
     /**
      * This will be called ONLY in BATCH execution mode, allowing the ProcessFunction to emit
@@ -42,14 +41,14 @@ public interface TwoOutputStreamProcessFunction<IN, OUT1, OUT2> extends ProcessF
      * <p>Note: This will NOT be called in STREAMING execution mode.
      */
     default void endOfPartition(
-            Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx) {}
+            Collector<OUT1> output1, Collector<OUT2> output2, RuntimeContext ctx) {}
 
     default void onProcessingTimer(
-            long timestamp, Consumer<OUT1> output1, Consumer<OUT2> output2, RuntimeContext ctx) {}
+            long timestamp, Collector<OUT1> output1, Collector<OUT2> output2, RuntimeContext ctx) {}
 
     default void onWatermark(
             ProcessWatermark<?> watermark,
-            Consumer<OUT1> output1,
-            Consumer<OUT2> output2,
+            Collector<OUT1> output1,
+            Collector<OUT2> output2,
             RuntimeContext ctx) {}
 }

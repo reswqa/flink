@@ -23,6 +23,7 @@ import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.window.Window;
@@ -30,13 +31,12 @@ import org.apache.flink.processfunction.api.windowing.window.Window;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public interface TwoInputWindowProcessFunction<IN1, IN2, OUT, W extends Window> extends Function {
     void processRecord(
             IN1 input1,
             IN2 input2,
-            Consumer<OUT> output,
+            Collector<OUT> output,
             RuntimeContext ctx,
             WindowContext<W> windowContext)
             throws Exception;

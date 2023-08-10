@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.operators;
 
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.runtime.jobgraph.JobType;
@@ -30,7 +31,6 @@ import org.apache.flink.util.OutputTag;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,16 +49,16 @@ public class TwoOutputProcessOperatorTest {
                             @Override
                             public void processRecord(
                                     Integer record,
-                                    Consumer<Integer> output1,
-                                    Consumer<Long> output2,
+                                    Collector<Integer> output1,
+                                    Collector<Long> output2,
                                     RuntimeContext ctx) {
                                 // do nothing
                             }
 
                             @Override
                             public void endOfPartition(
-                                    Consumer<Integer> output1,
-                                    Consumer<Long> output2,
+                                    Collector<Integer> output1,
+                                    Collector<Long> output2,
                                     RuntimeContext ctx) {
                                 assertThat(notifiedEndOfPartition).isNotDone();
                                 notifiedEndOfPartition.complete(null);

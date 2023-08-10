@@ -18,12 +18,11 @@
 
 package org.apache.flink.processfunction.functions;
 
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.JoinFunction;
 import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.window.Window;
-
-import java.util.function.Consumer;
 
 public abstract class OutJoinedWindowProcessFunction<IN1, IN2, OUT, W extends Window>
         implements TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W> {
@@ -37,20 +36,20 @@ public abstract class OutJoinedWindowProcessFunction<IN1, IN2, OUT, W extends Wi
     public void processRecord(
             Iterable<IN1> input1,
             Iterable<IN2> input2,
-            Consumer<OUT> output,
+            Collector<OUT> output,
             RuntimeContext ctx,
             WindowContext<W> windowContext)
             throws Exception {
         join(input1, input2, output, ctx);
     }
 
-    protected void outputJoinedRecord(IN1 left, IN2 right, Consumer<OUT> output, RuntimeContext ctx)
-            throws Exception {
+    protected void outputJoinedRecord(
+            IN1 left, IN2 right, Collector<OUT> output, RuntimeContext ctx) throws Exception {
         joinFunction.processRecord(left, right, output, ctx);
     }
 
     protected abstract void join(
-            Iterable<IN1> input1, Iterable<IN2> input2, Consumer<OUT> output, RuntimeContext ctx)
+            Iterable<IN1> input1, Iterable<IN2> input2, Collector<OUT> output, RuntimeContext ctx)
             throws Exception;
 
     public JoinFunction<IN1, IN2, OUT> getJoinFunction() {
@@ -66,7 +65,7 @@ public abstract class OutJoinedWindowProcessFunction<IN1, IN2, OUT, W extends Wi
 
         @Override
         protected void join(
-                Iterable<IN1> left, Iterable<IN2> right, Consumer<OUT> output, RuntimeContext ctx)
+                Iterable<IN1> left, Iterable<IN2> right, Collector<OUT> output, RuntimeContext ctx)
                 throws Exception {
             if (!left.iterator().hasNext()) {
                 return;
@@ -94,7 +93,7 @@ public abstract class OutJoinedWindowProcessFunction<IN1, IN2, OUT, W extends Wi
 
         @Override
         protected void join(
-                Iterable<IN1> left, Iterable<IN2> right, Consumer<OUT> output, RuntimeContext ctx)
+                Iterable<IN1> left, Iterable<IN2> right, Collector<OUT> output, RuntimeContext ctx)
                 throws Exception {
             if (!right.iterator().hasNext()) {
                 return;
@@ -122,7 +121,7 @@ public abstract class OutJoinedWindowProcessFunction<IN1, IN2, OUT, W extends Wi
 
         @Override
         protected void join(
-                Iterable<IN1> left, Iterable<IN2> right, Consumer<OUT> output, RuntimeContext ctx)
+                Iterable<IN1> left, Iterable<IN2> right, Collector<OUT> output, RuntimeContext ctx)
                 throws Exception {
             if (!right.iterator().hasNext() && !left.iterator().hasNext()) {
                 return;

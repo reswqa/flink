@@ -22,6 +22,7 @@ import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
 import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.processfunction.DefaultRuntimeContext;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
@@ -30,8 +31,6 @@ import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
-
-import java.util.function.Consumer;
 
 /** Operator for {@link SingleStreamProcessFunction}. */
 public class ProcessOperator<IN, OUT>
@@ -106,15 +105,15 @@ public class ProcessOperator<IN, OUT>
         userFunction.endOfPartition(outputCollector, context);
     }
 
-    protected class OutputCollector implements Consumer<OUT> {
+    protected class OutputCollector implements Collector<OUT> {
 
         protected final StreamRecord<OUT> reuse = new StreamRecord<>(null);
 
         public void setTimestamp(StreamRecord<?> timestampBase) {
             if (timestampBase.hasTimestamp()) {
-                reuse.setTimestamp(timestampBase.getTimestamp());
+                setAbsoluteTimestamp(timestampBase.getTimestamp());
             } else {
-                reuse.eraseTimestamp();
+                eraseTimestamp();
             }
         }
 
@@ -127,8 +126,14 @@ public class ProcessOperator<IN, OUT>
         }
 
         @Override
-        public void accept(OUT outputRecord) {
+        public void collect(OUT outputRecord) {
             output.collect(reuse.replace(outputRecord));
+        }
+
+        @Override
+        public void collect(OUT record, long timestamp) {
+            setAbsoluteTimestamp(timestamp);
+            output.collect(reuse.replace(record));
         }
     }
 }

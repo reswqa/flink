@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.runtime.jobgraph.JobType;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,21 +58,21 @@ class TwoInputProcessOperatorTest {
 
                             @Override
                             public void processFirstInputRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 firstInputRecord = record;
                             }
 
                             @Override
                             public void processSecondInputRecord(
-                                    Long record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Long record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 secondInputRecord = record;
                             }
 
                             @Override
                             public void endOfFirstInputPartition(
-                                    Consumer<Integer> output, RuntimeContext ctx) {
+                                    Collector<Integer> output, RuntimeContext ctx) {
                                 assertThat(processedLastRecordBeforeEndOfPartition1)
                                         .element(expectedKeys1.size())
                                         .isEqualTo(firstInputRecord);
@@ -82,7 +82,7 @@ class TwoInputProcessOperatorTest {
 
                             @Override
                             public void endOfSecondInputPartition(
-                                    Consumer<Integer> output, RuntimeContext ctx) {
+                                    Collector<Integer> output, RuntimeContext ctx) {
                                 assertThat(processedLastRecordBeforeEndOfPartition2)
                                         .element(expectedKeys2.size())
                                         .isEqualTo(secondInputRecord);

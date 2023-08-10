@@ -105,22 +105,32 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
     }
 
     private class KeyCheckedCollector extends OutputCollector {
+        @Override
+        public void collect(OUT outputRecord) {
+            checkOutputKey(outputRecord);
+            super.collect(outputRecord);
+        }
+
+        @Override
+        public void collect(OUT outputRecord, long timestamp) {
+            checkOutputKey(outputRecord);
+            super.collect(outputRecord, timestamp);
+        }
 
         @SuppressWarnings("unchecked")
-        @Override
-        public void accept(OUT outputRecord) {
+        private void checkOutputKey(OUT outputRecord) {
             try {
                 KEY currentKey = (KEY) getCurrentKey();
                 KEY outputKey = outKeySelector.getKey(outputRecord);
                 if (!outputKey.equals(currentKey)) {
                     throw new IllegalStateException(
-                            "Output key must equals to input key if you want the produced stream is keyed. ");
+                            "Output key must equals to input key if you want the produced stream "
+                                    + "is keyed. ");
                 }
             } catch (Exception e) {
                 // TODO Change Consumer to ThrowingConsumer.
                 ExceptionUtils.rethrow(e);
             }
-            super.accept(outputRecord);
         }
     }
 }

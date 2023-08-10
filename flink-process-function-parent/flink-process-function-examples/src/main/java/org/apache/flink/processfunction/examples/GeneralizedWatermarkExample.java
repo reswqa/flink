@@ -26,6 +26,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -37,7 +38,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public class GeneralizedWatermarkExample {
     public static void main(String[] args) throws Exception {
@@ -52,8 +52,8 @@ public class GeneralizedWatermarkExample {
                         new SingleStreamProcessFunction<Integer, Integer>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx) {
-                                output.accept(record);
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx) {
+                                output.collect(record);
                                 ctx.emitWatermark(new MyWatermark((long) record));
                             }
 
@@ -76,13 +76,13 @@ public class GeneralizedWatermarkExample {
                         new SingleStreamProcessFunction<Integer, Integer>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {}
 
                             @Override
                             public void onWatermark(
                                     ProcessWatermark<?> watermark,
-                                    Consumer<Integer> output,
+                                    Collector<Integer> output,
                                     RuntimeContext context) {
                                 if (watermark instanceof MyWatermark)
                                     System.out.println(

@@ -19,15 +19,15 @@
 package org.apache.flink.processfunction.api.function;
 
 import org.apache.flink.api.common.functions.Function;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public interface JoinFunction<IN1, IN2, OUT> extends Function {
-    void processRecord(IN1 leftRecord, IN2 rightRecord, Consumer<OUT> output, RuntimeContext ctx)
+    void processRecord(IN1 leftRecord, IN2 rightRecord, Collector<OUT> output, RuntimeContext ctx)
             throws Exception;
 
     default Set<StateDeclaration> usesStates() {

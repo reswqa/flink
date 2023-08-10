@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.examples;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -31,7 +32,6 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public class OneInputProcessEndOfPartition {
     public static void main(String[] args) throws Exception {
@@ -52,15 +52,15 @@ public class OneInputProcessEndOfPartition {
                         new SingleStreamProcessFunction<Integer, String>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<String> output, RuntimeContext ctx)
+                                    Integer record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept("record: " + record);
+                                output.collect("record: " + record);
                             }
 
                             @Override
                             public void endOfPartition(
-                                    Consumer<String> output, RuntimeContext ctx) {
-                                output.accept("EOP");
+                                    Collector<String> output, RuntimeContext ctx) {
+                                output.collect("EOP");
                             }
                         })
                 .sinkTo(Sinks.consumer(r -> System.out.println(r)));
@@ -90,16 +90,16 @@ public class OneInputProcessEndOfPartition {
                         new SingleStreamProcessFunction<Integer, String>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<String> output, RuntimeContext ctx)
+                                    Integer record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept("record: " + record);
+                                output.collect("record: " + record);
                             }
 
                             @Override
                             public void endOfPartition(
-                                    Consumer<String> output, RuntimeContext ctx) {
+                                    Collector<String> output, RuntimeContext ctx) {
                                 Optional<Integer> key = ctx.getCurrentKey();
-                                output.accept("EOP : " + key.get());
+                                output.collect("EOP : " + key.get());
                             }
                         })
                 .sinkTo(Sinks.consumer(r -> System.out.println(r)));

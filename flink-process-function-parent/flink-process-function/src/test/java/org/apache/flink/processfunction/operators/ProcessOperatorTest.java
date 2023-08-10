@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.runtime.jobgraph.JobType;
@@ -37,7 +38,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,11 +50,11 @@ class ProcessOperatorTest {
                         new SingleStreamProcessFunction<Integer, Integer>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 Optional<Integer> currentKey = ctx.getCurrentKey();
                                 assertThat(currentKey).hasValue(record);
-                                output.accept(record + 1);
+                                output.collect(record + 1);
                             }
                         });
 
@@ -75,10 +75,10 @@ class ProcessOperatorTest {
                         new SingleStreamProcessFunction<Integer, Integer>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 assertThat(ctx.getCurrentKey()).isNotPresent();
-                                output.accept(record + 1);
+                                output.collect(record + 1);
                             }
                         });
 
@@ -101,14 +101,14 @@ class ProcessOperatorTest {
                         new SingleStreamProcessFunction<Integer, Integer>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 // do nothing.
                             }
 
                             @Override
                             public void endOfPartition(
-                                    Consumer<Integer> output, RuntimeContext ctx) {
+                                    Collector<Integer> output, RuntimeContext ctx) {
                                 assertThat(notifiedEndOfPartition).isNotDone();
                                 notifiedEndOfPartition.complete(null);
                             }
@@ -142,14 +142,14 @@ class ProcessOperatorTest {
 
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 currentRecord = record;
                             }
 
                             @Override
                             public void endOfPartition(
-                                    Consumer<Integer> output, RuntimeContext ctx) {
+                                    Collector<Integer> output, RuntimeContext ctx) {
                                 assertThat(processedLastRecordBeforeEndOfPartition)
                                         .element(expectedKeys.size())
                                         .isEqualTo(currentRecord);
@@ -192,14 +192,14 @@ class ProcessOperatorTest {
                         new SingleStreamProcessFunction<Integer, Integer>() {
                             @Override
                             public void processRecord(
-                                    Integer record, Consumer<Integer> output, RuntimeContext ctx)
+                                    Integer record, Collector<Integer> output, RuntimeContext ctx)
                                     throws Exception {
                                 numProcessedRecords.incrementAndGet();
                             }
 
                             @Override
                             public void endOfPartition(
-                                    Consumer<Integer> output, RuntimeContext ctx) {
+                                    Collector<Integer> output, RuntimeContext ctx) {
                                 assertThat(numProcessedRecords).hasValue(5);
                                 assertThat(ctx.<Integer>getCurrentKey()).isPresent();
                                 expectedKeys.add(ctx.<Integer>getCurrentKey().get());

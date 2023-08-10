@@ -22,6 +22,7 @@ import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
 import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.processfunction.DefaultRuntimeContext;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
@@ -31,8 +32,6 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
-
-import java.util.function.Consumer;
 
 /**
  * Operator for {@link TwoOutputStreamProcessFunction}.
@@ -44,9 +43,9 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                 OUT_MAIN, TwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE>>
         implements OneInputStreamOperator<IN, OUT_MAIN>, BoundedOneInput {
 
-    protected transient Consumer<OUT_MAIN> mainCollector;
+    protected transient TimestampCollector<OUT_MAIN> mainCollector;
 
-    protected transient Consumer<OUT_SIDE> sideCollector;
+    protected transient TimestampCollector<OUT_SIDE> sideCollector;
 
     protected transient DefaultRuntimeContext context;
 
@@ -77,6 +76,8 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
+        mainCollector.setTimestamp(element);
+        sideCollector.setTimestamp(element);
         userFunction.processRecord(element.getValue(), mainCollector, sideCollector, context);
     }
 
@@ -106,11 +107,11 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         userFunction.endOfPartition(mainCollector, sideCollector, context);
     }
 
-    protected Consumer<OUT_MAIN> getMainCollector() {
+    protected TimestampCollector<OUT_MAIN> getMainCollector() {
         return new MainOutputCollector();
     }
 
-    public Consumer<OUT_SIDE> getSideCollector() {
+    public TimestampCollector<OUT_SIDE> getSideCollector() {
         return new SideOutputCollector();
     }
 
@@ -119,22 +120,50 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                 "Only triggerable keyed operator supports register processing timer.");
     }
 
-    protected class MainOutputCollector implements Consumer<OUT_MAIN> {
+    protected abstract static class TimestampCollector<T> implements Collector<T> {
+        protected final StreamRecord<T> reuse = new StreamRecord<>(null);
 
-        private final StreamRecord<OUT_MAIN> reuse = new StreamRecord<>(null);
+        public void setTimestamp(StreamRecord<?> timestampBase) {
+            if (timestampBase.hasTimestamp()) {
+                setAbsoluteTimestamp(timestampBase.getTimestamp());
+            } else {
+                eraseTimestamp();
+            }
+        }
 
-        @Override
-        public void accept(OUT_MAIN outputRecord) {
-            output.collect(reuse.replace(outputRecord));
+        public void setAbsoluteTimestamp(long timestamp) {
+            reuse.setTimestamp(timestamp);
+        }
+
+        public void eraseTimestamp() {
+            reuse.eraseTimestamp();
         }
     }
 
-    protected class SideOutputCollector implements Consumer<OUT_SIDE> {
-        private final StreamRecord<OUT_SIDE> reuse = new StreamRecord<>(null);
+    protected class MainOutputCollector extends TimestampCollector<OUT_MAIN> {
+        @Override
+        public void collect(OUT_MAIN outputRecord) {
+            output.collect(reuse.replace(outputRecord));
+        }
 
         @Override
-        public void accept(OUT_SIDE outputRecord) {
+        public void collect(OUT_MAIN record, long timestamp) {
+            setAbsoluteTimestamp(timestamp);
+            output.collect(reuse.replace(record));
+        }
+    }
+
+    protected class SideOutputCollector extends TimestampCollector<OUT_SIDE> {
+
+        @Override
+        public void collect(OUT_SIDE outputRecord) {
             output.collect(outputTag, reuse.replace(outputRecord));
+        }
+
+        @Override
+        public void collect(OUT_SIDE record, long timestamp) {
+            setAbsoluteTimestamp(timestamp);
+            output.collect(outputTag, reuse.replace(record));
         }
     }
 }

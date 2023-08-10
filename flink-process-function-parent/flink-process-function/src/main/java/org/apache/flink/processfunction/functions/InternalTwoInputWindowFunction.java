@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.functions;
 
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
@@ -28,7 +29,6 @@ import org.apache.flink.processfunction.api.windowing.utils.TaggedUnion;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import java.util.Set;
-import java.util.function.Consumer;
 
 public class InternalTwoInputWindowFunction<IN1, IN2, ACC1, ACC2, OUT, W extends Window>
         implements TwoInputStreamProcessFunction<IN1, IN2, OUT> {
@@ -49,13 +49,13 @@ public class InternalTwoInputWindowFunction<IN1, IN2, ACC1, ACC2, OUT, W extends
     }
 
     @Override
-    public void processFirstInputRecord(IN1 record, Consumer<OUT> output, RuntimeContext ctx)
+    public void processFirstInputRecord(IN1 record, Collector<OUT> output, RuntimeContext ctx)
             throws Exception {
         // Do nothing as this will translator to windowOperator instead of processOperator.
     }
 
     @Override
-    public void processSecondInputRecord(IN2 record, Consumer<OUT> output, RuntimeContext ctx)
+    public void processSecondInputRecord(IN2 record, Collector<OUT> output, RuntimeContext ctx)
             throws Exception {
         // Do nothing as this will translator to windowOperator instead of processOperator.
     }

@@ -20,6 +20,7 @@ package org.apache.flink.processfunction.examples;
 
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -30,7 +31,6 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.function.Consumer;
 
 public class BatchStreamingUnifiedReduce {
     public static void main(String[] args) throws Exception {
@@ -77,11 +77,11 @@ public class BatchStreamingUnifiedReduce {
             implements SingleStreamProcessFunction<String, WordAndCount> {
         @Override
         public void processRecord(
-                String record, Consumer<WordAndCount> output, RuntimeContext ctx) {
+                String record, Collector<WordAndCount> output, RuntimeContext ctx) {
             String[] tokens = record.split("\\W+");
             for (String token : tokens) {
                 if (token.length() > 0) {
-                    output.accept(new WordAndCount(token, 1));
+                    output.collect(new WordAndCount(token, 1));
                 }
             }
         }

@@ -22,6 +22,7 @@ import org.apache.flink.api.common.eventtime.GeneralizedWatermark;
 import org.apache.flink.api.common.eventtime.ProcessWatermarkWrapper;
 import org.apache.flink.api.common.eventtime.TimestampWatermark;
 import org.apache.flink.processfunction.DefaultRuntimeContext;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
@@ -30,8 +31,6 @@ import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.Preconditions;
-
-import java.util.function.Consumer;
 
 /** Operator for {@link TwoInputStreamProcessFunction}. */
 public class TwoInputProcessOperator<IN1, IN2, OUT>
@@ -62,11 +61,13 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
 
     @Override
     public void processElement1(StreamRecord<IN1> element) throws Exception {
+        collector.setTimestamp(element);
         userFunction.processFirstInputRecord(element.getValue(), collector, context);
     }
 
     @Override
     public void processElement2(StreamRecord<IN2> element) throws Exception {
+        collector.setTimestamp(element);
         userFunction.processSecondInputRecord(element.getValue(), collector, context);
     }
 
@@ -129,14 +130,14 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
         }
     }
 
-    protected class OutputCollector implements Consumer<OUT> {
+    protected class OutputCollector implements Collector<OUT> {
         protected final StreamRecord<OUT> reuse = new StreamRecord<>(null);
 
         public void setTimestamp(StreamRecord<?> timestampBase) {
             if (timestampBase.hasTimestamp()) {
-                reuse.setTimestamp(timestampBase.getTimestamp());
+                setAbsoluteTimestamp(timestampBase.getTimestamp());
             } else {
-                reuse.eraseTimestamp();
+                eraseTimestamp();
             }
         }
 
@@ -149,8 +150,14 @@ public class TwoInputProcessOperator<IN1, IN2, OUT>
         }
 
         @Override
-        public void accept(OUT outputRecord) {
+        public void collect(OUT outputRecord) {
             output.collect(reuse.replace(outputRecord));
+        }
+
+        @Override
+        public void collect(OUT record, long timestamp) {
+            setAbsoluteTimestamp(timestamp);
+            output.collect(reuse.replace(record));
         }
     }
 }

@@ -23,6 +23,7 @@ import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.window.Window;
@@ -30,13 +31,12 @@ import org.apache.flink.processfunction.api.windowing.window.Window;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 /** Special process function for window. */
 public interface WindowProcessFunction<IN, OUT, W extends Window> extends Function {
 
     void processRecord(
-            IN record, Consumer<OUT> output, RuntimeContext ctx, WindowContext<W> windowContext)
+            IN record, Collector<OUT> output, RuntimeContext ctx, WindowContext<W> windowContext)
             throws Exception;
 
     /**

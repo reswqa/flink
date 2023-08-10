@@ -19,12 +19,12 @@
 package org.apache.flink.processfunction.operators;
 
 import org.apache.flink.processfunction.DefaultRuntimeContext;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.util.function.TriConsumer;
 
 import java.util.HashSet;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 interface InputKeyListener {
     void keySelected(Object newKey);
@@ -34,16 +34,16 @@ interface InputKeyListener {
     class SortedInputKeyListener<OUT> implements InputKeyListener {
         private Object oldKey;
 
-        private final BiConsumer<Consumer<OUT>, RuntimeContext> endOfPartitionNotifier;
+        private final BiConsumer<Collector<OUT>, RuntimeContext> endOfPartitionNotifier;
 
-        private final Consumer<OUT> output;
+        private final Collector<OUT> output;
 
         private final DefaultRuntimeContext ctx;
 
         public SortedInputKeyListener(
-                Consumer<OUT> output,
+                Collector<OUT> output,
                 DefaultRuntimeContext ctx,
-                BiConsumer<Consumer<OUT>, RuntimeContext> endOfPartitionNotifier) {
+                BiConsumer<Collector<OUT>, RuntimeContext> endOfPartitionNotifier) {
             this.endOfPartitionNotifier = endOfPartitionNotifier;
             this.output = output;
             this.ctx = ctx;
@@ -73,9 +73,9 @@ interface InputKeyListener {
     }
 
     class UnSortedInputKeyListener<OUT> implements InputKeyListener {
-        private final BiConsumer<Consumer<OUT>, RuntimeContext> endOfPartitionNotifier;
+        private final BiConsumer<Collector<OUT>, RuntimeContext> endOfPartitionNotifier;
 
-        private final Consumer<OUT> output;
+        private final Collector<OUT> output;
 
         private final DefaultRuntimeContext ctx;
 
@@ -83,9 +83,9 @@ interface InputKeyListener {
         private final HashSet<Object> allKeys = new HashSet<>();
 
         public UnSortedInputKeyListener(
-                Consumer<OUT> output,
+                Collector<OUT> output,
                 DefaultRuntimeContext ctx,
-                BiConsumer<Consumer<OUT>, RuntimeContext> endOfPartitionNotifier) {
+                BiConsumer<Collector<OUT>, RuntimeContext> endOfPartitionNotifier) {
             this.output = output;
             this.ctx = ctx;
             this.endOfPartitionNotifier = endOfPartitionNotifier;
@@ -111,19 +111,20 @@ interface InputKeyListener {
     class SortedTwoOutputInputKeyListener<OUT1, OUT2> implements InputKeyListener {
         private Object oldKey;
 
-        private final TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext>
+        private final TriConsumer<Collector<OUT1>, Collector<OUT2>, RuntimeContext>
                 endOfPartitionNotifier;
 
-        private final Consumer<OUT1> output1;
+        private final Collector<OUT1> output1;
 
-        private final Consumer<OUT2> output2;
+        private final Collector<OUT2> output2;
 
         private final DefaultRuntimeContext ctx;
 
         public SortedTwoOutputInputKeyListener(
-                TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext> endOfPartitionNotifier,
-                Consumer<OUT1> output1,
-                Consumer<OUT2> output2,
+                TriConsumer<Collector<OUT1>, Collector<OUT2>, RuntimeContext>
+                        endOfPartitionNotifier,
+                Collector<OUT1> output1,
+                Collector<OUT2> output2,
                 DefaultRuntimeContext ctx) {
             this.endOfPartitionNotifier = endOfPartitionNotifier;
             this.output1 = output1;
@@ -155,12 +156,12 @@ interface InputKeyListener {
     }
 
     class UnsortedTwoOutputInputKeyListener<OUT1, OUT2> implements InputKeyListener {
-        private final TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext>
+        private final TriConsumer<Collector<OUT1>, Collector<OUT2>, RuntimeContext>
                 endOfPartitionNotifier;
 
-        private final Consumer<OUT1> output1;
+        private final Collector<OUT1> output1;
 
-        private final Consumer<OUT2> output2;
+        private final Collector<OUT2> output2;
 
         private final DefaultRuntimeContext ctx;
 
@@ -168,9 +169,10 @@ interface InputKeyListener {
         private final HashSet<Object> allKeys = new HashSet<>();
 
         public UnsortedTwoOutputInputKeyListener(
-                TriConsumer<Consumer<OUT1>, Consumer<OUT2>, RuntimeContext> endOfPartitionNotifier,
-                Consumer<OUT1> output1,
-                Consumer<OUT2> output2,
+                TriConsumer<Collector<OUT1>, Collector<OUT2>, RuntimeContext>
+                        endOfPartitionNotifier,
+                Collector<OUT1> output1,
+                Collector<OUT2> output2,
                 DefaultRuntimeContext ctx) {
             this.endOfPartitionNotifier = endOfPartitionNotifier;
             this.output1 = output1;

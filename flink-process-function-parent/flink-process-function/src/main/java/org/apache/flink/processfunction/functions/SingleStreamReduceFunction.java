@@ -1,11 +1,10 @@
 package org.apache.flink.processfunction.functions;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
-
-import java.util.function.Consumer;
 
 /** The built-in {@link SingleStreamProcessFunction} implementation for {@link ReduceFunction}. */
 public class SingleStreamReduceFunction<IN> implements SingleStreamProcessFunction<IN, IN> {
@@ -17,7 +16,7 @@ public class SingleStreamReduceFunction<IN> implements SingleStreamProcessFuncti
     }
 
     @Override
-    public void processRecord(IN record, Consumer<IN> output, RuntimeContext ctx) {
+    public void processRecord(IN record, Collector<IN> output, RuntimeContext ctx) {
         // Do nothing as this will translator to reduceOperator instead of processOperator.
     }
 

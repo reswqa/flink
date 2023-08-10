@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.examples;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.typeinfo.TypeDescriptors;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -33,7 +34,6 @@ import org.apache.flink.util.Preconditions;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 /** Usage: Must be executed with flink-process-function and flink-dist jar in classpath. */
 public class SimpleStatefulMap {
@@ -61,17 +61,17 @@ public class SimpleStatefulMap {
                 States.splitRedistributionListState(STATE_ID, TypeDescriptors.LONG);
 
         @Override
-        public void processRecord(Long record, Consumer<Long> output, RuntimeContext ctx)
+        public void processRecord(Long record, Collector<Long> output, RuntimeContext ctx)
                 throws Exception {
             Optional<ListState<Long>> stateOptional = ctx.getState(LIST_STATE_DECLARATION);
             Preconditions.checkState(stateOptional.isPresent());
             ListState<Long> state = stateOptional.get();
             if (!state.get().iterator().hasNext()) {
                 // for first record
-                output.accept(0L);
+                output.collect(0L);
             } else {
                 long diff = record - state.get().iterator().next();
-                output.accept(diff);
+                output.collect(diff);
             }
             state.update(Collections.singletonList(record));
         }

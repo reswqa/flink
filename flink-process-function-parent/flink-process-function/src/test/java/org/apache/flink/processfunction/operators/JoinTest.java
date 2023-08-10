@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.operators;
 import org.apache.flink.api.common.eventtime.TimestampAssignerSupplier;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
@@ -39,7 +40,6 @@ import org.apache.flink.util.function.SupplierFunction;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
-import java.util.function.Consumer;
 
 class JoinTest implements Serializable {
     @Test
@@ -111,10 +111,10 @@ class JoinTest implements Serializable {
                                             public void processRecord(
                                                     Integer leftRecord,
                                                     Integer rightRecord,
-                                                    Consumer<String> output,
+                                                    Collector<String> output,
                                                     RuntimeContext ctx)
                                                     throws Exception {
-                                                output.accept(
+                                                output.collect(
                                                         String.format(
                                                                 "joined: (%s, %s)",
                                                                 leftRecord, rightRecord));

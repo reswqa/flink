@@ -33,8 +33,6 @@ import org.apache.flink.util.Preconditions;
 
 import javax.annotation.Nullable;
 
-import java.util.function.Consumer;
-
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
@@ -115,18 +113,20 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
+        mainCollector.setTimestamp(element);
+        sideCollector.setTimestamp(element);
         userFunction.processRecord(element.getValue(), mainCollector, sideCollector, context);
     }
 
     @Override
-    protected Consumer<OUT_MAIN> getMainCollector() {
+    protected TimestampCollector<OUT_MAIN> getMainCollector() {
         return mainOutKeySelector != null && sideOutKeySelector != null
                 ? new KeyCheckedOutputCollector<>(new MainOutputCollector(), mainOutKeySelector)
                 : new MainOutputCollector();
     }
 
     @Override
-    public Consumer<OUT_SIDE> getSideCollector() {
+    public TimestampCollector<OUT_SIDE> getSideCollector() {
         return mainOutKeySelector != null && sideOutKeySelector != null
                 ? new KeyCheckedOutputCollector<>(new SideOutputCollector(), sideOutKeySelector)
                 : new SideOutputCollector();
@@ -148,33 +148,44 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
                 timer.getTimestamp(), getMainCollector(), getSideCollector(), context);
     }
 
-    private class KeyCheckedOutputCollector<T> implements Consumer<T> {
+    private class KeyCheckedOutputCollector<T> extends TimestampCollector<T> {
 
-        private final Consumer<T> outputCollector;
+        private final TimestampCollector<T> outputCollector;
 
         private final KeySelector<T, KEY> outputKeySelector;
 
         private KeyCheckedOutputCollector(
-                Consumer<T> outputCollector, KeySelector<T, KEY> outputKeySelector) {
+                TimestampCollector<T> outputCollector, KeySelector<T, KEY> outputKeySelector) {
             this.outputCollector = outputCollector;
             this.outputKeySelector = outputKeySelector;
         }
 
-        @SuppressWarnings("unchecked")
         @Override
-        public void accept(T outputRecord) {
+        public void collect(T outputRecord) {
+            checkOutputKey(outputRecord);
+            this.outputCollector.collect(outputRecord);
+        }
+
+        @Override
+        public void collect(T outputRecord, long timestamp) {
+            checkOutputKey(outputRecord);
+            this.outputCollector.collect(outputRecord, timestamp);
+        }
+
+        @SuppressWarnings("unchecked")
+        private void checkOutputKey(T outputRecord) {
             try {
                 KEY currentKey = (KEY) getCurrentKey();
                 KEY outputKey = this.outputKeySelector.getKey(outputRecord);
                 if (!outputKey.equals(currentKey)) {
                     throw new IllegalStateException(
-                            "Output key must equals to input key if you want the produced stream is keyed. ");
+                            "Output key must equals to input key if you want the produced stream "
+                                    + "is keyed. ");
                 }
             } catch (Exception e) {
                 // TODO Change Consumer to ThrowingConsumer.
                 ExceptionUtils.rethrow(e);
             }
-            this.outputCollector.accept(outputRecord);
         }
     }
 }

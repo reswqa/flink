@@ -21,6 +21,7 @@ package org.apache.flink.processfunction.examples;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.ExecutionEnvironment;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.builtin.Sinks;
@@ -31,7 +32,6 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public class TwoInputProcessEndOfPartition {
     public static void main(String[] args) throws Exception {
@@ -58,28 +58,28 @@ public class TwoInputProcessEndOfPartition {
                         new TwoInputStreamProcessFunction<Integer, String, String>() {
                             @Override
                             public void processFirstInputRecord(
-                                    Integer record, Consumer<String> output, RuntimeContext ctx)
+                                    Integer record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept("input1 record :" + record);
+                                output.collect("input1 record :" + record);
                             }
 
                             @Override
                             public void processSecondInputRecord(
-                                    String record, Consumer<String> output, RuntimeContext ctx)
+                                    String record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept("input2 record : " + record);
+                                output.collect("input2 record : " + record);
                             }
 
                             @Override
                             public void endOfFirstInputPartition(
-                                    Consumer<String> output, RuntimeContext ctx) {
-                                output.accept("input1 EOP");
+                                    Collector<String> output, RuntimeContext ctx) {
+                                output.collect("input1 EOP");
                             }
 
                             @Override
                             public void endOfSecondInputPartition(
-                                    Consumer<String> output, RuntimeContext ctx) {
-                                output.accept("input2 EOP");
+                                    Collector<String> output, RuntimeContext ctx) {
+                                output.collect("input2 EOP");
                             }
                         })
                 .sinkTo(Sinks.consumer(r -> System.out.println(r)));
@@ -116,30 +116,30 @@ public class TwoInputProcessEndOfPartition {
                         new TwoInputStreamProcessFunction<Integer, String, String>() {
                             @Override
                             public void processFirstInputRecord(
-                                    Integer record, Consumer<String> output, RuntimeContext ctx)
+                                    Integer record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept("input1 record :" + record);
+                                output.collect("input1 record :" + record);
                             }
 
                             @Override
                             public void processSecondInputRecord(
-                                    String record, Consumer<String> output, RuntimeContext ctx)
+                                    String record, Collector<String> output, RuntimeContext ctx)
                                     throws Exception {
-                                output.accept("input2 record : " + record);
+                                output.collect("input2 record : " + record);
                             }
 
                             @Override
                             public void endOfFirstInputPartition(
-                                    Consumer<String> output, RuntimeContext ctx) {
+                                    Collector<String> output, RuntimeContext ctx) {
                                 Optional<Integer> currentKey = ctx.getCurrentKey();
-                                output.accept("input1 EOP with key : " + currentKey.get());
+                                output.collect("input1 EOP with key : " + currentKey.get());
                             }
 
                             @Override
                             public void endOfSecondInputPartition(
-                                    Consumer<String> output, RuntimeContext ctx) {
+                                    Collector<String> output, RuntimeContext ctx) {
                                 Optional<Integer> currentKey = ctx.getCurrentKey();
-                                output.accept("input2 EOP with key : " + currentKey.get());
+                                output.collect("input2 EOP with key : " + currentKey.get());
                             }
                         })
                 .sinkTo(Sinks.consumer(r -> System.out.println(r)));

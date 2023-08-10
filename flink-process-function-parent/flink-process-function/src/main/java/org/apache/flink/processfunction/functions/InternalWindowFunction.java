@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.functions;
 
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
@@ -27,7 +28,6 @@ import org.apache.flink.processfunction.api.windowing.trigger.Trigger;
 import org.apache.flink.processfunction.api.windowing.window.Window;
 
 import java.util.Set;
-import java.util.function.Consumer;
 
 /** This is only a container for window related things. */
 public class InternalWindowFunction<IN, ACC, OUT, W extends Window>
@@ -48,7 +48,7 @@ public class InternalWindowFunction<IN, ACC, OUT, W extends Window>
     }
 
     @Override
-    public void processRecord(IN record, Consumer<OUT> output, RuntimeContext ctx)
+    public void processRecord(IN record, Collector<OUT> output, RuntimeContext ctx)
             throws Exception {
         // Do nothing as this will translator to windowOperator instead of processOperator.
     }

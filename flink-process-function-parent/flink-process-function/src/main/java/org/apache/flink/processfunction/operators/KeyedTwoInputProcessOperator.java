@@ -146,9 +146,20 @@ public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
 
     private class KeyCheckedCollector extends OutputCollector {
 
-        @SuppressWarnings("unchecked")
         @Override
-        public void accept(OUT outputRecord) {
+        public void collect(OUT outputRecord) {
+            checkOutputKey(outputRecord);
+            super.collect(outputRecord);
+        }
+
+        @Override
+        public void collect(OUT outputRecord, long timestamp) {
+            checkOutputKey(outputRecord);
+            super.collect(outputRecord, timestamp);
+        }
+
+        @SuppressWarnings("unchecked")
+        private void checkOutputKey(OUT outputRecord) {
             try {
                 KEY currentKey = (KEY) getCurrentKey();
                 KEY outputKey = outKeySelector.getKey(outputRecord);
@@ -160,7 +171,6 @@ public class KeyedTwoInputProcessOperator<KEY, IN1, IN2, OUT>
                 // TODO Change Consumer to ThrowingConsumer.
                 ExceptionUtils.rethrow(e);
             }
-            super.accept(outputRecord);
         }
     }
 }

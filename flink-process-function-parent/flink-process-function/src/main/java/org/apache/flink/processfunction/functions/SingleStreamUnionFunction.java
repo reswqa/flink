@@ -18,11 +18,10 @@
 
 package org.apache.flink.processfunction.functions;
 
+import org.apache.flink.processfunction.api.Collector;
 import org.apache.flink.processfunction.api.RuntimeContext;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
-
-import java.util.function.Consumer;
 
 public class SingleStreamUnionFunction<IN> implements SingleStreamProcessFunction<IN, IN> {
     private final NonKeyedPartitionStream<IN>[] streams;
@@ -33,7 +32,8 @@ public class SingleStreamUnionFunction<IN> implements SingleStreamProcessFunctio
     }
 
     @Override
-    public void processRecord(IN record, Consumer<IN> output, RuntimeContext ctx) throws Exception {
+    public void processRecord(IN record, Collector<IN> output, RuntimeContext ctx)
+            throws Exception {
         // Do nothing as this will translator to partition instead of physical transformation.
     }
 
