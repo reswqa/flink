@@ -61,12 +61,15 @@ import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.PfSinkTransformation;
 import org.apache.flink.streaming.api.transformations.ReduceTransformation;
+import org.apache.flink.streaming.api.transformations.UnionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.GlobalPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.KeyGroupStreamPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.OutputTag;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -521,6 +524,28 @@ public class KeyedPartitionStreamImpl<K, V>
         resultTransform.setStateKeyType(keyType);
 
         return resultTransform;
+    }
+
+    public final NonKeyedPartitionStreamImpl<V> union(List<KeyedPartitionStream<K, V>> streams) {
+        List<Transformation<V>> unionedTransforms = new ArrayList<>();
+        unionedTransforms.add(this.transformation);
+
+        for (KeyedPartitionStream<K, V> newStream : streams) {
+            KeyedPartitionStreamImpl<K, V> newStreamImpl =
+                    // This is safety as we only have one implementation for streams.
+                    (KeyedPartitionStreamImpl<K, V>) newStream;
+            if (!getType().equals(newStreamImpl.getType())) {
+                throw new IllegalArgumentException(
+                        "Cannot union streams of different types: "
+                                + getType()
+                                + " and "
+                                + newStreamImpl.getType());
+            }
+
+            unionedTransforms.add(newStreamImpl.getTransformation());
+        }
+        return new NonKeyedPartitionStreamImpl<>(
+                environment, new UnionTransformation<>(unionedTransforms));
     }
 
     static class KeyedTwoOutputStream<K, OUT1, OUT2>

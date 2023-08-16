@@ -44,8 +44,12 @@ import org.apache.flink.streaming.api.operators.SimpleUdfStreamOperatorFactory;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.PfSinkTransformation;
+import org.apache.flink.streaming.api.transformations.UnionTransformation;
 import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.util.OutputTag;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Implementation for {@link GlobalStream}. */
 public class GlobalStreamImpl<T>
@@ -185,6 +189,27 @@ public class GlobalStreamImpl<T>
         environment.addOperator(resultTransform);
 
         return returnStream;
+    }
+
+    public final GlobalStreamImpl<T> union(List<GlobalStream<T>> streams) {
+        List<Transformation<T>> unionedTransforms = new ArrayList<>();
+        unionedTransforms.add(this.transformation);
+
+        for (GlobalStream<T> newStream : streams) {
+            GlobalStreamImpl<T> newStreamImpl =
+                    // This is safety as we only have one implementation for streams.
+                    (GlobalStreamImpl<T>) newStream;
+            if (!getType().equals(newStreamImpl.getType())) {
+                throw new IllegalArgumentException(
+                        "Cannot union streams of different types: "
+                                + getType()
+                                + " and "
+                                + newStreamImpl.getType());
+            }
+
+            unionedTransforms.add(newStreamImpl.getTransformation());
+        }
+        return new GlobalStreamImpl<>(environment, new UnionTransformation<>(unionedTransforms));
     }
 
     private static class GlobalTwoOutputStream<OUT1, OUT2>

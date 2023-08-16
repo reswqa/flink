@@ -19,11 +19,20 @@
 package org.apache.flink.processfunction.builtin;
 
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.GlobalStream;
+import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.functions.SingleStreamFilterFunction;
 import org.apache.flink.processfunction.functions.SingleStreamMapFunction;
 import org.apache.flink.processfunction.functions.SingleStreamReduceFunction;
-import org.apache.flink.processfunction.functions.SingleStreamUnionFunction;
+import org.apache.flink.processfunction.stream.GlobalStreamImpl;
+import org.apache.flink.processfunction.stream.KeyedPartitionStreamImpl;
+import org.apache.flink.processfunction.stream.NonKeyedPartitionStreamImpl;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 public class BatchStreamingUnifiedFunctionsImpl {
     public static <IN, OUT> SingleStreamProcessFunction<IN, OUT> map(
@@ -49,9 +58,48 @@ public class BatchStreamingUnifiedFunctionsImpl {
         return new SingleStreamReduceFunction<>(reduceFunc);
     }
 
+    // ------------------------------------------------------------
+    //                          Union
+    // ------------------------------------------------------------
     @SafeVarargs
-    public static <T> SingleStreamProcessFunction<T, T> union(
-            NonKeyedPartitionStream<T>... streams) {
-        return new SingleStreamUnionFunction<>(streams);
+    public static <T, O>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O> union(
+                    SingleStreamProcessFunction<T, O> function,
+                    NonKeyedPartitionStream<T>... streams) {
+        Iterator<NonKeyedPartitionStream<T>> iterator = Arrays.stream(streams).iterator();
+        NonKeyedPartitionStreamImpl<T> bashStream =
+                (NonKeyedPartitionStreamImpl<T>) iterator.next();
+        List<NonKeyedPartitionStream<T>> otherStreams = new ArrayList<>();
+        while (iterator.hasNext()) {
+            otherStreams.add(iterator.next());
+        }
+        return bashStream.union(otherStreams).process(function);
+    }
+
+    @SafeVarargs
+    public static <K, T, O>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O> union(
+                    SingleStreamProcessFunction<T, O> function,
+                    KeyedPartitionStream<K, T>... streams) {
+        Iterator<KeyedPartitionStream<K, T>> iterator = Arrays.stream(streams).iterator();
+        KeyedPartitionStreamImpl<K, T> bashStream =
+                (KeyedPartitionStreamImpl<K, T>) iterator.next();
+        List<KeyedPartitionStream<K, T>> otherStreams = new ArrayList<>();
+        while (iterator.hasNext()) {
+            otherStreams.add(iterator.next());
+        }
+        return bashStream.union(otherStreams).process(function);
+    }
+
+    @SafeVarargs
+    public static <T, O> GlobalStream.ProcessConfigurableAndGlobalStream<O> union(
+            SingleStreamProcessFunction<T, O> function, GlobalStream<T>... streams) {
+        Iterator<GlobalStream<T>> iterator = Arrays.stream(streams).iterator();
+        GlobalStreamImpl<T> bashStream = (GlobalStreamImpl<T>) iterator.next();
+        List<GlobalStream<T>> otherStreams = new ArrayList<>();
+        while (iterator.hasNext()) {
+            otherStreams.add(iterator.next());
+        }
+        return bashStream.union(otherStreams).process(function);
     }
 }

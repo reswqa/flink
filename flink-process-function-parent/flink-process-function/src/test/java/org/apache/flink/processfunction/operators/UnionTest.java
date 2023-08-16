@@ -45,9 +45,14 @@ class UnionTest {
                         WatermarkStrategy.noWatermarks(),
                         "source2");
 
-        source1.process(BatchStreamingUnifiedFunctions.union(source2))
-                .process(BatchStreamingUnifiedFunctions.map(x -> x))
-                .sinkTo(Sinks.consumer((record) -> System.out.println(record)));
+        NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<Integer> union =
+                BatchStreamingUnifiedFunctions.union(
+                        BatchStreamingUnifiedFunctions.map(
+                                (BatchStreamingUnifiedFunctions.MapFunction<Integer, Integer>)
+                                        value -> value),
+                        source1,
+                        source2);
+        union.sinkTo(Sinks.consumer((record) -> System.out.println(record)));
 
         env.execute();
     }

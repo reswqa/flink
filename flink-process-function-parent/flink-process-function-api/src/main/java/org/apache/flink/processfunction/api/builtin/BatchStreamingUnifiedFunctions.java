@@ -37,8 +37,12 @@
 package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.api.common.functions.Function;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
+import org.apache.flink.processfunction.api.stream.GlobalStream;
+import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
 
@@ -90,16 +94,71 @@ public final class BatchStreamingUnifiedFunctions {
 
     @SafeVarargs
     @SuppressWarnings("unchecked")
-    public static <T> SingleStreamProcessFunction<T, T> union(
-            NonKeyedPartitionStream<T>... streams) {
-        // TODO supports this on keyedStream.
+    public static <T, O>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O> union(
+                    SingleStreamProcessFunction<T, O> function,
+                    NonKeyedPartitionStream<T>... streams) {
+        Preconditions.checkArgument(streams.length >= 2, "Union requires at least two streams.");
         try {
-            return (SingleStreamProcessFunction<T, T>)
-                    INSTANCE.getMethod("union", NonKeyedPartitionStream[].class)
-                            .invoke(null, (Object) streams);
+            return (NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O>)
+                    INSTANCE.getMethod(
+                                    "union",
+                                    SingleStreamProcessFunction.class,
+                                    NonKeyedPartitionStream[].class)
+                            .invoke(null, function, streams);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
+    public static <T, O>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O> union(
+                    SingleStreamProcessFunction<T, O> function, GlobalStream<T>... streams) {
+        Preconditions.checkArgument(streams.length >= 2, "Union requires at least two streams.");
+        try {
+            return (NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O>)
+                    INSTANCE.getMethod(
+                                    "union",
+                                    SingleStreamProcessFunction.class,
+                                    GlobalStream[].class)
+                            .invoke(null, function, streams);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
+    public static <K, T, O>
+            NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O> union(
+                    SingleStreamProcessFunction<T, O> function,
+                    KeyedPartitionStream<K, T>... streams) {
+        Preconditions.checkArgument(streams.length >= 2, "Union requires at least two streams.");
+        try {
+            return (NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<O>)
+                    INSTANCE.getMethod(
+                                    "union",
+                                    SingleStreamProcessFunction.class,
+                                    KeyedPartitionStream[].class)
+                            .invoke(null, function, streams);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
+    public static <K, NEW_K, T, O>
+            KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream<NEW_K, O> union(
+                    SingleStreamProcessFunction<T, O> function,
+                    KeySelector<O, NEW_K> keySelector,
+                    KeyedPartitionStream<K, T>... streams) {
+        Preconditions.checkArgument(streams.length >= 2, "Union requires at least two streams.");
+        Preconditions.checkNotNull(keySelector);
+        // TODO impl this.
+        return null;
     }
 
     @FunctionalInterface

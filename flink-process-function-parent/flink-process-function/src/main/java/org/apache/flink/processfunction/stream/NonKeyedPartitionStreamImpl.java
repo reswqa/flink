@@ -35,7 +35,6 @@ import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.processfunction.api.stream.ProcessConfigurable;
 import org.apache.flink.processfunction.functions.InternalTwoInputWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
-import org.apache.flink.processfunction.functions.SingleStreamUnionFunction;
 import org.apache.flink.processfunction.operators.ProcessOperator;
 import org.apache.flink.processfunction.operators.TwoInputProcessOperator;
 import org.apache.flink.processfunction.operators.TwoOutputProcessOperator;
@@ -82,12 +81,6 @@ public class NonKeyedPartitionStreamImpl<T>
             Transformation<OUT> outTransformation =
                     keyedStream.transformWindow(outType, processFunction, false);
             return new NonKeyedPartitionStreamImpl<>(keyedStream.environment, outTransformation);
-        } else if (processFunction instanceof SingleStreamUnionFunction) {
-            NonKeyedPartitionStream<T>[] streams =
-                    ((SingleStreamUnionFunction<T>) processFunction).getStreams();
-            // We have known that union has same input and output type.
-            // noinspection unchecked
-            return (NonKeyedPartitionStreamImpl<OUT>) union(streams);
         } else {
             ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
             return transform("Process", outType, operator);
@@ -232,8 +225,7 @@ public class NonKeyedPartitionStreamImpl<T>
         return returnStream;
     }
 
-    @SafeVarargs
-    public final NonKeyedPartitionStreamImpl<T> union(NonKeyedPartitionStream<T>... streams) {
+    public final NonKeyedPartitionStreamImpl<T> union(List<NonKeyedPartitionStream<T>> streams) {
         List<Transformation<T>> unionedTransforms = new ArrayList<>();
         unionedTransforms.add(this.transformation);
 
