@@ -131,7 +131,7 @@ class WindowOperatorTest implements Serializable {
                 source.process(BatchStreamingUnifiedFunctions.map(x -> x.value))
                         .keyBy(x -> 0)
                         .process(
-                                Windows.reduce(
+                                Windows.apply(
                                         Windows.TimeWindows.ofTumbling(
                                                 Time.seconds(5),
                                                 Windows.TimeWindows.TimeType.EVENT),
@@ -175,7 +175,7 @@ class WindowOperatorTest implements Serializable {
                 source.process(BatchStreamingUnifiedFunctions.map(x -> x.value))
                         .keyBy(x -> 0)
                         .process(
-                                Windows.reduce(
+                                Windows.apply(
                                         Windows.TimeWindows.<Integer>ofTumbling(
                                                 Time.seconds(5),
                                                 Windows.TimeWindows.TimeType.EVENT),
@@ -229,7 +229,7 @@ class WindowOperatorTest implements Serializable {
         NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<Integer> process =
                 source.process(BatchStreamingUnifiedFunctions.map(x -> x.value))
                         .process(
-                                Windows.reduce(
+                                Windows.apply(
                                         Windows.TimeWindows.ofTumbling(
                                                 Time.seconds(5),
                                                 Windows.TimeWindows.TimeType.EVENT),
@@ -291,7 +291,7 @@ class WindowOperatorTest implements Serializable {
                         .withParallelism(2)
                         .coalesce()
                         .process(
-                                Windows.reduce(
+                                Windows.apply(
                                         Windows.TimeWindows.ofTumbling(
                                                 Time.seconds(5),
                                                 Windows.TimeWindows.TimeType.EVENT),

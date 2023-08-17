@@ -20,46 +20,37 @@ package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.processfunction.api.function.JoinFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
-import org.apache.flink.processfunction.api.windowing.window.Window;
 
 public class Joins {
-    public static <IN1, IN2, W extends Window> JoinBuilder<IN1, IN2, W> withWindow(
-            Windows.TwoInputWindowBuilder<IN1, IN2, W> windowBuilder) {
-        return new JoinBuilder<>(windowBuilder);
+    public static final Class<?> INSTANCE;
+
+    static {
+        try {
+            INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.JoinsImpl");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(
+                    "Please ensure that flink-process-function in your class path");
+        }
     }
 
-    public static class JoinBuilder<IN1, IN2, W extends Window> {
-        private static final Class<?> INSTANCE;
-
-        static {
-            try {
-                INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.JoinsImpl");
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(
-                        "Please ensure that flink-process-function in your class path");
-            }
-        }
-
-        private final Windows.TwoInputWindowBuilder<IN1, IN2, W> windowBuilder;
-
-        private JoinBuilder(Windows.TwoInputWindowBuilder<IN1, IN2, W> windowBuilder) {
-            this.windowBuilder = windowBuilder;
-        }
-
-        @SuppressWarnings("unchecked")
-        public <OUT> TwoInputStreamProcessFunction<IN1, IN2, OUT> join(
-                JoinFunction<IN1, IN2, OUT> joinFunction, JoinType joinType) {
-            try {
-                return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
-                        INSTANCE.getMethod(
-                                        "join",
-                                        JoinFunction.class,
-                                        JoinType.class,
-                                        Windows.TwoInputWindowBuilder.class)
-                                .invoke(null, joinFunction, joinType, windowBuilder);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    /** Non-Window join. */
+    @SuppressWarnings("unchecked")
+    public <IN1, IN2, OUT> TwoInputStreamProcessFunction<IN1, IN2, OUT> join(
+            JoinFunction<IN1, IN2, OUT> joinFunction, JoinType joinType) {
+        try {
+            return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
+                    INSTANCE.getMethod(
+                                    "join",
+                                    JoinFunction.class,
+                                    JoinType.class,
+                                    Windows.TwoInputWindowBuilder.class)
+                            .invoke(
+                                    null,
+                                    joinFunction,
+                                    joinType,
+                                    Windows.GlobalWindows.createTwoInput());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

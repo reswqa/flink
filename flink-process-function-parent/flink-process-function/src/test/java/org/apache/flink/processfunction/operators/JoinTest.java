@@ -99,26 +99,24 @@ class JoinTest implements Serializable {
 
         source.connectAndProcess(
                         joinSource,
-                        Joins.withWindow(
-                                        Windows.TimeWindows.<Integer, Integer>ofTwoInputTumbling(
-                                                Time.seconds(5),
-                                                Windows.TimeWindows.TimeType.EVENT))
-                                .join(
-                                        new JoinFunction<Integer, Integer, String>() {
-                                            @Override
-                                            public void processRecord(
-                                                    Integer leftRecord,
-                                                    Integer rightRecord,
-                                                    Collector<String> output,
-                                                    RuntimeContext ctx)
-                                                    throws Exception {
-                                                output.collect(
-                                                        String.format(
-                                                                "joined: (%s, %s)",
-                                                                leftRecord, rightRecord));
-                                            }
-                                        },
-                                        Joins.JoinType.INNER))
+                        Windows.apply(
+                                Windows.TimeWindows.<Integer, Integer>ofTwoInputTumbling(
+                                        Time.seconds(5), Windows.TimeWindows.TimeType.EVENT),
+                                new JoinFunction<Integer, Integer, String>() {
+                                    @Override
+                                    public void processRecord(
+                                            Integer leftRecord,
+                                            Integer rightRecord,
+                                            Collector<String> output,
+                                            RuntimeContext ctx)
+                                            throws Exception {
+                                        output.collect(
+                                                String.format(
+                                                        "joined: (%s, %s)",
+                                                        leftRecord, rightRecord));
+                                    }
+                                },
+                                Joins.JoinType.INNER))
                 .sinkTo(Sinks.consumer((x) -> System.out.println(x)));
         env.execute();
     }

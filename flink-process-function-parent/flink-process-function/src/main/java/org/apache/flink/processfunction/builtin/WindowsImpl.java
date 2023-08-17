@@ -29,6 +29,7 @@ import org.apache.flink.processfunction.api.windowing.window.Window;
 import org.apache.flink.processfunction.functions.InternalReduceWindowFunction;
 import org.apache.flink.processfunction.functions.InternalWindowFunction;
 import org.apache.flink.processfunction.functions.PassThroughWindowProcessFunction;
+import org.apache.flink.processfunction.windows.assigner.GlobalWindowAssigner;
 import org.apache.flink.processfunction.windows.assigner.SlidingEventTimeWindowsAssigner;
 import org.apache.flink.processfunction.windows.assigner.SlidingProcessingTimeWindowsAssigner;
 import org.apache.flink.processfunction.windows.assigner.TumblingEventTimeWindowsAssigner;
@@ -57,6 +58,12 @@ public class WindowsImpl {
             WindowAssigner<IN, W> windowAssigner,
             Trigger<IN, W> trigger) {
         return new InternalWindowFunction<>(processFunction, windowAssigner, trigger);
+    }
+
+    public static class GlobalWindowsImpl {
+        public static WindowAssigner<?, ?> create() {
+            return GlobalWindowAssigner.create();
+        }
     }
 
     public static class TimeWindowsImpl {

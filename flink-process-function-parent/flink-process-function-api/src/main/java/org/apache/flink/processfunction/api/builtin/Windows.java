@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.processfunction.api.function.JoinFunction;
 import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
@@ -99,6 +100,26 @@ public class Windows {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static <IN1, IN2, OUT, W extends Window>
+            TwoInputStreamProcessFunction<IN1, IN2, OUT> apply(
+                    TwoInputWindowBuilder<IN1, IN2, W> window,
+                    JoinFunction<IN1, IN2, OUT> joinFunction,
+                    Joins.JoinType joinType) {
+        try {
+            return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
+                    Joins.INSTANCE
+                            .getMethod(
+                                    "join",
+                                    JoinFunction.class,
+                                    Joins.JoinType.class,
+                                    Windows.TwoInputWindowBuilder.class)
+                            .invoke(null, joinFunction, joinType, window);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static class WindowBuilder<IN, W extends Window> {
         private final WindowAssigner<IN, W> assigner;
 
@@ -133,7 +154,7 @@ public class Windows {
     }
 
     @SuppressWarnings("unchecked")
-    public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
+    public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> apply(
             WindowBuilder<IN, W> window, ReduceFunction<IN> reduceFunction) {
         try {
             return (SingleStreamProcessFunction<IN, IN>)
@@ -149,11 +170,11 @@ public class Windows {
     }
 
     /**
-     * Pre-aggregate elements but provide more context than {@link #reduce(WindowBuilder,
+     * Pre-aggregate elements but provide more context than {@link #apply(WindowBuilder,
      * ReduceFunction)}.
      */
     @SuppressWarnings("unchecked")
-    public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
+    public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> apply(
             WindowBuilder<IN, W> window,
             ReduceFunction<IN> reduceFunction,
             WindowProcessFunction<IN, IN, W> windowProcessFunction) {
@@ -173,6 +194,42 @@ public class Windows {
                                     window.trigger);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static class GlobalWindows {
+        private static final Class<?> INSTANCE;
+
+        static {
+            try {
+                INSTANCE =
+                        Class.forName(
+                                "org.apache.flink.processfunction.builtin.WindowsImpl$GlobalWindowsImpl");
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(
+                        "Please ensure that flink-process-function in your class path");
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public static <IN> WindowBuilder<IN, Window> create() {
+            try {
+                return new WindowBuilder<>(
+                        (WindowAssigner<IN, Window>) INSTANCE.getMethod("create").invoke(null));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public static <IN1, IN2> TwoInputWindowBuilder<IN1, IN2, Window> createTwoInput() {
+            try {
+                return new TwoInputWindowBuilder<>(
+                        (WindowAssigner<TaggedUnion<IN1, IN2>, Window>)
+                                INSTANCE.getMethod("create").invoke(null));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
