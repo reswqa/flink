@@ -33,6 +33,18 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /** Utils class for build window. */
 public class Windows {
+
+    private static final Class<?> INSTANCE;
+
+    static {
+        try {
+            INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.WindowsImpl");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(
+                    "Please ensure that flink-process-function in your class path");
+        }
+    }
+
     public static <IN, W extends Window> WindowBuilder<IN, W> builder(
             WindowAssigner<IN, W> windowAssigner) {
         return new WindowBuilder<>(windowAssigner);
@@ -44,17 +56,6 @@ public class Windows {
     }
 
     public static class TwoInputWindowBuilder<IN1, IN2, W extends Window> {
-        private static final Class<?> INSTANCE;
-
-        static {
-            try {
-                INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.WindowsImpl");
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(
-                        "Please ensure that flink-process-function in your class path");
-            }
-        }
-
         private final WindowAssigner<TaggedUnion<IN1, IN2>, W> assigner;
 
         private Trigger<TaggedUnion<IN1, IN2>, W> trigger;
@@ -70,23 +71,6 @@ public class Windows {
             return this;
         }
 
-        @SuppressWarnings("unchecked")
-        public <OUT> TwoInputStreamProcessFunction<IN1, IN2, OUT> apply(
-                TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W>
-                        windowProcessFunction) {
-            try {
-                return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
-                        INSTANCE.getMethod(
-                                        "apply",
-                                        TwoInputWindowProcessFunction.class,
-                                        WindowAssigner.class,
-                                        Trigger.class)
-                                .invoke(null, windowProcessFunction, assigner, trigger);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         public WindowAssigner<TaggedUnion<IN1, IN2>, W> getAssigner() {
             return assigner;
         }
@@ -96,19 +80,27 @@ public class Windows {
         }
     }
 
-    public static class WindowBuilder<IN, W extends Window> {
-        private static final Class<?> INSTANCE;
-
-        static {
-            try {
-                INSTANCE = Class.forName("org.apache.flink.processfunction.builtin.WindowsImpl");
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(
-                        "Please ensure that flink-process-function in your class path");
-            }
+    @SuppressWarnings("unchecked")
+    public static <IN1, IN2, OUT, W extends Window>
+            TwoInputStreamProcessFunction<IN1, IN2, OUT> apply(
+                    TwoInputWindowBuilder<IN1, IN2, W> window,
+                    TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W>
+                            windowProcessFunction) {
+        try {
+            return (TwoInputStreamProcessFunction<IN1, IN2, OUT>)
+                    INSTANCE.getMethod(
+                                    "apply",
+                                    TwoInputWindowProcessFunction.class,
+                                    WindowAssigner.class,
+                                    Trigger.class)
+                            .invoke(null, windowProcessFunction, window.assigner, window.trigger);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        private WindowAssigner<IN, W> assigner;
+    public static class WindowBuilder<IN, W extends Window> {
+        private final WindowAssigner<IN, W> assigner;
 
         private Trigger<IN, W> trigger;
 
@@ -121,60 +113,66 @@ public class Windows {
             this.trigger = checkNotNull(trigger);
             return this;
         }
+    }
 
-        @SuppressWarnings("unchecked")
-        public SingleStreamProcessFunction<IN, IN> reduce(ReduceFunction<IN> reduceFunction) {
-            try {
-                return (SingleStreamProcessFunction<IN, IN>)
-                        INSTANCE.getMethod(
-                                        "reduce",
-                                        ReduceFunction.class,
-                                        WindowAssigner.class,
-                                        Trigger.class)
-                                .invoke(null, reduceFunction, assigner, trigger);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    @SuppressWarnings("unchecked")
+    public static <IN, OUT, W extends Window> SingleStreamProcessFunction<IN, OUT> apply(
+            WindowBuilder<IN, W> window,
+            WindowProcessFunction<Iterable<IN>, OUT, W> windowProcessFunction) {
+        try {
+            return (SingleStreamProcessFunction<IN, OUT>)
+                    INSTANCE.getMethod(
+                                    "process",
+                                    WindowProcessFunction.class,
+                                    WindowAssigner.class,
+                                    Trigger.class)
+                            .invoke(null, windowProcessFunction, window.assigner, window.trigger);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        /** Pre-aggregate elements but provide more context than {@link #reduce(ReduceFunction)} */
-        @SuppressWarnings("unchecked")
-        public SingleStreamProcessFunction<IN, IN> reduce(
-                ReduceFunction<IN> reduceFunction,
-                WindowProcessFunction<IN, IN, W> windowProcessFunction) {
-            try {
-                return (SingleStreamProcessFunction<IN, IN>)
-                        INSTANCE.getMethod(
-                                        "reduce",
-                                        ReduceFunction.class,
-                                        WindowProcessFunction.class,
-                                        WindowAssigner.class,
-                                        Trigger.class)
-                                .invoke(
-                                        null,
-                                        reduceFunction,
-                                        windowProcessFunction,
-                                        assigner,
-                                        trigger);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    @SuppressWarnings("unchecked")
+    public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
+            WindowBuilder<IN, W> window, ReduceFunction<IN> reduceFunction) {
+        try {
+            return (SingleStreamProcessFunction<IN, IN>)
+                    INSTANCE.getMethod(
+                                    "reduce",
+                                    ReduceFunction.class,
+                                    WindowAssigner.class,
+                                    Trigger.class)
+                            .invoke(null, reduceFunction, window.assigner, window.trigger);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        @SuppressWarnings("unchecked")
-        public <OUT> SingleStreamProcessFunction<IN, OUT> apply(
-                WindowProcessFunction<Iterable<IN>, OUT, W> windowProcessFunction) {
-            try {
-                return (SingleStreamProcessFunction<IN, OUT>)
-                        INSTANCE.getMethod(
-                                        "process",
-                                        WindowProcessFunction.class,
-                                        WindowAssigner.class,
-                                        Trigger.class)
-                                .invoke(null, windowProcessFunction, assigner, trigger);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    /**
+     * Pre-aggregate elements but provide more context than {@link #reduce(WindowBuilder,
+     * ReduceFunction)}.
+     */
+    @SuppressWarnings("unchecked")
+    public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
+            WindowBuilder<IN, W> window,
+            ReduceFunction<IN> reduceFunction,
+            WindowProcessFunction<IN, IN, W> windowProcessFunction) {
+        try {
+            return (SingleStreamProcessFunction<IN, IN>)
+                    INSTANCE.getMethod(
+                                    "reduce",
+                                    ReduceFunction.class,
+                                    WindowProcessFunction.class,
+                                    WindowAssigner.class,
+                                    Trigger.class)
+                            .invoke(
+                                    null,
+                                    reduceFunction,
+                                    windowProcessFunction,
+                                    window.assigner,
+                                    window.trigger);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -193,23 +191,53 @@ public class Windows {
         }
 
         @SuppressWarnings("unchecked")
-        public static <IN> WindowAssigner<IN, Window> ofSliding(
+        public static <IN> WindowBuilder<IN, Window> ofSliding(
                 Time size, Time slide, TimeType timeType) {
             try {
-                return (WindowAssigner<IN, Window>)
-                        INSTANCE.getMethod("ofSliding", Time.class, Time.class, TimeType.class)
-                                .invoke(null, size, slide, timeType);
+                return new WindowBuilder<>(
+                        (WindowAssigner<IN, Window>)
+                                INSTANCE.getMethod(
+                                                "ofSliding", Time.class, Time.class, TimeType.class)
+                                        .invoke(null, size, slide, timeType));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         @SuppressWarnings("unchecked")
-        public static <IN> WindowAssigner<IN, Window> ofTumbling(Time size, TimeType timeType) {
+        public static <IN> WindowBuilder<IN, Window> ofTumbling(Time size, TimeType timeType) {
             try {
-                return (WindowAssigner<IN, Window>)
-                        INSTANCE.getMethod("ofTumbling", Time.class, TimeType.class)
-                                .invoke(null, size, timeType);
+                return new WindowBuilder<>(
+                        (WindowAssigner<IN, Window>)
+                                INSTANCE.getMethod("ofTumbling", Time.class, TimeType.class)
+                                        .invoke(null, size, timeType));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public static <IN1, IN2> TwoInputWindowBuilder<IN1, IN2, Window> ofTwoInputTumbling(
+                Time size, TimeType timeType) {
+            try {
+                return new TwoInputWindowBuilder<>(
+                        (WindowAssigner<TaggedUnion<IN1, IN2>, Window>)
+                                INSTANCE.getMethod("ofTumbling", Time.class, TimeType.class)
+                                        .invoke(null, size, timeType));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public static <IN1, IN2> TwoInputWindowBuilder<IN1, IN2, Window> ofTwoInputSliding(
+                Time size, Time slide, TimeType timeType) {
+            try {
+                return new TwoInputWindowBuilder<>(
+                        (WindowAssigner<TaggedUnion<IN1, IN2>, Window>)
+                                INSTANCE.getMethod(
+                                                "ofSliding", Time.class, Time.class, TimeType.class)
+                                        .invoke(null, size, slide, timeType));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

@@ -71,33 +71,27 @@ class WindowOperatorTest implements Serializable {
         NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<String> process =
                 source.keyBy(x -> 0)
                         .process(
-                                Windows.builder(
-                                                // TODO It seems that this type hint is necessary.
-                                                Windows.TimeWindows.<Long>ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.EVENT))
-                                        // .withTrigger()
-                                        // .withEvictor
-                                        .apply(
-                                                new WindowProcessFunction<
-                                                        Iterable<Long>, String, Window>() {
-                                                    @Override
-                                                    public void processRecord(
-                                                            Iterable<Long> record,
-                                                            Collector<String> output,
-                                                            RuntimeContext ctx,
-                                                            WindowContext<Window> windowContext)
-                                                            throws Exception {
-                                                        Window window = windowContext.window();
-                                                        // handle records;
-                                                        List<Long> collect =
-                                                                IterableUtils.toStream(record)
-                                                                        .collect(
-                                                                                Collectors
-                                                                                        .toList());
-                                                        output.collect(collect.toString());
-                                                    }
-                                                }));
+                                Windows.apply(
+                                        Windows.TimeWindows.ofTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.EVENT),
+                                        new WindowProcessFunction<
+                                                Iterable<Long>, String, Window>() {
+                                            @Override
+                                            public void processRecord(
+                                                    Iterable<Long> record,
+                                                    Collector<String> output,
+                                                    RuntimeContext ctx,
+                                                    WindowContext<Window> windowContext)
+                                                    throws Exception {
+                                                Window window = windowContext.window();
+                                                // handle records;
+                                                List<Long> collect =
+                                                        IterableUtils.toStream(record)
+                                                                .collect(Collectors.toList());
+                                                output.collect(collect.toString());
+                                            }
+                                        }));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {
@@ -137,12 +131,11 @@ class WindowOperatorTest implements Serializable {
                 source.process(BatchStreamingUnifiedFunctions.map(x -> x.value))
                         .keyBy(x -> 0)
                         .process(
-                                Windows.builder(
-                                                // TODO It seems that this type hint is necessary.
-                                                Windows.TimeWindows.<Integer>ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.EVENT))
-                                        .reduce((ReduceFunction<Integer>) Integer::sum));
+                                Windows.reduce(
+                                        Windows.TimeWindows.ofTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.EVENT),
+                                        (ReduceFunction<Integer>) Integer::sum));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {
@@ -182,25 +175,22 @@ class WindowOperatorTest implements Serializable {
                 source.process(BatchStreamingUnifiedFunctions.map(x -> x.value))
                         .keyBy(x -> 0)
                         .process(
-                                Windows.builder(
-                                                // TODO It seems that this type hint is necessary.
-                                                Windows.TimeWindows.<Integer>ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.EVENT))
-                                        .reduce(
-                                                (ReduceFunction<Integer>) Integer::sum,
-                                                new WindowProcessFunction<
-                                                        Integer, Integer, Window>() {
-                                                    @Override
-                                                    public void processRecord(
-                                                            Integer record,
-                                                            Collector<Integer> output,
-                                                            RuntimeContext ctx,
-                                                            WindowContext<Window> windowContext)
-                                                            throws Exception {
-                                                        output.collect(record);
-                                                    }
-                                                }));
+                                Windows.reduce(
+                                        Windows.TimeWindows.<Integer>ofTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.EVENT),
+                                        (ReduceFunction<Integer>) Integer::sum,
+                                        new WindowProcessFunction<Integer, Integer, Window>() {
+                                            @Override
+                                            public void processRecord(
+                                                    Integer record,
+                                                    Collector<Integer> output,
+                                                    RuntimeContext ctx,
+                                                    WindowContext<Window> windowContext)
+                                                    throws Exception {
+                                                output.collect(record);
+                                            }
+                                        }));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {
@@ -239,32 +229,28 @@ class WindowOperatorTest implements Serializable {
         NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<Integer> process =
                 source.process(BatchStreamingUnifiedFunctions.map(x -> x.value))
                         .process(
-                                Windows.builder(
-                                                // TODO It seems that this type hint is necessary.
-                                                Windows.TimeWindows.<Integer>ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.EVENT))
-                                        .reduce(
-                                                new ReduceFunction<Integer>() {
-                                                    @Override
-                                                    public Integer reduce(
-                                                            Integer value1, Integer value2)
-                                                            throws Exception {
-                                                        return value1 + value2;
-                                                    }
-                                                },
-                                                new WindowProcessFunction<
-                                                        Integer, Integer, Window>() {
-                                                    @Override
-                                                    public void processRecord(
-                                                            Integer record,
-                                                            Collector<Integer> output,
-                                                            RuntimeContext ctx,
-                                                            WindowContext<Window> windowContext)
-                                                            throws Exception {
-                                                        output.collect(record);
-                                                    }
-                                                }));
+                                Windows.reduce(
+                                        Windows.TimeWindows.ofTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.EVENT),
+                                        new ReduceFunction<Integer>() {
+                                            @Override
+                                            public Integer reduce(Integer value1, Integer value2)
+                                                    throws Exception {
+                                                return value1 + value2;
+                                            }
+                                        },
+                                        new WindowProcessFunction<Integer, Integer, Window>() {
+                                            @Override
+                                            public void processRecord(
+                                                    Integer record,
+                                                    Collector<Integer> output,
+                                                    RuntimeContext ctx,
+                                                    WindowContext<Window> windowContext)
+                                                    throws Exception {
+                                                output.collect(record);
+                                            }
+                                        }));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {
@@ -305,32 +291,28 @@ class WindowOperatorTest implements Serializable {
                         .withParallelism(2)
                         .coalesce()
                         .process(
-                                Windows.builder(
-                                                // TODO It seems that this type hint is necessary.
-                                                Windows.TimeWindows.<Integer>ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.EVENT))
-                                        .reduce(
-                                                new ReduceFunction<Integer>() {
-                                                    @Override
-                                                    public Integer reduce(
-                                                            Integer value1, Integer value2)
-                                                            throws Exception {
-                                                        return value1 + value2;
-                                                    }
-                                                },
-                                                new WindowProcessFunction<
-                                                        Integer, Integer, Window>() {
-                                                    @Override
-                                                    public void processRecord(
-                                                            Integer record,
-                                                            Collector<Integer> output,
-                                                            RuntimeContext ctx,
-                                                            WindowContext<Window> windowContext)
-                                                            throws Exception {
-                                                        output.collect(record);
-                                                    }
-                                                }));
+                                Windows.reduce(
+                                        Windows.TimeWindows.ofTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.EVENT),
+                                        new ReduceFunction<Integer>() {
+                                            @Override
+                                            public Integer reduce(Integer value1, Integer value2)
+                                                    throws Exception {
+                                                return value1 + value2;
+                                            }
+                                        },
+                                        new WindowProcessFunction<Integer, Integer, Window>() {
+                                            @Override
+                                            public void processRecord(
+                                                    Integer record,
+                                                    Collector<Integer> output,
+                                                    RuntimeContext ctx,
+                                                    WindowContext<Window> windowContext)
+                                                    throws Exception {
+                                                output.collect(record);
+                                            }
+                                        }));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {

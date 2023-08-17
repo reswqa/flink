@@ -43,27 +43,23 @@ public class WindowExample {
         NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream<String> process =
                 source.keyBy(x -> x % 2)
                         .process(
-                                Windows.builder(
-                                                // TODO It seems that this type hint is necessary.
-                                                Windows.TimeWindows.<Integer>ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.PROCESSING))
-                                        // .withTrigger()
-                                        // .withEvictor
-                                        .apply(
-                                                new WindowProcessFunction<
-                                                        Iterable<Integer>, String, Window>() {
-                                                    @Override
-                                                    public void processRecord(
-                                                            Iterable<Integer> record,
-                                                            Collector<String> output,
-                                                            RuntimeContext ctx,
-                                                            WindowContext<Window> windowContext)
-                                                            throws Exception {
-                                                        Window window = windowContext.window();
-                                                        // handle records.
-                                                    }
-                                                }));
+                                Windows.apply(
+                                        Windows.TimeWindows.ofTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.PROCESSING),
+                                        new WindowProcessFunction<
+                                                Iterable<Integer>, String, Window>() {
+                                            @Override
+                                            public void processRecord(
+                                                    Iterable<Integer> record,
+                                                    Collector<String> output,
+                                                    RuntimeContext ctx,
+                                                    WindowContext<Window> windowContext)
+                                                    throws Exception {
+                                                Window window = windowContext.window();
+                                                // handle records.
+                                            }
+                                        }));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {

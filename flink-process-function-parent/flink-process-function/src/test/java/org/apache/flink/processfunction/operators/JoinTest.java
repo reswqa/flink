@@ -31,7 +31,6 @@ import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.builtin.Windows;
 import org.apache.flink.processfunction.api.function.JoinFunction;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
-import org.apache.flink.processfunction.api.windowing.window.Window;
 import org.apache.flink.processfunction.operators.WindowOperatorTest.PerElementValueWithTimestampWatermarkGenerator;
 import org.apache.flink.processfunction.operators.WindowOperatorTest.ValueWithTimestamp;
 import org.apache.flink.processfunction.operators.WindowOperatorTest.ValueWithTimestampAssigner;
@@ -101,10 +100,9 @@ class JoinTest implements Serializable {
         source.connectAndProcess(
                         joinSource,
                         Joins.withWindow(
-                                        Windows.<Integer, Integer, Window>twoInputBuilder(
-                                                Windows.TimeWindows.ofTumbling(
-                                                        Time.seconds(5),
-                                                        Windows.TimeWindows.TimeType.EVENT)))
+                                        Windows.TimeWindows.<Integer, Integer>ofTwoInputTumbling(
+                                                Time.seconds(5),
+                                                Windows.TimeWindows.TimeType.EVENT))
                                 .join(
                                         new JoinFunction<Integer, Integer, String>() {
                                             @Override
