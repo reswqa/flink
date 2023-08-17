@@ -18,6 +18,7 @@
 
 package org.apache.flink.processfunction.builtin;
 
+import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
@@ -50,11 +51,7 @@ public class BatchStreamingUnifiedFunctionsImpl {
         return new SingleStreamFilterFunction<>(filterFunc);
     }
 
-    public static <T> SingleStreamProcessFunction<T, T> reduce(
-            org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions
-                                    .ReduceFunction<
-                            T>
-                    reduceFunc) {
+    public static <T> SingleStreamProcessFunction<T, T> reduce(ReduceFunction<T> reduceFunc) {
         return new SingleStreamReduceFunction<>(reduceFunc);
     }
 

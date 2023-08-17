@@ -29,7 +29,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExecutionOptions;
-import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoOutputStreamProcessFunction;
@@ -291,7 +290,7 @@ public class KeyedPartitionStreamImpl<K, V>
     }
 
     private Transformation<V> transformReduce(SingleStreamReduceFunction<V> processFunction) {
-        BatchStreamingUnifiedFunctions.ReduceFunction<V> reduceFunction =
+        org.apache.flink.processfunction.api.function.ReduceFunction<V> reduceFunction =
                 processFunction.getReduceFunction();
         ReduceTransformation<V, K> reduce =
                 new ReduceTransformation<>(

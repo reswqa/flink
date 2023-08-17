@@ -18,7 +18,7 @@
 
 package org.apache.flink.processfunction.functions;
 
-import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
+import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.state.StateDeclaration;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
@@ -29,18 +29,18 @@ import java.util.Set;
 
 public class InternalReduceWindowFunction<IN, W extends Window>
         extends InternalWindowFunction<IN, IN, IN, W> {
-    private final BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction;
+    private final ReduceFunction<IN> reduceFunction;
 
     public InternalReduceWindowFunction(
             WindowProcessFunction<IN, IN, W> windowProcessFunction,
             WindowAssigner<IN, W> assigner,
             Trigger<IN, W> trigger,
-            BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction) {
+            ReduceFunction<IN> reduceFunction) {
         super(windowProcessFunction, assigner, trigger);
         this.reduceFunction = reduceFunction;
     }
 
-    public BatchStreamingUnifiedFunctions.ReduceFunction<IN> getReduceFunction() {
+    public ReduceFunction<IN> getReduceFunction() {
         return reduceFunction;
     }
 

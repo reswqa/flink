@@ -38,6 +38,7 @@ package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.KeyedPartitionStream;
@@ -192,22 +193,5 @@ public final class BatchStreamingUnifiedFunctions {
          *     operation to fail and may trigger recovery.
          */
         boolean filter(T value) throws Exception;
-    }
-
-    @FunctionalInterface
-    public interface ReduceFunction<T> extends Function, Serializable {
-
-        /**
-         * The core method of ReduceFunction, combining two values into one value of the same type.
-         * The reduce function is consecutively applied to all values of a group until only a single
-         * value remains.
-         *
-         * @param value1 The first value to combine.
-         * @param value2 The second value to combine.
-         * @return The combined value of both input values.
-         * @throws Exception This method may throw exceptions. Throwing an exception will cause the
-         *     operation to fail and may trigger recovery.
-         */
-        T reduce(T value1, T value2) throws Exception;
     }
 }

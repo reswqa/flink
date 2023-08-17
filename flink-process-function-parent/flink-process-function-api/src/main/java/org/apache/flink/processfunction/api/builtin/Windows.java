@@ -19,6 +19,7 @@
 package org.apache.flink.processfunction.api.builtin;
 
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.TwoInputWindowProcessFunction;
@@ -122,13 +123,12 @@ public class Windows {
         }
 
         @SuppressWarnings("unchecked")
-        public SingleStreamProcessFunction<IN, IN> reduce(
-                BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction) {
+        public SingleStreamProcessFunction<IN, IN> reduce(ReduceFunction<IN> reduceFunction) {
             try {
                 return (SingleStreamProcessFunction<IN, IN>)
                         INSTANCE.getMethod(
                                         "reduce",
-                                        BatchStreamingUnifiedFunctions.ReduceFunction.class,
+                                        ReduceFunction.class,
                                         WindowAssigner.class,
                                         Trigger.class)
                                 .invoke(null, reduceFunction, assigner, trigger);
@@ -137,19 +137,16 @@ public class Windows {
             }
         }
 
-        /**
-         * Pre-aggregate elements but provide more context than {@link
-         * #reduce(BatchStreamingUnifiedFunctions.ReduceFunction)}
-         */
+        /** Pre-aggregate elements but provide more context than {@link #reduce(ReduceFunction)} */
         @SuppressWarnings("unchecked")
         public SingleStreamProcessFunction<IN, IN> reduce(
-                BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction,
+                ReduceFunction<IN> reduceFunction,
                 WindowProcessFunction<IN, IN, W> windowProcessFunction) {
             try {
                 return (SingleStreamProcessFunction<IN, IN>)
                         INSTANCE.getMethod(
                                         "reduce",
-                                        BatchStreamingUnifiedFunctions.ReduceFunction.class,
+                                        ReduceFunction.class,
                                         WindowProcessFunction.class,
                                         WindowAssigner.class,
                                         Trigger.class)

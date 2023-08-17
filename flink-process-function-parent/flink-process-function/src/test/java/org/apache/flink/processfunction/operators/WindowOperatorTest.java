@@ -33,6 +33,7 @@ import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctio
 import org.apache.flink.processfunction.api.builtin.Sinks;
 import org.apache.flink.processfunction.api.builtin.Sources;
 import org.apache.flink.processfunction.api.builtin.Windows;
+import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.stream.GlobalStream;
 import org.apache.flink.processfunction.api.stream.NonKeyedPartitionStream;
@@ -141,10 +142,7 @@ class WindowOperatorTest implements Serializable {
                                                 Windows.TimeWindows.<Integer>ofTumbling(
                                                         Time.seconds(5),
                                                         Windows.TimeWindows.TimeType.EVENT))
-                                        .reduce(
-                                                (BatchStreamingUnifiedFunctions.ReduceFunction<
-                                                                Integer>)
-                                                        Integer::sum));
+                                        .reduce((ReduceFunction<Integer>) Integer::sum));
         process.sinkTo(
                 Sinks.consumer(
                         (x) -> {
@@ -190,9 +188,7 @@ class WindowOperatorTest implements Serializable {
                                                         Time.seconds(5),
                                                         Windows.TimeWindows.TimeType.EVENT))
                                         .reduce(
-                                                (BatchStreamingUnifiedFunctions.ReduceFunction<
-                                                                Integer>)
-                                                        Integer::sum,
+                                                (ReduceFunction<Integer>) Integer::sum,
                                                 new WindowProcessFunction<
                                                         Integer, Integer, Window>() {
                                                     @Override
@@ -249,8 +245,7 @@ class WindowOperatorTest implements Serializable {
                                                         Time.seconds(5),
                                                         Windows.TimeWindows.TimeType.EVENT))
                                         .reduce(
-                                                new BatchStreamingUnifiedFunctions.ReduceFunction<
-                                                        Integer>() {
+                                                new ReduceFunction<Integer>() {
                                                     @Override
                                                     public Integer reduce(
                                                             Integer value1, Integer value2)
@@ -316,8 +311,7 @@ class WindowOperatorTest implements Serializable {
                                                         Time.seconds(5),
                                                         Windows.TimeWindows.TimeType.EVENT))
                                         .reduce(
-                                                new BatchStreamingUnifiedFunctions.ReduceFunction<
-                                                        Integer>() {
+                                                new ReduceFunction<Integer>() {
                                                     @Override
                                                     public Integer reduce(
                                                             Integer value1, Integer value2)

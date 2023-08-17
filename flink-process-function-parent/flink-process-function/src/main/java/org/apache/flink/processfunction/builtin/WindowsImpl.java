@@ -19,8 +19,8 @@
 package org.apache.flink.processfunction.builtin;
 
 import org.apache.flink.api.common.time.Time;
-import org.apache.flink.processfunction.api.builtin.BatchStreamingUnifiedFunctions;
 import org.apache.flink.processfunction.api.builtin.Windows;
+import org.apache.flink.processfunction.api.function.ReduceFunction;
 import org.apache.flink.processfunction.api.function.SingleStreamProcessFunction;
 import org.apache.flink.processfunction.api.function.WindowProcessFunction;
 import org.apache.flink.processfunction.api.windowing.assigner.WindowAssigner;
@@ -36,7 +36,7 @@ import org.apache.flink.processfunction.windows.assigner.TumblingProcessTimeWind
 
 public class WindowsImpl {
     public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
-            BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction,
+            ReduceFunction<IN> reduceFunction,
             WindowAssigner<IN, W> windowAssigner,
             Trigger<IN, W> trigger) {
         return new InternalReduceWindowFunction<>(
@@ -44,7 +44,7 @@ public class WindowsImpl {
     }
 
     public static <IN, W extends Window> SingleStreamProcessFunction<IN, IN> reduce(
-            BatchStreamingUnifiedFunctions.ReduceFunction<IN> reduceFunction,
+            ReduceFunction<IN> reduceFunction,
             WindowProcessFunction<IN, IN, W> windowProcessFunction,
             WindowAssigner<IN, W> windowAssigner,
             Trigger<IN, W> trigger) {
