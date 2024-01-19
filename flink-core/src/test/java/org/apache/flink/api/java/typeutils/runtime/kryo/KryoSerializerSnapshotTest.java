@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime.kryo;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
@@ -46,13 +46,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /** Tests for {@link KryoSerializerSnapshot}. */
 public class KryoSerializerSnapshotTest {
 
-    private ExecutionConfig oldConfig;
-    private ExecutionConfig newConfig;
+    private SerializerConfig oldConfig;
+    private SerializerConfig newConfig;
 
     @Before
     public void setup() {
-        oldConfig = new ExecutionConfig();
-        newConfig = new ExecutionConfig();
+        oldConfig = new SerializerConfig();
+        newConfig = new SerializerConfig();
     }
 
     @Test
@@ -103,7 +103,7 @@ public class KryoSerializerSnapshotTest {
         TypeSerializerSnapshot<Animal> restoredSnapshot = kryoSnapshotWithMissingClass();
 
         TypeSerializer<Animal> currentSerializer =
-                new KryoSerializer<>(Animal.class, new ExecutionConfig());
+                new KryoSerializer<>(Animal.class, new SerializerConfig());
 
         assertThat(
                 currentSerializer
@@ -137,7 +137,7 @@ public class KryoSerializerSnapshotTest {
         try {
             Thread.currentThread().setContextClassLoader(outsideClassLoading.getClassLoader());
 
-            ExecutionConfig conf = new ExecutionConfig();
+            SerializerConfig conf = new SerializerConfig();
             conf.registerKryoType(outsideClassLoading.getObject().getClass());
 
             KryoSerializer<Animal> previousSerializer = new KryoSerializer<>(Animal.class, conf);
@@ -153,7 +153,7 @@ public class KryoSerializerSnapshotTest {
     }
 
     private static TypeSerializerSchemaCompatibility<Animal> resolveKryoCompatibility(
-            ExecutionConfig previous, ExecutionConfig current) {
+            SerializerConfig previous, SerializerConfig current) {
         KryoSerializer<Animal> previousSerializer = new KryoSerializer<>(Animal.class, previous);
         TypeSerializerSnapshot<Animal> previousSnapshot =
                 previousSerializer.snapshotConfiguration();

@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.java.typeutils.runtime;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -80,7 +80,7 @@ class RowSerializerTest {
         namedPositionedRow.setField(2, null);
         namedPositionedRow.setField("d", false);
 
-        final TypeSerializer<Row> serializer = rowTypeInfo.createSerializer(new ExecutionConfig());
+        final TypeSerializer<Row> serializer = rowTypeInfo.createSerializer(new SerializerConfig());
         final RowSerializerTestInstance instance =
                 new RowSerializerTestInstance(
                         serializer, positionedRow, namedRow, sparseNamedRow, namedPositionedRow);
@@ -119,7 +119,7 @@ class RowSerializerTest {
         row.setField(11, null);
         row.setField(12, "Test");
 
-        TypeSerializer<Row> serializer = typeInfo.createSerializer(new ExecutionConfig());
+        TypeSerializer<Row> serializer = typeInfo.createSerializer(new SerializerConfig());
         RowSerializerTestInstance testInstance = new RowSerializerTestInstance(serializer, row);
         testInstance.testAll();
     }
@@ -204,7 +204,7 @@ class RowSerializerTest {
                             testPojo3)
                 };
 
-        TypeSerializer<Row> serializer = typeInfo.createSerializer(new ExecutionConfig());
+        TypeSerializer<Row> serializer = typeInfo.createSerializer(new SerializerConfig());
         RowSerializerTestInstance testInstance = new RowSerializerTestInstance(serializer, data);
         testInstance.testAll();
     }

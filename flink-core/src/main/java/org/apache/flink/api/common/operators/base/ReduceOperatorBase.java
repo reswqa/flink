@@ -223,16 +223,22 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>>
         FunctionUtils.openFunction(function, DefaultOpenContext.INSTANCE);
 
         TypeSerializer<T> serializer =
-                getOperatorInfo().getInputType().createSerializer(executionConfig);
+                getOperatorInfo()
+                        .getInputType()
+                        .createSerializer(executionConfig.getSerializerConfig());
 
         if (inputColumns.length > 0) {
             boolean[] inputOrderings = new boolean[inputColumns.length];
             TypeComparator<T> inputComparator =
                     inputType instanceof AtomicType
-                            ? ((AtomicType<T>) inputType).createComparator(false, executionConfig)
+                            ? ((AtomicType<T>) inputType)
+                                    .createComparator(false, executionConfig.getSerializerConfig())
                             : ((CompositeType<T>) inputType)
                                     .createComparator(
-                                            inputColumns, inputOrderings, 0, executionConfig);
+                                            inputColumns,
+                                            inputOrderings,
+                                            0,
+                                            executionConfig.getSerializerConfig());
 
             Map<TypeComparable<T>, T> aggregateMap =
                     new HashMap<TypeComparable<T>, T>(inputData.size() / 10);

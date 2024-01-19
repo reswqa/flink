@@ -20,8 +20,8 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -62,7 +62,7 @@ public class WritableTypeInfo<T extends Writable> extends TypeInformation<T>
     @Override
     @PublicEvolving
     public TypeComparator<T> createComparator(
-            boolean sortOrderAscending, ExecutionConfig executionConfig) {
+            boolean sortOrderAscending, SerializerConfig serializerConfig) {
         if (Comparable.class.isAssignableFrom(typeClass)) {
             return new WritableComparator(sortOrderAscending, typeClass);
         } else {
@@ -112,7 +112,7 @@ public class WritableTypeInfo<T extends Writable> extends TypeInformation<T>
 
     @Override
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerConfig serializerConfig) {
         return new WritableSerializer<T>(typeClass);
     }
 

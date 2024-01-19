@@ -18,8 +18,8 @@
 package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -215,7 +215,7 @@ public class RowTypeInfo extends TupleTypeInfoBase<Row> {
             int[] logicalKeyFields,
             boolean[] orders,
             int logicalFieldOffset,
-            ExecutionConfig config) {
+            SerializerConfig config) {
 
         comparatorOrders = orders;
         TypeComparator<Row> comparator =
@@ -248,7 +248,7 @@ public class RowTypeInfo extends TupleTypeInfoBase<Row> {
     }
 
     @Override
-    public TypeSerializer<Row> createSerializer(ExecutionConfig config) {
+    public TypeSerializer<Row> createSerializer(SerializerConfig config) {
         int len = getArity();
         TypeSerializer<?>[] fieldSerializers = new TypeSerializer[len];
         for (int i = 0; i < len; i++) {
@@ -307,7 +307,7 @@ public class RowTypeInfo extends TupleTypeInfoBase<Row> {
      * <p>The serialization format has changed from 1.10 to 1.11 and added {@link Row#getKind()}.
      */
     @Deprecated
-    public TypeSerializer<Row> createLegacySerializer(ExecutionConfig config) {
+    public TypeSerializer<Row> createLegacySerializer(SerializerConfig config) {
         int len = getArity();
         TypeSerializer<?>[] fieldSerializers = new TypeSerializer[len];
         for (int i = 0; i < len; i++) {
@@ -354,7 +354,7 @@ public class RowTypeInfo extends TupleTypeInfoBase<Row> {
         }
 
         @Override
-        public TypeComparator<Row> createTypeComparator(ExecutionConfig config) {
+        public TypeComparator<Row> createTypeComparator(SerializerConfig config) {
             checkState(
                     fieldComparators.size() > 0,
                     "No field comparators were defined for the TupleTypeComparatorBuilder.");

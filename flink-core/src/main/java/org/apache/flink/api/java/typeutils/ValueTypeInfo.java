@@ -20,8 +20,8 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -163,7 +163,7 @@ public class ValueTypeInfo<T extends Value> extends TypeInformation<T> implement
     @Override
     @SuppressWarnings("unchecked")
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerConfig serializerConfig) {
         if (BooleanValue.class.isAssignableFrom(type)) {
             return (TypeSerializer<T>) BooleanValueSerializer.INSTANCE;
         } else if (ByteValue.class.isAssignableFrom(type)) {
@@ -196,7 +196,7 @@ public class ValueTypeInfo<T extends Value> extends TypeInformation<T> implement
     @Override
     @PublicEvolving
     public TypeComparator<T> createComparator(
-            boolean sortOrderAscending, ExecutionConfig executionConfig) {
+            boolean sortOrderAscending, SerializerConfig serializerConfig) {
         if (!isKeyType()) {
             throw new RuntimeException("The type " + type.getName() + " is not Comparable.");
         }

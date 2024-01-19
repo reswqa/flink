@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime.kryo;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.core.testutils.BlockerSync;
@@ -47,35 +47,35 @@ public class KryoSerializerConcurrencyTest {
 
     @Test
     public void testDuplicateSerializerWithDefaultSerializerClass() {
-        ExecutionConfig executionConfig = new ExecutionConfig();
-        executionConfig.addDefaultKryoSerializer(WrappedString.class, TestSerializer.class);
-        runDuplicateSerializerTest(executionConfig);
+        SerializerConfig serializerConfig = new SerializerConfig();
+        serializerConfig.addDefaultKryoSerializer(WrappedString.class, TestSerializer.class);
+        runDuplicateSerializerTest(serializerConfig);
     }
 
     @Test
     public void testDuplicateSerializerWithDefaultSerializerInstance() {
-        ExecutionConfig executionConfig = new ExecutionConfig();
-        executionConfig.addDefaultKryoSerializer(WrappedString.class, new TestSerializer());
-        runDuplicateSerializerTest(executionConfig);
+        SerializerConfig serializerConfig = new SerializerConfig();
+        serializerConfig.addDefaultKryoSerializer(WrappedString.class, new TestSerializer());
+        runDuplicateSerializerTest(serializerConfig);
     }
 
     @Test
     public void testDuplicateSerializerWithRegisteredSerializerClass() {
-        ExecutionConfig executionConfig = new ExecutionConfig();
-        executionConfig.registerTypeWithKryoSerializer(WrappedString.class, TestSerializer.class);
-        runDuplicateSerializerTest(executionConfig);
+        SerializerConfig serializerConfig = new SerializerConfig();
+        serializerConfig.registerTypeWithKryoSerializer(WrappedString.class, TestSerializer.class);
+        runDuplicateSerializerTest(serializerConfig);
     }
 
     @Test
     public void testDuplicateSerializerWithRegisteredSerializerInstance() {
-        ExecutionConfig executionConfig = new ExecutionConfig();
-        executionConfig.registerTypeWithKryoSerializer(WrappedString.class, new TestSerializer());
-        runDuplicateSerializerTest(executionConfig);
+        SerializerConfig serializerConfig = new SerializerConfig();
+        serializerConfig.registerTypeWithKryoSerializer(WrappedString.class, new TestSerializer());
+        runDuplicateSerializerTest(serializerConfig);
     }
 
-    private void runDuplicateSerializerTest(ExecutionConfig executionConfig) {
+    private void runDuplicateSerializerTest(SerializerConfig serializerConfig) {
         final KryoSerializer<WrappedString> original =
-                new KryoSerializer<>(WrappedString.class, executionConfig);
+                new KryoSerializer<>(WrappedString.class, serializerConfig);
         final KryoSerializer<WrappedString> duplicate = original.duplicate();
 
         WrappedString testString = new WrappedString("test");
@@ -93,7 +93,7 @@ public class KryoSerializerConcurrencyTest {
     @Test
     public void testConcurrentUseOfSerializer() throws Exception {
         final KryoSerializer<String> serializer =
-                new KryoSerializer<>(String.class, new ExecutionConfig());
+                new KryoSerializer<>(String.class, new SerializerConfig());
 
         final BlockerSync sync = new BlockerSync();
 

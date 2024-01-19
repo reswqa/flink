@@ -320,7 +320,8 @@ public abstract class StateDescriptor<S extends State, T> implements Serializabl
                     @Override
                     public <T> TypeSerializer<T> createSerializer(
                             TypeInformation<T> typeInformation) {
-                        return typeInformation.createSerializer(executionConfig);
+                        return typeInformation.createSerializer(
+                                executionConfig.getSerializerConfig());
                     }
                 });
     }

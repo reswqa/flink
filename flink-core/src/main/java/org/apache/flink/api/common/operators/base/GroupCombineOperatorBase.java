@@ -95,9 +95,11 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
             ExecutionConfig executionConfig) {
         if (typeInfo instanceof CompositeType) {
             return ((CompositeType<IN>) typeInfo)
-                    .createComparator(sortColumns, sortOrderings, 0, executionConfig);
+                    .createComparator(
+                            sortColumns, sortOrderings, 0, executionConfig.getSerializerConfig());
         } else if (typeInfo instanceof AtomicType) {
-            return ((AtomicType<IN>) typeInfo).createComparator(sortOrderings[0], executionConfig);
+            return ((AtomicType<IN>) typeInfo)
+                    .createComparator(sortOrderings[0], executionConfig.getSerializerConfig());
         }
 
         throw new InvalidProgramException(
@@ -146,9 +148,12 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
         ArrayList<OUT> result = new ArrayList<OUT>();
 
         if (keyColumns.length == 0) {
-            final TypeSerializer<IN> inputSerializer = inputType.createSerializer(executionConfig);
+            final TypeSerializer<IN> inputSerializer =
+                    inputType.createSerializer(executionConfig.getSerializerConfig());
             TypeSerializer<OUT> outSerializer =
-                    getOperatorInfo().getOutputType().createSerializer(executionConfig);
+                    getOperatorInfo()
+                            .getOutputType()
+                            .createSerializer(executionConfig.getSerializerConfig());
             List<IN> inputDataCopy = new ArrayList<IN>(inputData.size());
             for (IN in : inputData) {
                 inputDataCopy.add(inputSerializer.copy(in));
@@ -158,7 +163,8 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
 
             function.combine(inputDataCopy, collector);
         } else {
-            final TypeSerializer<IN> inputSerializer = inputType.createSerializer(executionConfig);
+            final TypeSerializer<IN> inputSerializer =
+                    inputType.createSerializer(executionConfig.getSerializerConfig());
             boolean[] keyOrderings = new boolean[keyColumns.length];
             final TypeComparator<IN> comparator =
                     getTypeComparator(inputType, keyColumns, keyOrderings, executionConfig);
@@ -167,7 +173,9 @@ public class GroupCombineOperatorBase<IN, OUT, FT extends GroupCombineFunction<I
                     new ListKeyGroupedIterator<IN>(inputData, inputSerializer, comparator);
 
             TypeSerializer<OUT> outSerializer =
-                    getOperatorInfo().getOutputType().createSerializer(executionConfig);
+                    getOperatorInfo()
+                            .getOutputType()
+                            .createSerializer(executionConfig.getSerializerConfig());
             CopyingListCollector<OUT> collector =
                     new CopyingListCollector<OUT>(result, outSerializer);
 

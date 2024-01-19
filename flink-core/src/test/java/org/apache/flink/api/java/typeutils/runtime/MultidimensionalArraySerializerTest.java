@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SerializerTestInstance;
@@ -36,7 +36,10 @@ public class MultidimensionalArraySerializerTest {
 
         SerializerTestInstance<String[][]> testInstance =
                 new SerializerTestInstance<String[][]>(
-                        ti.createSerializer(new ExecutionConfig()), String[][].class, -1, array) {};
+                        ti.createSerializer(new SerializerConfig()),
+                        String[][].class,
+                        -1,
+                        array) {};
         testInstance.testAll();
     }
 
@@ -47,7 +50,7 @@ public class MultidimensionalArraySerializerTest {
 
         SerializerTestInstance<int[][]> testInstance =
                 new SerializerTestInstance<int[][]>(
-                        ti.createSerializer(new ExecutionConfig()), int[][].class, -1, array) {};
+                        ti.createSerializer(new SerializerConfig()), int[][].class, -1, array) {};
         testInstance.testAll();
     }
 
@@ -79,7 +82,7 @@ public class MultidimensionalArraySerializerTest {
 
         SerializerTestInstance<Integer[][]> testInstance =
                 new SerializerTestInstance<Integer[][]>(
-                        ti.createSerializer(new ExecutionConfig()),
+                        ti.createSerializer(new SerializerConfig()),
                         Integer[][].class,
                         -1,
                         array) {};
@@ -93,7 +96,7 @@ public class MultidimensionalArraySerializerTest {
 
         SerializerTestInstance<MyPojo[][]> testInstance2 =
                 new SerializerTestInstance<MyPojo[][]>(
-                        ti2.createSerializer(new ExecutionConfig()),
+                        ti2.createSerializer(new SerializerConfig()),
                         MyPojo[][].class,
                         -1,
                         array2) {};
@@ -139,7 +142,7 @@ public class MultidimensionalArraySerializerTest {
 
         SerializerTestInstance testInstance =
                 new SerializerTestInstance(
-                        ti.createSerializer(new ExecutionConfig()),
+                        ti.createSerializer(new SerializerConfig()),
                         MyGenericPojo[][].class,
                         -1,
                         (Object) array) {};

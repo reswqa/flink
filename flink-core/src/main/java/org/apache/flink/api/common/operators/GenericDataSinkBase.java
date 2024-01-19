@@ -248,11 +248,16 @@ public class GenericDataSinkBase<IN> extends Operator<Nothing> {
             if (inputType instanceof CompositeType) {
                 sortComparator =
                         ((CompositeType<IN>) inputType)
-                                .createComparator(sortColumns, sortOrderings, 0, executionConfig);
+                                .createComparator(
+                                        sortColumns,
+                                        sortOrderings,
+                                        0,
+                                        executionConfig.getSerializerConfig());
             } else if (inputType instanceof AtomicType) {
                 sortComparator =
                         ((AtomicType<IN>) inputType)
-                                .createComparator(sortOrderings[0], executionConfig);
+                                .createComparator(
+                                        sortOrderings[0], executionConfig.getSerializerConfig());
             } else {
                 throw new UnsupportedOperationException(
                         "Local output sorting does not support type " + inputType + " yet.");

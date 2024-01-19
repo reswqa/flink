@@ -19,6 +19,7 @@ package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.annotation.{Public, PublicEvolving}
 import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
 
@@ -48,7 +49,7 @@ class ScalaNothingTypeInfo extends TypeInformation[Nothing] {
   override def isKeyType: Boolean = false
 
   @PublicEvolving
-  override def createSerializer(config: ExecutionConfig): TypeSerializer[Nothing] =
+  override def createSerializer(config: SerializerConfig): TypeSerializer[Nothing] =
     (new NothingSerializer).asInstanceOf[TypeSerializer[Nothing]]
 
   override def hashCode(): Int = classOf[ScalaNothingTypeInfo].hashCode

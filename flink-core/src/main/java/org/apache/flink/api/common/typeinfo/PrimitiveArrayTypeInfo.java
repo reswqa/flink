@@ -20,8 +20,8 @@ package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.array.BooleanPrimitiveArrayComparator;
 import org.apache.flink.api.common.typeutils.base.array.BooleanPrimitiveArraySerializer;
@@ -171,7 +171,7 @@ public class PrimitiveArrayTypeInfo<T> extends TypeInformation<T> implements Ato
 
     @Override
     @PublicEvolving
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerConfig serializerConfig) {
         return this.serializer;
     }
 
@@ -265,7 +265,7 @@ public class PrimitiveArrayTypeInfo<T> extends TypeInformation<T> implements Ato
     @Override
     @PublicEvolving
     public PrimitiveArrayComparator<T, ?> createComparator(
-            boolean sortOrderAscending, ExecutionConfig executionConfig) {
+            boolean sortOrderAscending, SerializerConfig serializerConfig) {
         try {
             return comparatorClass.getConstructor(boolean.class).newInstance(sortOrderAscending);
         } catch (Exception e) {

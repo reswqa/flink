@@ -18,9 +18,9 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.common.operators.Keys.IncompatibleKeysException;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType.FlatFieldDescriptor;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
@@ -55,7 +55,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
 
     @Override
     protected TypeSerializer<TestUserClass> createSerializer() {
-        TypeSerializer<TestUserClass> serializer = type.createSerializer(new ExecutionConfig());
+        TypeSerializer<TestUserClass> serializer = type.createSerializer(new SerializerConfig());
         assert (serializer instanceof PojoSerializer);
         return serializer;
     }
@@ -251,7 +251,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
         int[] fields = new int[1]; // see below
         fields[0] = result.get(0).getPosition();
         TypeComparator<TestUserClass> pojoComp =
-                pType.createComparator(fields, new boolean[] {true}, 0, new ExecutionConfig());
+                pType.createComparator(fields, new boolean[] {true}, 0, new SerializerConfig());
 
         TestUserClass pojoTestRecord =
                 new TestUserClass(
@@ -268,7 +268,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
                 (TupleTypeInfo<Tuple1<String>>) TypeExtractor.getForObject(tupleTest);
         TypeComparator<Tuple1<String>> tupleComp =
                 tType.createComparator(
-                        new int[] {0}, new boolean[] {true}, 0, new ExecutionConfig());
+                        new int[] {0}, new boolean[] {true}, 0, new SerializerConfig());
 
         int tHash = tupleComp.hash(tupleTest);
 
@@ -300,7 +300,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
                         expressKey.computeLogicalKeyPositions(),
                         new boolean[] {true, true, true},
                         0,
-                        new ExecutionConfig());
+                        new SerializerConfig());
         int multiPojoHash = multiPojoComp.hash(pojoTestRecord);
 
         // pojo order is: dumm2 (str), dumm1 (int), dumm3 (double).
@@ -309,7 +309,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
                         fieldKey.computeLogicalKeyPositions(),
                         new boolean[] {true, true, true},
                         0,
-                        new ExecutionConfig());
+                        new SerializerConfig());
         int multiTupleHash = multiTupleComp.hash(multiTupleTest);
 
         assertThat(multiPojoHash)
@@ -331,7 +331,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
         PojoSerializer<SubTestUserClassB> pojoSerializer1 =
                 (PojoSerializer<SubTestUserClassB>)
                         TypeExtractor.getForClass(SubTestUserClassB.class)
-                                .createSerializer(new ExecutionConfig());
+                                .createSerializer(new SerializerConfig());
 
         // snapshot configuration and serialize to bytes
         TypeSerializerSnapshot pojoSerializerConfigSnapshot =
@@ -346,7 +346,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
         PojoSerializer<SubTestUserClassA> pojoSerializer2 =
                 (PojoSerializer<SubTestUserClassA>)
                         TypeExtractor.getForClass(SubTestUserClassA.class)
-                                .createSerializer(new ExecutionConfig());
+                                .createSerializer(new SerializerConfig());
 
         // read configuration again from bytes
         try (ByteArrayInputStream in = new ByteArrayInputStream(serializedConfig)) {
@@ -369,12 +369,12 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
      */
     @Test
     void testReconfigureDifferentSubclassRegistrationOrder() throws Exception {
-        ExecutionConfig executionConfig = new ExecutionConfig();
-        executionConfig.registerPojoType(SubTestUserClassA.class);
-        executionConfig.registerPojoType(SubTestUserClassB.class);
+        SerializerConfig serializerConfig = new SerializerConfig();
+        serializerConfig.registerPojoType(SubTestUserClassA.class);
+        serializerConfig.registerPojoType(SubTestUserClassB.class);
 
         PojoSerializer<TestUserClass> pojoSerializer =
-                (PojoSerializer<TestUserClass>) type.createSerializer(executionConfig);
+                (PojoSerializer<TestUserClass>) type.createSerializer(serializerConfig);
 
         // get original registration ids
         int subClassATag = pojoSerializer.getRegisteredClasses().get(SubTestUserClassA.class);
@@ -391,12 +391,12 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
         }
 
         // use new config and instantiate new PojoSerializer
-        executionConfig = new ExecutionConfig();
-        executionConfig.registerPojoType(
+        serializerConfig = new SerializerConfig();
+        serializerConfig.registerPojoType(
                 SubTestUserClassB.class); // test with B registered before A
-        executionConfig.registerPojoType(SubTestUserClassA.class);
+        serializerConfig.registerPojoType(SubTestUserClassA.class);
 
-        pojoSerializer = (PojoSerializer<TestUserClass>) type.createSerializer(executionConfig);
+        pojoSerializer = (PojoSerializer<TestUserClass>) type.createSerializer(serializerConfig);
 
         // read configuration from bytes
         try (ByteArrayInputStream in = new ByteArrayInputStream(serializedConfig)) {
@@ -438,7 +438,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
     void testReconfigureRepopulateNonregisteredSubclassSerializerCache() throws Exception {
         // don't register any subclasses
         PojoSerializer<TestUserClass> pojoSerializer =
-                (PojoSerializer<TestUserClass>) type.createSerializer(new ExecutionConfig());
+                (PojoSerializer<TestUserClass>) type.createSerializer(new SerializerConfig());
 
         // create cached serializers for SubTestUserClassA and SubTestUserClassB
         pojoSerializer.getSubclassSerializer(SubTestUserClassA.class);
@@ -460,7 +460,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
         // instantiate new PojoSerializer
 
         pojoSerializer =
-                (PojoSerializer<TestUserClass>) type.createSerializer(new ExecutionConfig());
+                (PojoSerializer<TestUserClass>) type.createSerializer(new SerializerConfig());
 
         // read configuration from bytes
         try (ByteArrayInputStream in = new ByteArrayInputStream(serializedConfig)) {
@@ -504,7 +504,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
     void testReconfigureWithPreviouslyNonregisteredSubclasses() throws Exception {
         // don't register any subclasses at first
         PojoSerializer<TestUserClass> pojoSerializer =
-                (PojoSerializer<TestUserClass>) type.createSerializer(new ExecutionConfig());
+                (PojoSerializer<TestUserClass>) type.createSerializer(new SerializerConfig());
 
         // create cached serializers for SubTestUserClassA and SubTestUserClassB
         pojoSerializer.getSubclassSerializer(SubTestUserClassA.class);
@@ -530,10 +530,10 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
 
         // instantiate new PojoSerializer, with new execution config that has the subclass
         // registrations
-        ExecutionConfig newExecutionConfig = new ExecutionConfig();
-        newExecutionConfig.registerPojoType(SubTestUserClassA.class);
-        newExecutionConfig.registerPojoType(SubTestUserClassB.class);
-        pojoSerializer = (PojoSerializer<TestUserClass>) type.createSerializer(newExecutionConfig);
+        SerializerConfig serializerConfig = new SerializerConfig();
+        serializerConfig.registerPojoType(SubTestUserClassA.class);
+        serializerConfig.registerPojoType(SubTestUserClassB.class);
+        pojoSerializer = (PojoSerializer<TestUserClass>) type.createSerializer(serializerConfig);
 
         // read configuration from bytes
         try (ByteArrayInputStream in = new ByteArrayInputStream(serializedConfig)) {

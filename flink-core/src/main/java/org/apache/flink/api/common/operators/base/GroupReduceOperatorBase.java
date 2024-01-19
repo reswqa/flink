@@ -178,9 +178,11 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
             ExecutionConfig executionConfig) {
         if (typeInfo instanceof CompositeType) {
             return ((CompositeType<IN>) typeInfo)
-                    .createComparator(sortColumns, sortOrderings, 0, executionConfig);
+                    .createComparator(
+                            sortColumns, sortOrderings, 0, executionConfig.getSerializerConfig());
         } else if (typeInfo instanceof AtomicType) {
-            return ((AtomicType<IN>) typeInfo).createComparator(sortOrderings[0], executionConfig);
+            return ((AtomicType<IN>) typeInfo)
+                    .createComparator(sortOrderings[0], executionConfig.getSerializerConfig());
         }
 
         throw new InvalidProgramException(
@@ -228,10 +230,13 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
         ArrayList<OUT> result = new ArrayList<OUT>();
 
         if (inputData.size() > 0) {
-            final TypeSerializer<IN> inputSerializer = inputType.createSerializer(executionConfig);
+            final TypeSerializer<IN> inputSerializer =
+                    inputType.createSerializer(executionConfig.getSerializerConfig());
             if (keyColumns.length == 0) {
                 TypeSerializer<OUT> outSerializer =
-                        getOperatorInfo().getOutputType().createSerializer(executionConfig);
+                        getOperatorInfo()
+                                .getOutputType()
+                                .createSerializer(executionConfig.getSerializerConfig());
                 List<IN> inputDataCopy = new ArrayList<IN>(inputData.size());
                 for (IN in : inputData) {
                     inputDataCopy.add(inputSerializer.copy(in));
@@ -249,7 +254,9 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
                         new ListKeyGroupedIterator<IN>(inputData, inputSerializer, comparator);
 
                 TypeSerializer<OUT> outSerializer =
-                        getOperatorInfo().getOutputType().createSerializer(executionConfig);
+                        getOperatorInfo()
+                                .getOutputType()
+                                .createSerializer(executionConfig.getSerializerConfig());
                 CopyingListCollector<OUT> collector =
                         new CopyingListCollector<OUT>(result, outSerializer);
 

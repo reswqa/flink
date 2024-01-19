@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.java.typeutils.runtime;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.ComparatorTestBase;
@@ -68,12 +68,12 @@ class RowComparatorWithManyFieldsTests extends ComparatorTestBase<Row> {
     @Override
     protected TypeComparator<Row> createComparator(boolean ascending) {
         return typeInfo.createComparator(
-                new int[] {0}, new boolean[] {ascending}, 0, new ExecutionConfig());
+                new int[] {0}, new boolean[] {ascending}, 0, new SerializerConfig());
     }
 
     @Override
     protected TypeSerializer<Row> createSerializer() {
-        return typeInfo.createSerializer(new ExecutionConfig());
+        return typeInfo.createSerializer(new SerializerConfig());
     }
 
     @Override

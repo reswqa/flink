@@ -117,8 +117,10 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
         TypeComparator<IN2> rightComparator =
                 buildComparatorFor(1, executionConfig, rightInformation);
 
-        TypeSerializer<IN1> leftSerializer = leftInformation.createSerializer(executionConfig);
-        TypeSerializer<IN2> rightSerializer = rightInformation.createSerializer(executionConfig);
+        TypeSerializer<IN1> leftSerializer =
+                leftInformation.createSerializer(executionConfig.getSerializerConfig());
+        TypeSerializer<IN2> rightSerializer =
+                rightInformation.createSerializer(executionConfig.getSerializerConfig());
 
         OuterJoinListIterator<IN1, IN2> outerJoinIterator =
                 new OuterJoinListIterator<>(
@@ -141,7 +143,8 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
         List<OUT> result = new ArrayList<>();
         Collector<OUT> collector =
                 new CopyingListCollector<>(
-                        result, outInformation.createSerializer(executionConfig));
+                        result,
+                        outInformation.createSerializer(executionConfig.getSerializerConfig()));
 
         while (outerJoinIterator.next()) {
             IN1 left = outerJoinIterator.getLeft();
@@ -162,7 +165,9 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
             int input, ExecutionConfig executionConfig, TypeInformation<T> typeInformation) {
         TypeComparator<T> comparator;
         if (typeInformation instanceof AtomicType) {
-            comparator = ((AtomicType<T>) typeInformation).createComparator(true, executionConfig);
+            comparator =
+                    ((AtomicType<T>) typeInformation)
+                            .createComparator(true, executionConfig.getSerializerConfig());
         } else if (typeInformation instanceof CompositeType) {
             int[] keyPositions = getKeyColumns(input);
             boolean[] orders = new boolean[keyPositions.length];
@@ -170,7 +175,8 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
             comparator =
                     ((CompositeType<T>) typeInformation)
-                            .createComparator(keyPositions, orders, 0, executionConfig);
+                            .createComparator(
+                                    keyPositions, orders, 0, executionConfig.getSerializerConfig());
         } else {
             throw new RuntimeException(
                     "Type information for input of type "

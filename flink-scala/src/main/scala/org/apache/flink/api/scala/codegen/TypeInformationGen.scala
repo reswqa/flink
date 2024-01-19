@@ -18,7 +18,7 @@
 package org.apache.flink.api.scala.codegen
 
 import org.apache.flink.annotation.Internal
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo._
 import org.apache.flink.api.common.typeutils._
 import org.apache.flink.api.java.typeutils._
@@ -26,7 +26,6 @@ import org.apache.flink.api.scala.typeutils._
 import org.apache.flink.types.Value
 
 import java.lang.reflect.{Field, Modifier}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -137,10 +136,10 @@ private[flink] trait TypeInformationGen[C <: Context] {
         fieldsExpr.splice,
         fieldNamesExpr.splice) {
 
-        override def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = {
+        override def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
           val fieldSerializers: Array[TypeSerializer[_]] = new Array[TypeSerializer[_]](getArity)
           for (i <- 0 until getArity) {
-            fieldSerializers(i) = types(i).createSerializer(executionConfig)
+            fieldSerializers(i) = types(i).createSerializer(serializerConfig)
           }
           // -------------------------------------------------------------------------------------
           // NOTE:

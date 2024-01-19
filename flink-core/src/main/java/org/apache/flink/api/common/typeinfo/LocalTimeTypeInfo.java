@@ -19,7 +19,7 @@
 package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.LocalDateComparator;
@@ -107,13 +107,13 @@ public class LocalTimeTypeInfo<T extends Temporal> extends TypeInformation<T>
     }
 
     @Override
-    public TypeSerializer<T> createSerializer(ExecutionConfig executionConfig) {
+    public TypeSerializer<T> createSerializer(SerializerConfig serializerConfig) {
         return serializer;
     }
 
     @Override
     public TypeComparator<T> createComparator(
-            boolean sortOrderAscending, ExecutionConfig executionConfig) {
+            boolean sortOrderAscending, SerializerConfig serializerConfig) {
         return instantiateComparator(comparatorClass, sortOrderAscending);
     }
 

@@ -19,6 +19,7 @@
 package org.apache.flink.api.common.state;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -129,7 +130,7 @@ public class StateDescriptorTest {
         assertEquals(
                 "broken test assumption",
                 -1,
-                new KryoSerializer<>(String.class, new ExecutionConfig())
+                new KryoSerializer<>(String.class, new SerializerConfig())
                         .getKryo()
                         .getRegistration(File.class)
                         .getId());
@@ -164,7 +165,7 @@ public class StateDescriptorTest {
         // we need a serializer that actually duplicates for testing (a stateful one)
         // we use Kryo here, because it meets these conditions
         TypeSerializer<String> statefulSerializer =
-                new KryoSerializer<>(String.class, new ExecutionConfig());
+                new KryoSerializer<>(String.class, new SerializerConfig());
 
         TestStateDescriptor<String> descr = new TestStateDescriptor<>("foobar", statefulSerializer);
 

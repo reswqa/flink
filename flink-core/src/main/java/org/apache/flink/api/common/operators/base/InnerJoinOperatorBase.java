@@ -95,15 +95,18 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
         TypeInformation<IN2> rightInformation = getOperatorInfo().getSecondInputType();
         TypeInformation<OUT> outInformation = getOperatorInfo().getOutputType();
 
-        TypeSerializer<IN1> leftSerializer = leftInformation.createSerializer(executionConfig);
-        TypeSerializer<IN2> rightSerializer = rightInformation.createSerializer(executionConfig);
+        TypeSerializer<IN1> leftSerializer =
+                leftInformation.createSerializer(executionConfig.getSerializerConfig());
+        TypeSerializer<IN2> rightSerializer =
+                rightInformation.createSerializer(executionConfig.getSerializerConfig());
 
         TypeComparator<IN1> leftComparator;
         TypeComparator<IN2> rightComparator;
 
         if (leftInformation instanceof AtomicType) {
             leftComparator =
-                    ((AtomicType<IN1>) leftInformation).createComparator(true, executionConfig);
+                    ((AtomicType<IN1>) leftInformation)
+                            .createComparator(true, executionConfig.getSerializerConfig());
         } else if (leftInformation instanceof CompositeType) {
             int[] keyPositions = getKeyColumns(0);
             boolean[] orders = new boolean[keyPositions.length];
@@ -111,7 +114,8 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
             leftComparator =
                     ((CompositeType<IN1>) leftInformation)
-                            .createComparator(keyPositions, orders, 0, executionConfig);
+                            .createComparator(
+                                    keyPositions, orders, 0, executionConfig.getSerializerConfig());
         } else {
             throw new RuntimeException(
                     "Type information for left input of type "
@@ -121,7 +125,8 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
         if (rightInformation instanceof AtomicType) {
             rightComparator =
-                    ((AtomicType<IN2>) rightInformation).createComparator(true, executionConfig);
+                    ((AtomicType<IN2>) rightInformation)
+                            .createComparator(true, executionConfig.getSerializerConfig());
         } else if (rightInformation instanceof CompositeType) {
             int[] keyPositions = getKeyColumns(1);
             boolean[] orders = new boolean[keyPositions.length];
@@ -129,7 +134,8 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
             rightComparator =
                     ((CompositeType<IN2>) rightInformation)
-                            .createComparator(keyPositions, orders, 0, executionConfig);
+                            .createComparator(
+                                    keyPositions, orders, 0, executionConfig.getSerializerConfig());
         } else {
             throw new RuntimeException(
                     "Type information for right input of type "
@@ -143,7 +149,8 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
         List<OUT> result = new ArrayList<OUT>();
         Collector<OUT> collector =
                 new CopyingListCollector<OUT>(
-                        result, outInformation.createSerializer(executionConfig));
+                        result,
+                        outInformation.createSerializer(executionConfig.getSerializerConfig()));
 
         Map<Integer, List<IN2>> probeTable = new HashMap<Integer, List<IN2>>();
 

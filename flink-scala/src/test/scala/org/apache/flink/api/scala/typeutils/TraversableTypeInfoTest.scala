@@ -17,7 +17,7 @@
  */
 package org.apache.flink.api.scala.typeutils
 
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
 import org.apache.flink.api.common.typeutils.{TypeInformationTestBase, TypeSerializer}
 
@@ -28,13 +28,13 @@ class TraversableTypeInfoTest extends TypeInformationTestBase[TraversableTypeInf
     new TraversableTypeInfo[Seq[Int], Int](
       classOf[Seq[Int]],
       BasicTypeInfo.INT_TYPE_INFO.asInstanceOf[TypeInformation[Int]]) {
-      override def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[Seq[Int]] =
+      override def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[Seq[Int]] =
         ???
     },
     new TraversableTypeInfo[List[Int], Int](
       classOf[List[Int]],
       BasicTypeInfo.INT_TYPE_INFO.asInstanceOf[TypeInformation[Int]]) {
-      override def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[List[Int]] =
+      override def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[List[Int]] =
         ???
     }
   )

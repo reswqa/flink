@@ -19,6 +19,7 @@
 package org.apache.flink.api.common;
 
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -86,7 +87,7 @@ public class ExecutionConfigTest {
 
     @Test
     void testDisableGenericTypes() {
-        ExecutionConfig conf = new ExecutionConfig();
+        SerializerConfig conf = new SerializerConfig();
         TypeInformation<Object> typeInfo = new GenericTypeInfo<Object>(Object.class);
 
         // by default, generic types are supported
@@ -94,7 +95,7 @@ public class ExecutionConfigTest {
         assertThat(serializer instanceof KryoSerializer).isTrue();
 
         // expect an exception when generic types are disabled
-        conf.disableGenericTypes();
+        conf.setGenericTypes(false);
         assertThatThrownBy(
                         () -> typeInfo.createSerializer(conf),
                         "should have failed with an exception")

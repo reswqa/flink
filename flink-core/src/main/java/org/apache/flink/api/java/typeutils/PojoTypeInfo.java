@@ -20,8 +20,8 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.common.typeutils.TypeComparator;
@@ -334,7 +334,7 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
     @Override
     @PublicEvolving
     @SuppressWarnings("unchecked")
-    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+    public TypeSerializer<T> createSerializer(SerializerConfig config) {
         if (config.isForceKryoEnabled()) {
             return new KryoSerializer<>(getTypeClass(), config);
         }
@@ -346,7 +346,7 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
         return createPojoSerializer(config);
     }
 
-    public PojoSerializer<T> createPojoSerializer(ExecutionConfig config) {
+    public PojoSerializer<T> createPojoSerializer(SerializerConfig config) {
         TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[fields.length];
         Field[] reflectiveFields = new Field[fields.length];
 
@@ -423,7 +423,7 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
         }
 
         @Override
-        public TypeComparator<T> createTypeComparator(ExecutionConfig config) {
+        public TypeComparator<T> createTypeComparator(SerializerConfig config) {
             checkState(
                     keyFields.size() > 0,
                     "No keys were defined for the PojoTypeComparatorBuilder.");

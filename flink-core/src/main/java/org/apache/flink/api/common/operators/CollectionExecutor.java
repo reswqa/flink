@@ -443,7 +443,11 @@ public class CollectionExecutor {
         boolean[] inputOrderings = new boolean[keyColumns.length];
         TypeComparator<T> inputComparator =
                 ((CompositeType<T>) solutionType)
-                        .createComparator(keyColumns, inputOrderings, 0, executionConfig);
+                        .createComparator(
+                                keyColumns,
+                                inputOrderings,
+                                0,
+                                executionConfig.getSerializerConfig());
 
         Map<TypeComparable<T>, T> solutionMap =
                 new HashMap<TypeComparable<T>, T>(solutionInputData.size());

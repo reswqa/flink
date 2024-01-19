@@ -18,6 +18,7 @@
 package org.apache.flink.api.scala.runtime
 
 import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.{CompositeType, TypeComparator}
 import org.apache.flink.api.scala._
@@ -44,10 +45,10 @@ class CaseClassNormalizedKeySortingTest {
     val typeInfo = implicitly[TypeInformation[CaseTestClass]]
       .asInstanceOf[CompositeType[CaseTestClass]]
 
-    val serializer = typeInfo.createSerializer(new ExecutionConfig)
+    val serializer = typeInfo.createSerializer(new SerializerConfig)
     val comparator = new FailingCompareDeserializedWrapper(
       typeInfo
-        .createComparator(Array[Int](0, 2), Array[Boolean](true, true), 0, new ExecutionConfig))
+        .createComparator(Array[Int](0, 2), Array[Boolean](true, true), 0, new SerializerConfig))
 
     assertTrue(comparator.supportsNormalizedKey())
     assertEquals(8, comparator.getNormalizeKeyLen())

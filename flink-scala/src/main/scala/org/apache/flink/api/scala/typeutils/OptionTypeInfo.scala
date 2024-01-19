@@ -18,7 +18,7 @@
 package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.annotation.{Public, PublicEvolving, VisibleForTesting}
-import org.apache.flink.api.common.ExecutionConfig
+import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.{AtomicType, TypeInformation}
 import org.apache.flink.api.common.typeutils.{TypeComparator, TypeSerializer}
 
@@ -56,11 +56,13 @@ class OptionTypeInfo[A, T <: Option[A]](private val elemTypeInfo: TypeInformatio
   override def getGenericParameters = Map[String, TypeInformation[_]]("A" -> elemTypeInfo).asJava
 
   @PublicEvolving
-  override def createComparator(ascending: Boolean, executionConfig: ExecutionConfig) = {
+  override def createComparator(
+      ascending: Boolean,
+      serializerConfig: SerializerConfig): TypeComparator[T] = {
     if (isKeyType) {
       val elemCompartor = elemTypeInfo
         .asInstanceOf[AtomicType[A]]
-        .createComparator(ascending, executionConfig)
+        .createComparator(ascending, serializerConfig)
       new OptionTypeComparator[A](ascending, elemCompartor).asInstanceOf[TypeComparator[T]]
     } else {
       throw new UnsupportedOperationException("Element type that doesn't support ")
@@ -68,12 +70,12 @@ class OptionTypeInfo[A, T <: Option[A]](private val elemTypeInfo: TypeInformatio
   }
 
   @PublicEvolving
-  def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = {
+  def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
     if (elemTypeInfo == null) {
       // this happens when the type of a DataSet is None, i.e. DataSet[None]
       new OptionSerializer(new NothingSerializer).asInstanceOf[TypeSerializer[T]]
     } else {
-      new OptionSerializer(elemTypeInfo.createSerializer(executionConfig))
+      new OptionSerializer(elemTypeInfo.createSerializer(serializerConfig))
         .asInstanceOf[TypeSerializer[T]]
     }
   }
