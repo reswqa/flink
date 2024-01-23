@@ -178,11 +178,9 @@ public class GroupReduceOperatorBase<IN, OUT, FT extends GroupReduceFunction<IN,
             ExecutionConfig executionConfig) {
         if (typeInfo instanceof CompositeType) {
             return ((CompositeType<IN>) typeInfo)
-                    .createComparator(
-                            sortColumns, sortOrderings, 0, executionConfig.getSerializerConfig());
+                    .createComparator(sortColumns, sortOrderings, 0, executionConfig);
         } else if (typeInfo instanceof AtomicType) {
-            return ((AtomicType<IN>) typeInfo)
-                    .createComparator(sortOrderings[0], executionConfig.getSerializerConfig());
+            return ((AtomicType<IN>) typeInfo).createComparator(sortOrderings[0], executionConfig);
         }
 
         throw new InvalidProgramException(

@@ -26,6 +26,7 @@ import org.apache.flink.api.scala.typeutils._
 import org.apache.flink.types.Value
 
 import java.lang.reflect.{Field, Modifier}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -262,11 +263,11 @@ private[flink] trait TypeInformationGen[C <: Context] {
       import scala.collection.generic.CanBuildFrom
       import org.apache.flink.api.scala.typeutils.TraversableTypeInfo
       import org.apache.flink.api.scala.typeutils.TraversableSerializer
-      import org.apache.flink.api.common.ExecutionConfig
+      import org.apache.flink.api.common.serialization.SerializerConfig
 
       val elementTpe = $elementTypeInfo
       new TraversableTypeInfo($collectionClass, elementTpe) {
-        def createSerializer(executionConfig: ExecutionConfig) = {
+        def createSerializer(serializerConfig: SerializerConfig) = {
 
           // -------------------------------------------------------------------------------------
           // NOTE:
@@ -275,14 +276,14 @@ private[flink] trait TypeInformationGen[C <: Context] {
           // with Flink versions pre 1.8, that were using Java deserialization.
           // -------------------------------------------------------------------------------------
           val unused = new TraversableSerializer[${desc.tpe}, ${desc.elem.tpe}](
-              elementTpe.createSerializer(executionConfig),
+              elementTpe.createSerializer(serializerConfig),
               $cbfStringLiteral) {
 
                   override def legacyCbfCode = $cbfStringLiteral
               }
 
           new TraversableSerializer[${desc.tpe}, ${desc.elem.tpe}](
-                                  elementTpe.createSerializer(executionConfig),
+                                  elementTpe.createSerializer(serializerConfig),
                                   $cbfStringLiteral)
         }
       }

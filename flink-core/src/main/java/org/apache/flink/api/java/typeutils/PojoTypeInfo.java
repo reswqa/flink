@@ -20,6 +20,7 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -423,7 +424,7 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
         }
 
         @Override
-        public TypeComparator<T> createTypeComparator(SerializerConfig config) {
+        public TypeComparator<T> createTypeComparator(ExecutionConfig config) {
             checkState(
                     keyFields.size() > 0,
                     "No keys were defined for the PojoTypeComparatorBuilder.");
@@ -439,7 +440,7 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
             return new PojoComparator<T>(
                     keyFields.toArray(new Field[keyFields.size()]),
                     fieldComparators.toArray(new TypeComparator[fieldComparators.size()]),
-                    createSerializer(config),
+                    createSerializer(config.getSerializerConfig()),
                     getTypeClass());
         }
     }

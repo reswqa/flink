@@ -293,8 +293,10 @@ public class QueryableStateClient {
         Preconditions.checkNotNull(namespaceTypeInfo);
         Preconditions.checkNotNull(stateDescriptor);
 
-        TypeSerializer<K> keySerializer = keyTypeInfo.createSerializer(executionConfig);
-        TypeSerializer<N> namespaceSerializer = namespaceTypeInfo.createSerializer(executionConfig);
+        TypeSerializer<K> keySerializer =
+                keyTypeInfo.createSerializer(executionConfig.getSerializerConfig());
+        TypeSerializer<N> namespaceSerializer =
+                namespaceTypeInfo.createSerializer(executionConfig.getSerializerConfig());
 
         stateDescriptor.initializeSerializerUnlessSet(executionConfig);
 

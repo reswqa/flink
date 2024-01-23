@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.api.functions;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -78,7 +79,7 @@ public class FromElementsFunctionTest {
 
             FromElementsFunction<String> source =
                     new FromElementsFunction<String>(
-                            BasicTypeInfo.STRING_TYPE_INFO.createSerializer(new ExecutionConfig()),
+                            BasicTypeInfo.STRING_TYPE_INFO.createSerializer(new SerializerConfig()),
                             data);
 
             List<String> result = new ArrayList<String>();
@@ -109,7 +110,7 @@ public class FromElementsFunctionTest {
 
         assertNotNull(source.getSerializer());
         assertEquals(
-                BasicTypeInfo.STRING_TYPE_INFO.createSerializer(new ExecutionConfig()),
+                BasicTypeInfo.STRING_TYPE_INFO.createSerializer(new SerializerConfig()),
                 source.getSerializer());
 
         List<String> result = runSource(source);
@@ -121,7 +122,7 @@ public class FromElementsFunctionTest {
     public void testSetOutputTypeWithSameSerializer() throws Exception {
         FromElementsFunction<String> source =
                 new FromElementsFunction<>(
-                        BasicTypeInfo.STRING_TYPE_INFO.createSerializer(new ExecutionConfig()),
+                        BasicTypeInfo.STRING_TYPE_INFO.createSerializer(new SerializerConfig()),
                         STRING_LIST_DATA);
 
         TypeSerializer<String> existingSerializer = source.getSerializer();
@@ -155,7 +156,8 @@ public class FromElementsFunctionTest {
 
         FromElementsFunction<DeserializeTooMuchType> source =
                 new FromElementsFunction<>(
-                        info.createSerializer(new ExecutionConfig()), new DeserializeTooMuchType());
+                        info.createSerializer(new SerializerConfig()),
+                        new DeserializeTooMuchType());
 
         TypeSerializer<DeserializeTooMuchType> existingSerializer = source.getSerializer();
 
@@ -200,7 +202,7 @@ public class FromElementsFunctionTest {
             FromElementsFunction<MyPojo> source =
                     new FromElementsFunction<MyPojo>(
                             TypeExtractor.getForClass(MyPojo.class)
-                                    .createSerializer(new ExecutionConfig()),
+                                    .createSerializer(new SerializerConfig()),
                             data);
 
             List<MyPojo> result = runSource(source);
@@ -233,7 +235,8 @@ public class FromElementsFunctionTest {
 
             try {
                 new FromElementsFunction<SerializationErrorType>(
-                        info.createSerializer(new ExecutionConfig()), new SerializationErrorType());
+                        info.createSerializer(new SerializerConfig()),
+                        new SerializationErrorType());
 
                 fail("should fail with an exception");
             } catch (IOException e) {
@@ -253,7 +256,7 @@ public class FromElementsFunctionTest {
 
             FromElementsFunction<DeserializeTooMuchType> source =
                     new FromElementsFunction<DeserializeTooMuchType>(
-                            info.createSerializer(new ExecutionConfig()),
+                            info.createSerializer(new SerializerConfig()),
                             new DeserializeTooMuchType());
 
             try {

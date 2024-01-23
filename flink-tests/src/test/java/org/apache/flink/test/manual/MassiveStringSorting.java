@@ -208,7 +208,7 @@ public class MassiveStringSorting {
                                 new TypeHint<Tuple2<String, String[]>>() {}.getTypeInfo();
 
                 TypeSerializer<Tuple2<String, String[]>> serializer =
-                        typeInfo.createSerializer(new ExecutionConfig());
+                        typeInfo.createSerializer(new SerializerConfig());
                 TypeComparator<Tuple2<String, String[]>> comparator =
                         typeInfo.createComparator(
                                 new int[] {0}, new boolean[] {true}, 0, new ExecutionConfig());

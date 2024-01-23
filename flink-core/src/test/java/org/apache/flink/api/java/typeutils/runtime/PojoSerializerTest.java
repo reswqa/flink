@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys;
 import org.apache.flink.api.common.operators.Keys.IncompatibleKeysException;
 import org.apache.flink.api.common.serialization.SerializerConfig;
@@ -251,7 +252,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
         int[] fields = new int[1]; // see below
         fields[0] = result.get(0).getPosition();
         TypeComparator<TestUserClass> pojoComp =
-                pType.createComparator(fields, new boolean[] {true}, 0, new SerializerConfig());
+                pType.createComparator(fields, new boolean[] {true}, 0, new ExecutionConfig());
 
         TestUserClass pojoTestRecord =
                 new TestUserClass(
@@ -268,7 +269,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
                 (TupleTypeInfo<Tuple1<String>>) TypeExtractor.getForObject(tupleTest);
         TypeComparator<Tuple1<String>> tupleComp =
                 tType.createComparator(
-                        new int[] {0}, new boolean[] {true}, 0, new SerializerConfig());
+                        new int[] {0}, new boolean[] {true}, 0, new ExecutionConfig());
 
         int tHash = tupleComp.hash(tupleTest);
 
@@ -300,7 +301,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
                         expressKey.computeLogicalKeyPositions(),
                         new boolean[] {true, true, true},
                         0,
-                        new SerializerConfig());
+                        new ExecutionConfig());
         int multiPojoHash = multiPojoComp.hash(pojoTestRecord);
 
         // pojo order is: dumm2 (str), dumm1 (int), dumm3 (double).
@@ -309,7 +310,7 @@ class PojoSerializerTest extends SerializerTestBase<PojoSerializerTest.TestUserC
                         fieldKey.computeLogicalKeyPositions(),
                         new boolean[] {true, true, true},
                         0,
-                        new SerializerConfig());
+                        new ExecutionConfig());
         int multiTupleHash = multiTupleComp.hash(multiTupleTest);
 
         assertThat(multiPojoHash)

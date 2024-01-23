@@ -20,7 +20,7 @@ package org.apache.flink.api.common.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.serialization.SerializerConfig;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
@@ -117,7 +117,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
             int[] logicalKeyFields,
             boolean[] orders,
             int logicalFieldOffset,
-            SerializerConfig config) {
+            ExecutionConfig config) {
 
         TypeComparatorBuilder<T> builder = createTypeComparatorBuilder();
 
@@ -195,7 +195,7 @@ public abstract class CompositeType<T> extends TypeInformation<T> {
 
         void addComparatorField(int fieldId, TypeComparator<?> comparator);
 
-        TypeComparator<T> createTypeComparator(SerializerConfig config);
+        TypeComparator<T> createTypeComparator(ExecutionConfig config);
     }
 
     @PublicEvolving

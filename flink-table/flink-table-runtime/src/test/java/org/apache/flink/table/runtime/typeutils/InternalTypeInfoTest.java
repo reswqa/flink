@@ -18,7 +18,7 @@
 
 package org.apache.flink.table.runtime.typeutils;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeutils.TypeInformationTestBase;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
 import org.apache.flink.table.api.DataTypes;
@@ -36,12 +36,12 @@ class InternalTypeInfoTest extends TypeInformationTestBase<InternalTypeInfo<?>> 
             InternalTypeInfo.of(
                     DataTypes.RAW(
                                     DayOfWeek.class,
-                                    new KryoSerializer<>(DayOfWeek.class, new ExecutionConfig()))
+                                    new KryoSerializer<>(DayOfWeek.class, new SerializerConfig()))
                             .getLogicalType()),
             InternalTypeInfo.of(
                     DataTypes.RAW(
                                     ByteBuffer.class,
-                                    new KryoSerializer<>(ByteBuffer.class, new ExecutionConfig()))
+                                    new KryoSerializer<>(ByteBuffer.class, new SerializerConfig()))
                             .getLogicalType()),
         };
     }

@@ -19,7 +19,7 @@
 package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.annotation.Public;
-import org.apache.flink.api.common.serialization.SerializerConfig;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 
 /**
@@ -38,10 +38,9 @@ public interface AtomicType<T> {
      *
      * @param sortOrderAscending True, if the comparator should define the order to be ascending,
      *     false, if the comparator should define the order to be descending.
-     * @param serializerConfig The config from which the comparator will be parametrized.
+     * @param executionConfig The config from which the comparator will be parametrized.
      *     Parametrization includes for example registration of class tags for frameworks like Kryo.
      * @return A comparator for this type.
      */
-    TypeComparator<T> createComparator(
-            boolean sortOrderAscending, SerializerConfig serializerConfig);
+    TypeComparator<T> createComparator(boolean sortOrderAscending, ExecutionConfig executionConfig);
 }

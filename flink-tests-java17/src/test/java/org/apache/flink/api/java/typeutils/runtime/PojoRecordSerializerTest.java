@@ -49,7 +49,7 @@ class PojoRecordSerializerTest extends SerializerTestBase<PojoRecordSerializerTe
 
     @Override
     protected TypeSerializer<TestUserClass> createSerializer() {
-        TypeSerializer<TestUserClass> serializer = type.createSerializer(new ExecutionConfig());
+        TypeSerializer<TestUserClass> serializer = type.createSerializer(new SerializerConfig());
         assertThat(serializer).isInstanceOf(PojoSerializer.class);
         return serializer;
     }

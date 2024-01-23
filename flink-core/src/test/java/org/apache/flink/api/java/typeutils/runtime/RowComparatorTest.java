@@ -17,6 +17,7 @@
  */
 package org.apache.flink.api.java.typeutils.runtime;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeutils.ComparatorTestBase;
@@ -101,7 +102,7 @@ class RowComparatorTest extends ComparatorTestBase<Row> {
                     ascending, ascending, ascending, ascending, ascending, ascending, ascending
                 },
                 0,
-                new SerializerConfig());
+                new ExecutionConfig());
     }
 
     @Override

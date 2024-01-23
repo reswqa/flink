@@ -22,12 +22,12 @@ import org.apache.flink.api.common.functions._
 import org.apache.flink.api.common.state.{ReducingStateDescriptor, ValueStateDescriptor}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
-import org.apache.flink.streaming.api.datastream.{QueryableStateStream, KeyedStream => KeyedJavaStream, WindowedStream => WindowedJavaStream}
-import org.apache.flink.streaming.api.functions.aggregation.AggregationFunction.AggregationType
+import org.apache.flink.streaming.api.datastream.{KeyedStream => KeyedJavaStream, QueryableStateStream, WindowedStream => WindowedJavaStream}
+import org.apache.flink.streaming.api.functions.{KeyedProcessFunction, ProcessFunction}
 import org.apache.flink.streaming.api.functions.aggregation.{AggregationFunction, ComparableAggregator, SumAggregator}
+import org.apache.flink.streaming.api.functions.aggregation.AggregationFunction.AggregationType
 import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction
 import org.apache.flink.streaming.api.functions.query.{QueryableAppendingStateOperator, QueryableValueStateOperator}
-import org.apache.flink.streaming.api.functions.{KeyedProcessFunction, ProcessFunction}
 import org.apache.flink.streaming.api.scala.function.StatefulFunction
 import org.apache.flink.streaming.api.windowing.assigners._
 import org.apache.flink.streaming.api.windowing.time.Time
@@ -631,7 +631,7 @@ class KeyedStream[T, K](javaStream: KeyedJavaStream[T, K]) extends DataStream[T]
       s"Queryable state: $queryableStateName",
       new QueryableValueStateOperator(queryableStateName, stateDescriptor))(dataType)
 
-    stateDescriptor.initializeSerializerUnlessSet(executionConfig.getSerializerConfig)
+    stateDescriptor.initializeSerializerUnlessSet(executionConfig)
 
     new QueryableStateStream(
       queryableStateName,
@@ -658,7 +658,7 @@ class KeyedStream[T, K](javaStream: KeyedJavaStream[T, K]) extends DataStream[T]
       s"Queryable state: $queryableStateName",
       new QueryableAppendingStateOperator(queryableStateName, stateDescriptor))(dataType)
 
-    stateDescriptor.initializeSerializerUnlessSet(executionConfig.getSerializerConfig)
+    stateDescriptor.initializeSerializerUnlessSet(executionConfig)
 
     new QueryableStateStream(
       queryableStateName,

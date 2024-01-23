@@ -247,8 +247,7 @@ public class CoGroupRawOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN
         }
 
         return ((CompositeType<T>) inputType)
-                .createComparator(
-                        inputKeys, inputSortDirections, 0, executionConfig.getSerializerConfig());
+                .createComparator(inputKeys, inputSortDirections, 0, executionConfig);
     }
 
     public static class SimpleListIterable<IN> implements Iterable<IN> {

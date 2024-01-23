@@ -105,8 +105,7 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
         if (leftInformation instanceof AtomicType) {
             leftComparator =
-                    ((AtomicType<IN1>) leftInformation)
-                            .createComparator(true, executionConfig.getSerializerConfig());
+                    ((AtomicType<IN1>) leftInformation).createComparator(true, executionConfig);
         } else if (leftInformation instanceof CompositeType) {
             int[] keyPositions = getKeyColumns(0);
             boolean[] orders = new boolean[keyPositions.length];
@@ -114,8 +113,7 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
             leftComparator =
                     ((CompositeType<IN1>) leftInformation)
-                            .createComparator(
-                                    keyPositions, orders, 0, executionConfig.getSerializerConfig());
+                            .createComparator(keyPositions, orders, 0, executionConfig);
         } else {
             throw new RuntimeException(
                     "Type information for left input of type "
@@ -125,8 +123,7 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
         if (rightInformation instanceof AtomicType) {
             rightComparator =
-                    ((AtomicType<IN2>) rightInformation)
-                            .createComparator(true, executionConfig.getSerializerConfig());
+                    ((AtomicType<IN2>) rightInformation).createComparator(true, executionConfig);
         } else if (rightInformation instanceof CompositeType) {
             int[] keyPositions = getKeyColumns(1);
             boolean[] orders = new boolean[keyPositions.length];
@@ -134,8 +131,7 @@ public class InnerJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
             rightComparator =
                     ((CompositeType<IN2>) rightInformation)
-                            .createComparator(
-                                    keyPositions, orders, 0, executionConfig.getSerializerConfig());
+                            .createComparator(keyPositions, orders, 0, executionConfig);
         } else {
             throw new RuntimeException(
                     "Type information for right input of type "

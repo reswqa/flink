@@ -18,7 +18,6 @@
 
 package org.apache.flink.table.utils;
 
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.OpenContext;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -170,7 +169,7 @@ public class TestCollectionTableFactory
         @Override
         public ScanRuntimeProvider getScanRuntimeProvider(ScanContext runtimeProviderContext) {
             TypeInformation<RowData> type = runtimeProviderContext.createTypeInformation(rowType);
-            TypeSerializer<RowData> serializer = type.createSerializer(new ExecutionConfig());
+            TypeSerializer<RowData> serializer = type.createSerializer(new SerializerConfig());
             DataStructureConverter converter =
                     runtimeProviderContext.createDataStructureConverter(rowType);
             List<RowData> rowData =
@@ -310,7 +309,7 @@ public class TestCollectionTableFactory
 
         @Override
         public void open(OpenContext openContext) throws Exception {
-            serializer = outputType.createSerializer(new ExecutionConfig());
+            serializer = outputType.createSerializer(new SerializerConfig());
         }
 
         @Override

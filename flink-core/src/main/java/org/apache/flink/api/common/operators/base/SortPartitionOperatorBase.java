@@ -74,16 +74,10 @@ public class SortPartitionOperatorBase<IN> extends SingleInputOperator<IN, IN, N
         if (inputType instanceof CompositeType) {
             sortComparator =
                     ((CompositeType<IN>) inputType)
-                            .createComparator(
-                                    sortColumns,
-                                    sortOrderings,
-                                    0,
-                                    executionConfig.getSerializerConfig());
+                            .createComparator(sortColumns, sortOrderings, 0, executionConfig);
         } else if (inputType instanceof AtomicType) {
             sortComparator =
-                    ((AtomicType) inputType)
-                            .createComparator(
-                                    sortOrderings[0], executionConfig.getSerializerConfig());
+                    ((AtomicType) inputType).createComparator(sortOrderings[0], executionConfig);
         } else {
             throw new UnsupportedOperationException(
                     "Partition sorting does not support type " + inputType + " yet.");

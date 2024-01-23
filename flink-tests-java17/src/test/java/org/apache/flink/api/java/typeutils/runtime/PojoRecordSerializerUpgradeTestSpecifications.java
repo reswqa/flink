@@ -57,7 +57,7 @@ class PojoRecordSerializerUpgradeTestSpecifications {
         public TypeSerializer<PojoBeforeUpgrade> createPriorSerializer() {
             TypeSerializer<PojoBeforeUpgrade> serializer =
                     TypeExtractor.createTypeInfo(PojoBeforeUpgrade.class)
-                            .createSerializer(new ExecutionConfig());
+                            .createSerializer(new SerializerConfig());
             assertSame(PojoSerializer.class, serializer.getClass());
             return serializer;
         }
@@ -80,7 +80,7 @@ class PojoRecordSerializerUpgradeTestSpecifications {
         public TypeSerializer<PojoAfterUpgrade> createUpgradedSerializer() {
             TypeSerializer<PojoAfterUpgrade> serializer =
                     TypeExtractor.createTypeInfo(PojoAfterUpgrade.class)
-                            .createSerializer(new ExecutionConfig());
+                            .createSerializer(new SerializerConfig());
             assertSame(PojoSerializer.class, serializer.getClass());
             return serializer;
         }
@@ -109,7 +109,7 @@ class PojoRecordSerializerUpgradeTestSpecifications {
         public TypeSerializer<RecordBeforeMigration> createPriorSerializer() {
             TypeSerializer<RecordBeforeMigration> serializer =
                     TypeExtractor.createTypeInfo(RecordBeforeMigration.class)
-                            .createSerializer(new ExecutionConfig());
+                            .createSerializer(new SerializerConfig());
             assertSame(PojoSerializer.class, serializer.getClass());
             return serializer;
         }
@@ -132,7 +132,7 @@ class PojoRecordSerializerUpgradeTestSpecifications {
         public TypeSerializer<RecordAfterSchemaUpgrade> createUpgradedSerializer() {
             TypeSerializer<RecordAfterSchemaUpgrade> serializer =
                     TypeExtractor.createTypeInfo(RecordAfterSchemaUpgrade.class)
-                            .createSerializer(new ExecutionConfig());
+                            .createSerializer(new SerializerConfig());
             assertSame(PojoSerializer.class, serializer.getClass());
             return serializer;
         }

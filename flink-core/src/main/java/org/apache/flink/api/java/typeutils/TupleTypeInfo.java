@@ -20,6 +20,7 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -133,7 +134,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
         }
 
         @Override
-        public TypeComparator<T> createTypeComparator(SerializerConfig config) {
+        public TypeComparator<T> createTypeComparator(ExecutionConfig config) {
             checkState(
                     fieldComparators.size() > 0,
                     "No field comparators were defined for the TupleTypeComparatorBuilder.");
@@ -153,7 +154,7 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
             TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[maxKey + 1];
 
             for (int i = 0; i <= maxKey; i++) {
-                fieldSerializers[i] = types[i].createSerializer(config);
+                fieldSerializers[i] = types[i].createSerializer(config.getSerializerConfig());
             }
 
             return new TupleComparator<T>(

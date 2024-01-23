@@ -326,15 +326,10 @@ public class CoGroupOperatorBase<IN1, IN2, OUT, FT extends CoGroupFunction<IN1, 
             boolean[] inputSortDirections) {
         if (inputType instanceof CompositeType) {
             return ((CompositeType<T>) inputType)
-                    .createComparator(
-                            inputKeys,
-                            inputSortDirections,
-                            0,
-                            executionConfig.getSerializerConfig());
+                    .createComparator(inputKeys, inputSortDirections, 0, executionConfig);
         } else if (inputType instanceof AtomicType) {
             return ((AtomicType<T>) inputType)
-                    .createComparator(
-                            inputSortDirections[0], executionConfig.getSerializerConfig());
+                    .createComparator(inputSortDirections[0], executionConfig);
         }
 
         throw new InvalidProgramException(

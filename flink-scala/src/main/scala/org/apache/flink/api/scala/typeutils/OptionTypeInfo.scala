@@ -18,6 +18,7 @@
 package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.annotation.{Public, PublicEvolving, VisibleForTesting}
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.{AtomicType, TypeInformation}
 import org.apache.flink.api.common.typeutils.{TypeComparator, TypeSerializer}
@@ -58,11 +59,11 @@ class OptionTypeInfo[A, T <: Option[A]](private val elemTypeInfo: TypeInformatio
   @PublicEvolving
   override def createComparator(
       ascending: Boolean,
-      serializerConfig: SerializerConfig): TypeComparator[T] = {
+      executionConfig: ExecutionConfig): TypeComparator[T] = {
     if (isKeyType) {
       val elemCompartor = elemTypeInfo
         .asInstanceOf[AtomicType[A]]
-        .createComparator(ascending, serializerConfig)
+        .createComparator(ascending, executionConfig)
       new OptionTypeComparator[A](ascending, elemCompartor).asInstanceOf[TypeComparator[T]]
     } else {
       throw new UnsupportedOperationException("Element type that doesn't support ")

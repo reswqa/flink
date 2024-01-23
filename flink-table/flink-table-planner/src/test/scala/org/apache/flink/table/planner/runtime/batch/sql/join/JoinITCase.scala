@@ -17,6 +17,7 @@
  */
 package org.apache.flink.table.planner.runtime.batch.sql.join
 
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.Types
 import org.apache.flink.api.common.typeutils.TypeComparator
@@ -36,11 +37,13 @@ import org.apache.flink.table.planner.utils.TestingTableEnvironment
 import org.apache.flink.table.runtime.operators.CodeGenOperatorFactory
 import org.apache.flink.testutils.junit.extensions.parameterized.{Parameter, ParameterizedTestExtension, Parameters}
 import org.apache.flink.types.Row
+
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.{BeforeEach, TestTemplate}
+import org.junit.jupiter.api.extension.ExtendWith
 
 import java.util
+
 import scala.collection.JavaConversions._
 
 @ExtendWith(Array(classOf[ParameterizedTestExtension]))
@@ -1500,7 +1503,7 @@ class GenericTypeInfoWithoutComparator[T](clazz: Class[T]) extends GenericTypeIn
 
   override def createComparator(
       sortOrderAscending: Boolean,
-      serializerConfig: SerializerConfig): TypeComparator[T] = {
+      executionConfig: ExecutionConfig): TypeComparator[T] = {
     throw new RuntimeException("Not expected!")
   }
 }

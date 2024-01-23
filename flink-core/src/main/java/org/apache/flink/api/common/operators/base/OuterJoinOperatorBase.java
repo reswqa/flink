@@ -165,9 +165,7 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
             int input, ExecutionConfig executionConfig, TypeInformation<T> typeInformation) {
         TypeComparator<T> comparator;
         if (typeInformation instanceof AtomicType) {
-            comparator =
-                    ((AtomicType<T>) typeInformation)
-                            .createComparator(true, executionConfig.getSerializerConfig());
+            comparator = ((AtomicType<T>) typeInformation).createComparator(true, executionConfig);
         } else if (typeInformation instanceof CompositeType) {
             int[] keyPositions = getKeyColumns(input);
             boolean[] orders = new boolean[keyPositions.length];
@@ -175,8 +173,7 @@ public class OuterJoinOperatorBase<IN1, IN2, OUT, FT extends FlatJoinFunction<IN
 
             comparator =
                     ((CompositeType<T>) typeInformation)
-                            .createComparator(
-                                    keyPositions, orders, 0, executionConfig.getSerializerConfig());
+                            .createComparator(keyPositions, orders, 0, executionConfig);
         } else {
             throw new RuntimeException(
                     "Type information for input of type "

@@ -20,6 +20,7 @@ package org.apache.flink.api.java.typeutils;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -95,12 +96,14 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
     @Override
     @PublicEvolving
     public TypeComparator<T> createComparator(
-            boolean sortOrderAscending, SerializerConfig serializerConfig) {
+            boolean sortOrderAscending, ExecutionConfig executionConfig) {
         if (isKeyType()) {
             @SuppressWarnings("rawtypes")
             GenericTypeComparator comparator =
                     new GenericTypeComparator(
-                            sortOrderAscending, createSerializer(serializerConfig), this.typeClass);
+                            sortOrderAscending,
+                            createSerializer(executionConfig.getSerializerConfig()),
+                            this.typeClass);
             return (TypeComparator<T>) comparator;
         }
 

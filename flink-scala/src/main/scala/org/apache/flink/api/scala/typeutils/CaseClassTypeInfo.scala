@@ -18,16 +18,18 @@
 package org.apache.flink.api.scala.typeutils
 
 import org.apache.flink.annotation.{Public, PublicEvolving}
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.operators.Keys
 import org.apache.flink.api.common.operators.Keys.ExpressionKeys
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.common.typeutils.CompositeType.{FlatFieldDescriptor, InvalidFieldReferenceException, TypeComparatorBuilder}
 import org.apache.flink.api.common.typeutils._
+import org.apache.flink.api.common.typeutils.CompositeType.{FlatFieldDescriptor, InvalidFieldReferenceException, TypeComparatorBuilder}
 import org.apache.flink.api.java.typeutils.TupleTypeInfoBase
 
 import java.util
 import java.util.regex.{Matcher, Pattern}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
@@ -246,13 +248,13 @@ abstract class CaseClassTypeInfo[T <: Product](
       logicalKeyFields += fieldId
     }
 
-    override def createTypeComparator(config: SerializerConfig): TypeComparator[T] = {
+    override def createTypeComparator(config: ExecutionConfig): TypeComparator[T] = {
       val maxIndex = logicalKeyFields.max
 
       new CaseClassComparator[T](
         logicalKeyFields.toArray,
         fieldComparators.toArray,
-        types.take(maxIndex + 1).map(_.createSerializer(config))
+        types.take(maxIndex + 1).map(_.createSerializer(config.getSerializerConfig))
       )
     }
   }

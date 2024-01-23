@@ -19,6 +19,7 @@
 package org.apache.flink.table.typeutils;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.AtomicType;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -118,7 +119,7 @@ public final class TimeIntervalTypeInfo<T> extends TypeInformation<T>
 
     @Override
     public TypeComparator<T> createComparator(
-            boolean sortOrderAscending, SerializerConfig serializerConfig) {
+            boolean sortOrderAscending, ExecutionConfig executionConfig) {
         try {
             Constructor<? extends TypeComparator<T>> constructor =
                     comparatorClass.getConstructor(Boolean.TYPE);

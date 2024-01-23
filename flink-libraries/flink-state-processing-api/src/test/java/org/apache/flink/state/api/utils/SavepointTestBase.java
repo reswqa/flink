@@ -18,7 +18,17 @@
 
 package org.apache.flink.state.api.utils;
 
-import org.apache.flink.api.common.ExecutionConfig;
+import static org.apache.flink.runtime.execution.ExecutionState.RUNNING;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
@@ -33,17 +43,6 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.test.util.AbstractTestBase;
 import org.apache.flink.test.util.MiniClusterWithClientResource;
 import org.apache.flink.util.AbstractID;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.apache.flink.runtime.execution.ExecutionState.RUNNING;
 
 /** A test base that includes utilities for taking a savepoint. */
 public abstract class SavepointTestBase extends AbstractTestBase {
@@ -103,7 +102,7 @@ public abstract class SavepointTestBase extends AbstractTestBase {
         try {
             SourceFunction<T> inner =
                     new FromElementsFunction<>(
-                            typeInfo.createSerializer(new ExecutionConfig()), data);
+                            typeInfo.createSerializer(new SerializerConfig()), data);
             return new WaitingSource<>(inner, typeInfo);
         } catch (IOException e) {
             throw new RuntimeException(e);

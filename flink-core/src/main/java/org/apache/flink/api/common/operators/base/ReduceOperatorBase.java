@@ -231,14 +231,10 @@ public class ReduceOperatorBase<T, FT extends ReduceFunction<T>>
             boolean[] inputOrderings = new boolean[inputColumns.length];
             TypeComparator<T> inputComparator =
                     inputType instanceof AtomicType
-                            ? ((AtomicType<T>) inputType)
-                                    .createComparator(false, executionConfig.getSerializerConfig())
+                            ? ((AtomicType<T>) inputType).createComparator(false, executionConfig)
                             : ((CompositeType<T>) inputType)
                                     .createComparator(
-                                            inputColumns,
-                                            inputOrderings,
-                                            0,
-                                            executionConfig.getSerializerConfig());
+                                            inputColumns, inputOrderings, 0, executionConfig);
 
             Map<TypeComparable<T>, T> aggregateMap =
                     new HashMap<TypeComparable<T>, T>(inputData.size() / 10);
