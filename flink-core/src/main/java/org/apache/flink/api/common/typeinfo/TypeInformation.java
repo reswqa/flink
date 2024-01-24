@@ -175,13 +175,24 @@ public abstract class TypeInformation<T> implements Serializable {
      * @return A serializer for this type.
      */
     @PublicEvolving
-    public abstract TypeSerializer<T> createSerializer(SerializerConfig config);
+    public TypeSerializer<T> createSerializer(SerializerConfig config) {
+        return null;
+    }
 
+    /**
+     * Create {@link TypeSerializer} for this type.
+     *
+     * @param config the configuration of this job execution
+     * @deprecated This method is deprecated since Flink 1.19 and will be removed in Flink 1.20. The
+     *     users are recommended to implement {@link #createSerializer(SerializerConfig config)}.
+     *     <p>If you implement {@link #createSerializer(SerializerConfig)}, this method will never
+     *     be invoked.
+     *     <p>If you don't implement {@link #createSerializer(SerializerConfig)}, this method will
+     *     be invoked in the default implementation of {@link #createSerializer(SerializerConfig)}.
+     */
     @PublicEvolving
     @Deprecated
-    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
-        return createSerializer(config.getSerializerConfig());
-    }
+    public abstract TypeSerializer<T> createSerializer(ExecutionConfig config);
 
     @Override
     public abstract String toString();
