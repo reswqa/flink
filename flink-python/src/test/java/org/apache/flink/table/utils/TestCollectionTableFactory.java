@@ -19,6 +19,7 @@
 package org.apache.flink.table.utils;
 
 import org.apache.flink.api.common.functions.OpenContext;
+import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.io.CollectionInputFormat;

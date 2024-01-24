@@ -20,6 +20,7 @@ package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -175,6 +176,12 @@ public abstract class TypeInformation<T> implements Serializable {
      */
     @PublicEvolving
     public abstract TypeSerializer<T> createSerializer(SerializerConfig config);
+
+    @PublicEvolving
+    @Deprecated
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
 
     @Override
     public abstract String toString();

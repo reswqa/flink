@@ -18,6 +18,17 @@
 
 package org.apache.flink.hdfstests;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+
 import org.apache.flink.FlinkVersion;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.io.FileInputFormat;
@@ -44,7 +55,6 @@ import org.apache.flink.streaming.util.OperatorSnapshotUtil;
 import org.apache.flink.test.util.MigrationTest;
 import org.apache.flink.util.OperatingSystem;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -53,15 +63,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** Tests that verify the migration from previous Flink version snapshots. */
 @RunWith(Parameterized.class)
@@ -415,6 +416,6 @@ public class ContinuousFileProcessingMigrationTest implements MigrationTest {
                 new ContinuousFileReaderOperatorFactory(
                         format, TypeExtractor.getInputFormatTypes(format), config),
                 TypeExtractor.getForClass(TimestampedFileInputSplit.class)
-                        .createSerializer(config));
+                        .createSerializer(config.getSerializerConfig()));
     }
 }
