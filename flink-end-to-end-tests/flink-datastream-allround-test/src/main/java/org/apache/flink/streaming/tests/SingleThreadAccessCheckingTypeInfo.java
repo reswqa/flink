@@ -18,6 +18,7 @@
 
 package org.apache.flink.streaming.tests;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.SingleThreadAccessCheckingTypeSerializer;
@@ -71,6 +72,11 @@ public class SingleThreadAccessCheckingTypeInfo<T> extends TypeInformation<T> {
     public TypeSerializer<T> createSerializer(SerializerConfig config) {
         return new SingleThreadAccessCheckingTypeSerializer<>(
                 originalTypeInformation.createSerializer(config));
+    }
+
+    @Override
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
     }
 
     @Override

@@ -19,6 +19,7 @@
 package org.apache.flink.streaming.api.connector.sink2;
 
 import org.apache.flink.annotation.Experimental;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -111,6 +112,11 @@ public class CommittableMessageTypeInfo<CommT> extends TypeInformation<Committab
                 return from;
             }
         };
+    }
+
+    @Override
+    public TypeSerializer<CommittableMessage<CommT>> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
     }
 
     @Override

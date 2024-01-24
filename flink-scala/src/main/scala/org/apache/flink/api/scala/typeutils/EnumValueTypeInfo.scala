@@ -59,8 +59,13 @@ class EnumValueTypeInfo[E <: Enumeration](val enum: E, val clazz: Class[E#Value]
   override def getGenericParameters = Map.empty[String, TypeInformation[_]].asJava
 
   @PublicEvolving
-  def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
+  override def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
     new EnumValueSerializer[E](enum)
+  }
+
+  @PublicEvolving
+  def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = {
+    createSerializer(executionConfig.getSerializerConfig)
   }
 
   @PublicEvolving

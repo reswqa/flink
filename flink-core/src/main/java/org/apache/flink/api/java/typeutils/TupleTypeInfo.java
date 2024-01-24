@@ -112,6 +112,11 @@ public final class TupleTypeInfo<T extends Tuple> extends TupleTypeInfoBase<T> {
     }
 
     @Override
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
+    @Override
     protected TypeComparatorBuilder<T> createTypeComparatorBuilder() {
         return new TupleTypeComparatorBuilder();
     }

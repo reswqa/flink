@@ -71,7 +71,7 @@ class OptionTypeInfo[A, T <: Option[A]](private val elemTypeInfo: TypeInformatio
   }
 
   @PublicEvolving
-  def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
+  override def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
     if (elemTypeInfo == null) {
       // this happens when the type of a DataSet is None, i.e. DataSet[None]
       new OptionSerializer(new NothingSerializer).asInstanceOf[TypeSerializer[T]]
@@ -79,6 +79,12 @@ class OptionTypeInfo[A, T <: Option[A]](private val elemTypeInfo: TypeInformatio
       new OptionSerializer(elemTypeInfo.createSerializer(serializerConfig))
         .asInstanceOf[TypeSerializer[T]]
     }
+  }
+
+  @PublicEvolving
+  @Deprecated
+  def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = {
+    createSerializer(executionConfig.getSerializerConfig)
   }
 
   override def toString = s"Option[$elemTypeInfo]"

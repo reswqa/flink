@@ -113,6 +113,11 @@ public class LocalTimeTypeInfo<T extends Temporal> extends TypeInformation<T>
     }
 
     @Override
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
+    @Override
     public TypeComparator<T> createComparator(
             boolean sortOrderAscending, ExecutionConfig executionConfig) {
         return instantiateComparator(comparatorClass, sortOrderAscending);

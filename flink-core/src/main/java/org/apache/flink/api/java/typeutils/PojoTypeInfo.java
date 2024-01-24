@@ -347,6 +347,13 @@ public class PojoTypeInfo<T> extends CompositeType<T> {
         return createPojoSerializer(config);
     }
 
+    @Override
+    @Deprecated
+    @PublicEvolving
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
     public PojoSerializer<T> createPojoSerializer(SerializerConfig config) {
         TypeSerializer<?>[] fieldSerializers = new TypeSerializer<?>[fields.length];
         Field[] reflectiveFields = new Field[fields.length];

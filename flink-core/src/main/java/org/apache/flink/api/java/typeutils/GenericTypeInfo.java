@@ -93,6 +93,8 @@ public class GenericTypeInfo<T> extends TypeInformation<T> implements AtomicType
     }
 
     @Override
+    @Deprecated
+    @PublicEvolving
     public TypeSerializer<T> createSerializer(ExecutionConfig config) {
         return createSerializer(config.getSerializerConfig());
     }

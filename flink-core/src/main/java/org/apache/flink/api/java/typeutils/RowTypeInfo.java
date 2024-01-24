@@ -263,6 +263,11 @@ public class RowTypeInfo extends TupleTypeInfoBase<Row> {
     }
 
     @Override
+    public TypeSerializer<Row> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
+    @Override
     public boolean canEqual(Object obj) {
         return obj instanceof RowTypeInfo;
     }

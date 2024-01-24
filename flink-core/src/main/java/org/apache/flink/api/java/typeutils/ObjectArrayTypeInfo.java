@@ -18,17 +18,18 @@
 
 package org.apache.flink.api.java.typeutils;
 
+import static org.apache.flink.util.Preconditions.checkArgument;
+import static org.apache.flink.util.Preconditions.checkNotNull;
+
+import java.lang.reflect.Array;
+
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.GenericArraySerializer;
-
-import java.lang.reflect.Array;
-
-import static org.apache.flink.util.Preconditions.checkArgument;
-import static org.apache.flink.util.Preconditions.checkNotNull;
 
 @Public
 public class ObjectArrayTypeInfo<T, C> extends TypeInformation<T> {
@@ -95,6 +96,13 @@ public class ObjectArrayTypeInfo<T, C> extends TypeInformation<T> {
                 new GenericArraySerializer<C>(
                         componentInfo.getTypeClass(),
                         componentInfo.createSerializer(serializerConfig));
+    }
+
+    @Override
+    @Deprecated
+    @PublicEvolving
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
     }
 
     @Override

@@ -118,6 +118,11 @@ public class WritableTypeInfo<T extends Writable> extends TypeInformation<T>
     }
 
     @Override
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
+    @Override
     public String toString() {
         return "WritableType<" + typeClass.getName() + ">";
     }

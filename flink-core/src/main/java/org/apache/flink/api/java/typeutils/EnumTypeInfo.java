@@ -104,6 +104,13 @@ public class EnumTypeInfo<T extends Enum<T>> extends TypeInformation<T> implemen
         return new EnumSerializer<T>(typeClass);
     }
 
+    @Override
+    @Deprecated
+    @PublicEvolving
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
     // ------------------------------------------------------------------------
     //  Standard utils
     // ------------------------------------------------------------------------

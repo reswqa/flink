@@ -60,7 +60,7 @@ class EitherTypeInfo[A, B, T <: Either[A, B]](
     Map[String, TypeInformation[_]]("A" -> leftTypeInfo, "B" -> rightTypeInfo).asJava
 
   @PublicEvolving
-  def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
+  override def createSerializer(serializerConfig: SerializerConfig): TypeSerializer[T] = {
     val leftSerializer: TypeSerializer[A] = if (leftTypeInfo != null) {
       leftTypeInfo.createSerializer(serializerConfig)
     } else {
@@ -74,6 +74,10 @@ class EitherTypeInfo[A, B, T <: Either[A, B]](
     }
     new EitherSerializer[A, B](leftSerializer, rightSerializer).asInstanceOf[TypeSerializer[T]]
   }
+
+  @PublicEvolving
+  @Deprecated
+  def createSerializer(executionConfig: ExecutionConfig): TypeSerializer[T] = createSerializer(executionConfig.getSerializerConfig)
 
   override def equals(obj: Any): Boolean = {
     obj match {

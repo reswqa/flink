@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.typeutils;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -2405,6 +2406,11 @@ public class TypeExtractorTest {
                     @Override
                     public TypeSerializer<Object> createSerializer(SerializerConfig config) {
                         return null;
+                    }
+
+                    @Override
+                    public TypeSerializer<Object> createSerializer(ExecutionConfig config) {
+                        return createSerializer(config.getSerializerConfig());
                     }
 
                     @Override

@@ -113,6 +113,11 @@ public class SqlTimeTypeInfo<T> extends TypeInformation<T> implements AtomicType
     }
 
     @Override
+    public TypeSerializer<T> createSerializer(ExecutionConfig config) {
+        return createSerializer(config.getSerializerConfig());
+    }
+
+    @Override
     public TypeComparator<T> createComparator(
             boolean sortOrderAscending, ExecutionConfig executionConfig) {
         return instantiateComparator(comparatorClass, sortOrderAscending);
