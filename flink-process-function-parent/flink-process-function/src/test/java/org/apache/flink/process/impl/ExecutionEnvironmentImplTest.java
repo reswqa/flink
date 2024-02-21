@@ -19,11 +19,19 @@
 package org.apache.flink.process.impl;
 
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.connector.v2.SourceUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.DefaultExecutorServiceLoader;
 import org.apache.flink.process.api.ExecutionEnvironment;
+import org.apache.flink.process.api.stream.NonKeyedPartitionStream;
+import org.apache.flink.process.impl.stream.StreamTestUtils;
+import org.apache.flink.streaming.api.graph.StreamGraph;
+import org.apache.flink.streaming.api.graph.StreamNode;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,5 +64,21 @@ class ExecutionEnvironmentImplTest {
         env.addOperator(t1);
         env.addOperator(t2);
         assertThat(env.getTransformations()).containsExactly(t1, t2);
+    }
+
+    @Test
+    void testFromSource() {
+        ExecutionEnvironmentImpl env =
+                new ExecutionEnvironmentImpl(
+                        new DefaultExecutorServiceLoader(), new Configuration(), null);
+        NonKeyedPartitionStream<Integer> source =
+                env.fromSource(SourceUtils.fromData(Arrays.asList(1, 2, 3)), "test-source");
+        source.process(new StreamTestUtils.NoOpOneInputStreamProcessFunction());
+        StreamGraph streamGraph = StreamTestUtils.getStreamGraph(env);
+        Collection<StreamNode> nodes = streamGraph.getStreamNodes();
+        assertThat(nodes).hasSize(2);
+        Collection<Integer> sourceIDs = streamGraph.getSourceIDs();
+        StreamNode sourceNode = nodes.iterator().next();
+        assertThat(sourceIDs).containsExactly(sourceNode.getId());
     }
 }

@@ -20,6 +20,8 @@ package org.apache.flink.process.api;
 
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.connector.v2.Source;
+import org.apache.flink.process.api.stream.NonKeyedPartitionStream;
 
 /**
  * This is the context in which a program is executed.
@@ -45,5 +47,5 @@ public interface ExecutionEnvironment {
 
     ExecutionEnvironment setExecutionMode(RuntimeExecutionMode runtimeMode);
 
-    // TODO introduce method to add source
+    <OUT> NonKeyedPartitionStream<OUT> fromSource(Source<OUT> source, String sourceName);
 }
