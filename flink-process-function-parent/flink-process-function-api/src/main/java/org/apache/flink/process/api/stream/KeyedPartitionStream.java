@@ -25,6 +25,7 @@ import org.apache.flink.process.api.function.OneInputStreamProcessFunction;
 import org.apache.flink.process.api.function.TwoInputBroadcastStreamProcessFunction;
 import org.apache.flink.process.api.function.TwoInputNonBroadcastStreamProcessFunction;
 import org.apache.flink.process.api.function.TwoOutputStreamProcessFunction;
+import org.apache.flink.process.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
 import org.apache.flink.process.api.stream.NonKeyedPartitionStream.TwoNonKeyedPartitionStreams;
 
 /** This interface represents a stream that each parallel task processes the same data. */
@@ -41,7 +42,7 @@ public interface KeyedPartitionStream<K, T> {
      * @param newKeySelector to select the key after process.
      * @return new {@link KeyedPartitionStream} with this operation.
      */
-    <OUT> KeyedPartitionStream<K, OUT> process(
+    <OUT> ProcessConfigurableAndKeyedPartitionStream<K, OUT> process(
             OneInputStreamProcessFunction<T, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector);
 
@@ -51,7 +52,7 @@ public interface KeyedPartitionStream<K, T> {
      * @param processFunction to perform operation.
      * @return new {@link NonKeyedPartitionStream} with this operation.
      */
-    <OUT> NonKeyedPartitionStream<OUT> process(
+    <OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> process(
             OneInputStreamProcessFunction<T, OUT> processFunction);
 
     /**
@@ -88,7 +89,7 @@ public interface KeyedPartitionStream<K, T> {
      * @param processFunction to perform operation.
      * @return new {@link NonKeyedPartitionStream} with this operation.
      */
-    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputNonBroadcastStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
@@ -105,7 +106,7 @@ public interface KeyedPartitionStream<K, T> {
      * @param newKeySelector to select the key after process.
      * @return new {@link KeyedPartitionStream} with this operation.
      */
-    <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndKeyedPartitionStream<K, OUT> connectAndProcess(
             KeyedPartitionStream<K, T_OTHER> other,
             TwoInputNonBroadcastStreamProcessFunction<T, T_OTHER, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector);
@@ -116,7 +117,7 @@ public interface KeyedPartitionStream<K, T> {
      * @param processFunction to perform operation.
      * @return new stream with this operation.
      */
-    <T_OTHER, OUT> NonKeyedPartitionStream<OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputBroadcastStreamProcessFunction<T, T_OTHER, OUT> processFunction);
 
@@ -134,7 +135,7 @@ public interface KeyedPartitionStream<K, T> {
      * @param newKeySelector to select the key after process.
      * @return new {@link KeyedPartitionStream} with this operation.
      */
-    <T_OTHER, OUT> KeyedPartitionStream<K, OUT> connectAndProcess(
+    <T_OTHER, OUT> ProcessConfigurableAndKeyedPartitionStream<K, OUT> connectAndProcess(
             BroadcastStream<T_OTHER> other,
             TwoInputBroadcastStreamProcessFunction<T, T_OTHER, OUT> processFunction,
             KeySelector<OUT, K> newKeySelector);
@@ -169,7 +170,11 @@ public interface KeyedPartitionStream<K, T> {
      */
     BroadcastStream<T> broadcast();
 
-    void toSink(Sink<T> sink);
+    ProcessConfigurable<?> toSink(Sink<T> sink);
+
+    interface ProcessConfigurableAndKeyedPartitionStream<K, T>
+            extends KeyedPartitionStream<K, T>,
+                    ProcessConfigurable<ProcessConfigurableAndKeyedPartitionStream<K, T>> {}
 
     /**
      * This class represents a combination of two {@link KeyedPartitionStream}. It will be used as
@@ -177,9 +182,9 @@ public interface KeyedPartitionStream<K, T> {
      */
     interface TwoKeyedPartitionStreams<K, T1, T2> {
         /** Get the first stream. */
-        KeyedPartitionStream<K, T1> getFirst();
+        ProcessConfigurableAndKeyedPartitionStream<K, T1> getFirst();
 
         /** Get the second stream. */
-        KeyedPartitionStream<K, T2> getSecond();
+        ProcessConfigurableAndKeyedPartitionStream<K, T2> getSecond();
     }
 }
