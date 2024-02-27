@@ -18,11 +18,11 @@
 
 package org.apache.flink.api.common.resources;
 
-import org.apache.flink.annotation.Internal;
+import static java.math.BigDecimal.ROUND_HALF_UP;
 
 import java.math.BigDecimal;
 
-import static java.math.BigDecimal.ROUND_HALF_UP;
+import org.apache.flink.annotation.Internal;
 
 /** Represents CPU resource. */
 @Internal
