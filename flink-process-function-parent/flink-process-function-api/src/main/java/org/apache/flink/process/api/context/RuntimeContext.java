@@ -31,4 +31,7 @@ import org.apache.flink.annotation.Experimental;
 public interface RuntimeContext {
     /** Get the {@link JobInfo} of this process function. */
     JobInfo getJobInfo();
+
+    /** Get the {@link TaskInfo} of this process function. */
+    TaskInfo getTaskInfo();
 }
