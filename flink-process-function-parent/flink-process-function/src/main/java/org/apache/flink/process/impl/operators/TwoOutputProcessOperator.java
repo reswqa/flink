@@ -19,12 +19,14 @@
 package org.apache.flink.process.impl.operators;
 
 import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.process.api.context.ProcessingTimeManager;
 import org.apache.flink.process.api.context.TwoOutputNonPartitionedContext;
 import org.apache.flink.process.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.process.impl.common.OutputCollector;
 import org.apache.flink.process.impl.common.TimestampCollector;
 import org.apache.flink.process.impl.context.DefaultRuntimeContext;
 import org.apache.flink.process.impl.context.DefaultTwoOutputNonPartitionedContext;
+import org.apache.flink.process.impl.context.UnsupportedProcessingTimeManager;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedOneInput;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
@@ -76,7 +78,8 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                         taskInfo.getNumberOfParallelSubtasks(),
                         taskInfo.getMaxNumberOfParallelSubtasks(),
                         taskInfo.getTaskName(),
-                        this::currentKey);
+                        this::currentKey,
+                        getProcessingTimeManager());
         this.nonPartitionedContext = new DefaultTwoOutputNonPartitionedContext<>(context);
     }
 
@@ -103,6 +106,10 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
     protected Optional<Object> currentKey() {
         // non-keyed operator always return empty key.
         return Optional.empty();
+    }
+
+    protected ProcessingTimeManager getProcessingTimeManager() {
+        return UnsupportedProcessingTimeManager.INSTANCE;
     }
 
     /**
