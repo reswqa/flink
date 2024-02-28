@@ -16,17 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.flink.process.api.context;
+package org.apache.flink.process.impl.context;
+
+import org.apache.flink.process.api.context.TimestampManager;
 
 import java.util.Optional;
 
-/** This is responsibility for retrieving timestamp related things of process function. */
-public interface TimestampManager {
-    /**
-     * Get the timestamp of current processing record.
-     *
-     * @return the timestamp of current processed record. If it does not have timestamp, empty will
-     *     be returned.
-     */
-    Optional<Long> getCurrentRecordTimestamp();
+/** The default implementation of {@link TimestampManager}. */
+public class DefaultTimestampManager implements TimestampManager {
+    private Optional<Long> currentTimestamp;
+
+    @Override
+    public Optional<Long> getCurrentRecordTimestamp() {
+        return currentTimestamp;
+    }
+
+    public void setTimestamp(Optional<Long> timestamp) {
+        currentTimestamp = timestamp;
+    }
+
+    public void resetTimestamp() {
+        currentTimestamp = Optional.empty();
+    }
 }

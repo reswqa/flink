@@ -22,6 +22,7 @@ import org.apache.flink.process.api.context.JobInfo;
 import org.apache.flink.process.api.context.ProcessingTimeManager;
 import org.apache.flink.process.api.context.StateManager;
 import org.apache.flink.process.api.context.TaskInfo;
+import org.apache.flink.process.api.context.TimestampManager;
 import org.apache.flink.process.api.context.TwoOutputNonPartitionedContext;
 
 public class DefaultTwoOutputNonPartitionedContext<OUT1, OUT2>
@@ -58,5 +59,10 @@ public class DefaultTwoOutputNonPartitionedContext<OUT1, OUT2>
     public ProcessingTimeManager getProcessingTimeManager() {
         // processing timer is partition-aware, so it's not supported in non-partitioned context.
         return UnsupportedProcessingTimeManager.INSTANCE;
+    }
+
+    @Override
+    public TimestampManager getTimestampManager() {
+        return context.getTimestampManager();
     }
 }
