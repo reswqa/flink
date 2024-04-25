@@ -38,11 +38,13 @@ import org.apache.flink.table.connector.source.lookup.FullCachingLookupProvider;
 import org.apache.flink.table.connector.source.lookup.LookupFunctionProvider;
 import org.apache.flink.table.connector.source.lookup.PartialCachingAsyncLookupProvider;
 import org.apache.flink.table.connector.source.lookup.PartialCachingLookupProvider;
+import org.apache.flink.table.connector.source.lookup.cache.PartitionedLookupProvider;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.functions.AsyncLookupFunction;
 import org.apache.flink.table.functions.LookupFunction;
 import org.apache.flink.table.functions.UserDefinedFunction;
+import org.apache.flink.table.partitioner.RowDataCustomPartitioner;
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory;
 import org.apache.flink.table.planner.hint.LookupJoinHintOptions;
 import org.apache.flink.table.planner.plan.schema.LegacyTableSourceTable;
@@ -84,6 +86,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static org.apache.flink.table.planner.hint.LookupJoinHintOptions.ASYNC_CAPACITY;
@@ -443,16 +446,16 @@ public final class LookupJoinUtil {
      * Gets required lookup function (async or sync) from temporal table , will raise an error if
      * specified lookup function instance not found.
      */
-    public static UserDefinedFunction getLookupFunction(
+    public static LookupFunctionAndPartitioner getLookupFunction(
             RelOptTable temporalTable,
             Collection<Integer> lookupKeys,
             ClassLoader classLoader,
             boolean async,
             ResultRetryStrategy retryStrategy) {
-        UserDefinedFunction lookupFunction = null;
+        LookupFunctionAndPartitioner lookupFunctionAndPartitioner = null;
         int[] lookupKeyIndicesInOrder = getOrderedLookupKeys(lookupKeys);
         if (temporalTable instanceof TableSourceTable) {
-            lookupFunction =
+            lookupFunctionAndPartitioner =
                     findLookupFunctionFromNewSource(
                             (TableSourceTable) temporalTable,
                             lookupKeyIndicesInOrder,
@@ -460,13 +463,14 @@ public final class LookupJoinUtil {
                             async,
                             classLoader);
         } else if (temporalTable instanceof LegacyTableSourceTable) {
-            lookupFunction =
-                    findLookupFunctionFromLegacySource(
-                            (LegacyTableSourceTable<?>) temporalTable,
-                            lookupKeyIndicesInOrder,
-                            async);
+            lookupFunctionAndPartitioner =
+                    LookupFunctionAndPartitioner.withoutPartitioner(
+                            findLookupFunctionFromLegacySource(
+                                    (LegacyTableSourceTable<?>) temporalTable,
+                                    lookupKeyIndicesInOrder,
+                                    async));
         }
-        if (null == lookupFunction) {
+        if (null == lookupFunctionAndPartitioner) {
             StringBuilder errorMsg = new StringBuilder();
             errorMsg.append("Required ")
                     .append(async ? "async" : "sync")
@@ -476,7 +480,7 @@ public final class LookupJoinUtil {
                             "does not offer a valid lookup function neither as TableSourceTable nor LegacyTableSourceTable");
             throw new TableException(errorMsg.toString());
         }
-        return lookupFunction;
+        return lookupFunctionAndPartitioner;
     }
 
     /**
@@ -533,7 +537,7 @@ public final class LookupJoinUtil {
         return provider.createAsyncLookupFunction();
     }
 
-    private static UserDefinedFunction findLookupFunctionFromNewSource(
+    private static LookupFunctionAndPartitioner findLookupFunctionFromNewSource(
             TableSourceTable temporalTable,
             int[] lookupKeyIndicesInOrder,
             ResultRetryStrategy retryStrategy,
@@ -541,7 +545,40 @@ public final class LookupJoinUtil {
             ClassLoader classLoader) {
         LookupTableSource.LookupRuntimeProvider provider =
                 createLookupRuntimeProvider(temporalTable, lookupKeyIndicesInOrder);
+        if (provider instanceof PartitionedLookupProvider) {
+            PartitionedLookupProvider partitionedLookupProvider =
+                    (PartitionedLookupProvider) provider;
+            RowDataCustomPartitioner partitioner = partitionedLookupProvider.getPartitioner();
+            provider = partitionedLookupProvider.getProvider();
+            UserDefinedFunction lookupFunction =
+                    getLookupFunction(
+                            temporalTable,
+                            lookupKeyIndicesInOrder,
+                            retryStrategy,
+                            async,
+                            classLoader,
+                            provider);
+            return LookupFunctionAndPartitioner.withPartitioner(lookupFunction, partitioner);
+        } else {
+            return LookupFunctionAndPartitioner.withoutPartitioner(
+                    getLookupFunction(
+                            temporalTable,
+                            lookupKeyIndicesInOrder,
+                            retryStrategy,
+                            async,
+                            classLoader,
+                            provider));
+        }
+    }
 
+    @Nullable
+    private static UserDefinedFunction getLookupFunction(
+            TableSourceTable temporalTable,
+            int[] lookupKeyIndicesInOrder,
+            ResultRetryStrategy retryStrategy,
+            boolean async,
+            ClassLoader classLoader,
+            LookupTableSource.LookupRuntimeProvider provider) {
         if (async) {
             if (provider instanceof AsyncLookupFunctionProvider) {
                 if (provider instanceof PartialCachingAsyncLookupProvider) {
@@ -589,6 +626,37 @@ public final class LookupJoinUtil {
             }
         }
         return null;
+    }
+
+    public static class LookupFunctionAndPartitioner {
+        private final UserDefinedFunction userDefinedFunction;
+
+        @Nullable private final RowDataCustomPartitioner partitioner;
+
+        private LookupFunctionAndPartitioner(
+                UserDefinedFunction userDefinedFunction,
+                @Nullable RowDataCustomPartitioner partitioner) {
+            this.userDefinedFunction = checkNotNull(userDefinedFunction);
+            this.partitioner = partitioner;
+        }
+
+        public static LookupFunctionAndPartitioner withoutPartitioner(
+                UserDefinedFunction userDefinedFunction) {
+            return new LookupFunctionAndPartitioner(userDefinedFunction, null);
+        }
+
+        public static LookupFunctionAndPartitioner withPartitioner(
+                UserDefinedFunction userDefinedFunction, RowDataCustomPartitioner partitioner) {
+            return new LookupFunctionAndPartitioner(userDefinedFunction, checkNotNull(partitioner));
+        }
+
+        public UserDefinedFunction getUserDefinedFunction() {
+            return userDefinedFunction;
+        }
+
+        public Optional<RowDataCustomPartitioner> getPartitioner() {
+            return Optional.ofNullable(partitioner);
+        }
     }
 
     private static UserDefinedFunction findLookupFunctionFromLegacySource(

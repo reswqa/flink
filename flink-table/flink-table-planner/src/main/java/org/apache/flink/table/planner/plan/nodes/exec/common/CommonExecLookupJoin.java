@@ -29,6 +29,7 @@ import org.apache.flink.streaming.api.operators.ProcessOperator;
 import org.apache.flink.streaming.api.operators.SimpleOperatorFactory;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.async.AsyncWaitOperatorFactory;
+import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.catalog.DataTypeFactory;
 import org.apache.flink.table.connector.ChangelogMode;
@@ -40,6 +41,7 @@ import org.apache.flink.table.functions.AsyncTableFunction;
 import org.apache.flink.table.functions.TableFunction;
 import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.table.functions.UserDefinedFunctionHelper;
+import org.apache.flink.table.partitioner.RowDataCustomPartitioner;
 import org.apache.flink.table.planner.calcite.FlinkTypeFactory;
 import org.apache.flink.table.planner.codegen.CodeGeneratorContext;
 import org.apache.flink.table.planner.codegen.LookupJoinCodeGenerator;
@@ -55,6 +57,7 @@ import org.apache.flink.table.planner.plan.nodes.exec.utils.ExecNodeUtil;
 import org.apache.flink.table.planner.plan.schema.LegacyTableSourceTable;
 import org.apache.flink.table.planner.plan.schema.TableSourceTable;
 import org.apache.flink.table.planner.plan.utils.LookupJoinUtil;
+import org.apache.flink.table.planner.plan.utils.LookupJoinUtil.LookupFunctionAndPartitioner;
 import org.apache.flink.table.planner.utils.JavaScalaConversionUtil;
 import org.apache.flink.table.planner.utils.ShortcutUtils;
 import org.apache.flink.table.runtime.collector.ListenableCollector;
@@ -69,6 +72,7 @@ import org.apache.flink.table.runtime.operators.join.lookup.AsyncLookupJoinWithC
 import org.apache.flink.table.runtime.operators.join.lookup.LookupJoinRunner;
 import org.apache.flink.table.runtime.operators.join.lookup.LookupJoinWithCalcRunner;
 import org.apache.flink.table.runtime.operators.join.lookup.ResultRetryStrategy;
+import org.apache.flink.table.runtime.partitioner.RowDataCustomPartitionerWrapper;
 import org.apache.flink.table.runtime.types.PlannerTypeUtils;
 import org.apache.flink.table.runtime.types.TypeInfoDataTypeConverter;
 import org.apache.flink.table.runtime.typeutils.InternalSerializers;
@@ -98,6 +102,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.flink.table.planner.calcite.FlinkTypeFactory.toLogicalType;
+import static org.apache.flink.table.planner.plan.nodes.exec.common.CommonExecSink.PARTITIONER_TRANSFORMATION;
 import static org.apache.flink.table.planner.utils.ShortcutUtils.unwrapTypeFactory;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -252,13 +257,19 @@ public abstract class CommonExecLookupJoin extends ExecNodeBase<RowData> {
         ResultRetryStrategy retryStrategy =
                 retryOptions != null ? retryOptions.toRetryStrategy() : null;
 
-        UserDefinedFunction lookupFunction =
+        Transformation<RowData> inputTransformation =
+                (Transformation<RowData>) inputEdge.translateToPlan(planner);
+
+        LookupFunctionAndPartitioner lookupFunctionAndPartitioner =
                 LookupJoinUtil.getLookupFunction(
                         temporalTable,
                         lookupKeys.keySet(),
                         planner.getFlinkContext().getClassLoader(),
                         isAsyncEnabled,
                         retryStrategy);
+        UserDefinedFunction lookupFunction = lookupFunctionAndPartitioner.getUserDefinedFunction();
+        Optional<RowDataCustomPartitioner> partitioner =
+                lookupFunctionAndPartitioner.getPartitioner();
         UserDefinedFunctionHelper.prepareInstance(config, lookupFunction);
 
         boolean isLeftOuterJoin = joinType == FlinkJoinType.LEFT;
@@ -266,9 +277,8 @@ public abstract class CommonExecLookupJoin extends ExecNodeBase<RowData> {
             assert lookupFunction instanceof AsyncTableFunction;
         }
 
-        Transformation<RowData> inputTransformation =
-                (Transformation<RowData>) inputEdge.translateToPlan(planner);
-
+        // upsert materialize mod expect that input stream is partitioned by the look-up key. We
+        // must trade off between correctness and performance.
         if (upsertMaterialize) {
             // upsertMaterialize only works on sync lookup mode, async lookup is unsupported.
             assert !isAsyncEnabled && !inputChangelogMode.containsOnly(RowKind.INSERT);
@@ -286,46 +296,57 @@ public abstract class CommonExecLookupJoin extends ExecNodeBase<RowData> {
                     isLeftOuterJoin,
                     planner.getExecEnv().getConfig().isObjectReuseEnabled(),
                     lookupKeyContainsPrimaryKey);
-        } else {
-            StreamOperatorFactory<RowData> operatorFactory;
-            if (isAsyncEnabled) {
-                operatorFactory =
-                        createAsyncLookupJoin(
-                                temporalTable,
-                                config,
-                                planner.getFlinkContext().getClassLoader(),
-                                lookupKeys,
-                                (AsyncTableFunction<Object>) lookupFunction,
-                                planner.createRelBuilder(),
-                                inputRowType,
-                                tableSourceRowType,
-                                resultRowType,
-                                isLeftOuterJoin,
-                                asyncLookupOptions);
-            } else {
-                operatorFactory =
-                        createSyncLookupJoin(
-                                temporalTable,
-                                config,
-                                planner.getFlinkContext().getClassLoader(),
-                                lookupKeys,
-                                (TableFunction<Object>) lookupFunction,
-                                planner.createRelBuilder(),
-                                inputRowType,
-                                tableSourceRowType,
-                                resultRowType,
-                                isLeftOuterJoin,
-                                planner.getExecEnv().getConfig().isObjectReuseEnabled());
-            }
-
-            return ExecNodeUtil.createOneInputTransformation(
-                    inputTransformation,
-                    createTransformationMeta(LOOKUP_JOIN_TRANSFORMATION, config),
-                    operatorFactory,
-                    InternalTypeInfo.of(resultRowType),
-                    inputTransformation.getParallelism(),
-                    false);
         }
+
+        StreamOperatorFactory<RowData> operatorFactory;
+        if (isAsyncEnabled) {
+            operatorFactory =
+                    createAsyncLookupJoin(
+                            temporalTable,
+                            config,
+                            planner.getFlinkContext().getClassLoader(),
+                            lookupKeys,
+                            (AsyncTableFunction<Object>) lookupFunction,
+                            planner.createRelBuilder(),
+                            inputRowType,
+                            tableSourceRowType,
+                            resultRowType,
+                            isLeftOuterJoin,
+                            asyncLookupOptions);
+        } else {
+            operatorFactory =
+                    createSyncLookupJoin(
+                            temporalTable,
+                            config,
+                            planner.getFlinkContext().getClassLoader(),
+                            lookupKeys,
+                            (TableFunction<Object>) lookupFunction,
+                            planner.createRelBuilder(),
+                            inputRowType,
+                            tableSourceRowType,
+                            resultRowType,
+                            isLeftOuterJoin,
+                            planner.getExecEnv().getConfig().isObjectReuseEnabled());
+        }
+
+        if (partitioner.isPresent()) {
+            Transformation<RowData> partitionedTransform =
+                    new PartitionTransformation<>(
+                            inputTransformation,
+                            new RowDataCustomPartitionerWrapper(partitioner.get()));
+            createTransformationMeta(
+                            PARTITIONER_TRANSFORMATION, "Partitioner", "Partitioner", config)
+                    .fill(partitionedTransform);
+            partitionedTransform.setParallelism(inputTransformation.getParallelism(), false);
+            inputTransformation = partitionedTransform;
+        }
+        return ExecNodeUtil.createOneInputTransformation(
+                inputTransformation,
+                createTransformationMeta(LOOKUP_JOIN_TRANSFORMATION, config),
+                operatorFactory,
+                InternalTypeInfo.of(resultRowType),
+                inputTransformation.getParallelism(),
+                false);
     }
 
     protected abstract Transformation<RowData> createSyncLookupJoinWithState(
