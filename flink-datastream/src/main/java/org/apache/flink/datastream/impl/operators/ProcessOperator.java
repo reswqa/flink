@@ -19,6 +19,8 @@
 package org.apache.flink.datastream.impl.operators;
 
 import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.common.watermark.WatermarkHandlingResult;
+import org.apache.flink.api.common.watermark.WatermarkHandlingStrategy;
 import org.apache.flink.datastream.api.context.NonPartitionedContext;
 import org.apache.flink.datastream.api.context.ProcessingTimeManager;
 import org.apache.flink.datastream.api.function.OneInputStreamProcessFunction;
@@ -32,7 +34,12 @@ import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedOneInput;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
+import org.apache.flink.streaming.runtime.streamrecord.GeneralizedWatermarkElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.streaming.util.watermark.AbstractInternalWatermarkDeclaration;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Operator for {@link OneInputStreamProcessFunction}. */
 public class ProcessOperator<IN, OUT>
@@ -46,6 +53,8 @@ public class ProcessOperator<IN, OUT>
     protected transient NonPartitionedContext<OUT> nonPartitionedContext;
 
     protected transient TimestampCollector<OUT> outputCollector;
+
+    protected transient Map<String, WatermarkHandlingStrategy> watermarkHandlingStrategyMap;
 
     public ProcessOperator(OneInputStreamProcessFunction<IN, OUT> userFunction) {
         super(userFunction);
@@ -64,6 +73,15 @@ public class ProcessOperator<IN, OUT>
                         taskInfo.getMaxNumberOfParallelSubtasks(),
                         taskInfo.getTaskName(),
                         operatorContext.getMetricGroup());
+        outputCollector = getOutputCollector();
+
+        watermarkHandlingStrategyMap =
+                config.getWatermarkDeclarations(getUserCodeClassloader()).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        AbstractInternalWatermarkDeclaration::getIdentifier,
+                                        AbstractInternalWatermarkDeclaration
+                                                ::getDefaultHandlingStrategyForFunction));
         partitionedContext =
                 new DefaultPartitionedContext(
                         context,
@@ -72,14 +90,27 @@ public class ProcessOperator<IN, OUT>
                         getProcessingTimeManager(),
                         operatorContext,
                         getOperatorStateBackend());
-        outputCollector = getOutputCollector();
         nonPartitionedContext = getNonPartitionedContext();
+        partitionedContext.setNonPartitionedContext(nonPartitionedContext);
     }
 
     @Override
     public void processElement(StreamRecord<IN> element) throws Exception {
         outputCollector.setTimestampFromStreamRecord(element);
         userFunction.processRecord(element.getValue(), outputCollector, partitionedContext);
+    }
+
+    @Override
+    public void processGeneralizedWatermark(GeneralizedWatermarkElement watermark)
+            throws Exception {
+        WatermarkHandlingResult watermarkHandlingResultByUserFunction =
+                userFunction.onWatermark(
+                        watermark.getWatermark(), outputCollector, nonPartitionedContext);
+        if (watermarkHandlingResultByUserFunction == WatermarkHandlingResult.PEEK
+                && watermarkHandlingStrategyMap.get(watermark.getWatermark().getIdentifier())
+                        == WatermarkHandlingStrategy.FORWARD) {
+            output.emitGeneralizedWatermark(watermark);
+        }
     }
 
     protected TimestampCollector<OUT> getOutputCollector() {
@@ -101,6 +132,18 @@ public class ProcessOperator<IN, OUT>
 
     protected NonPartitionedContext<OUT> getNonPartitionedContext() {
         return new DefaultNonPartitionedContext<>(
-                context, partitionedContext, outputCollector, false, null);
+                context,
+                partitionedContext,
+                outputCollector,
+                false,
+                null,
+                output,
+                watermarkHandlingStrategyMap.keySet());
+    }
+
+    @Override
+    public void close() throws Exception {
+        super.close();
+        userFunction.close();
     }
 }

@@ -53,6 +53,7 @@ public final class StreamElementSerializer<T> extends TypeSerializer<StreamEleme
     private static final int TAG_STREAM_STATUS = 4;
     private static final int TAG_RECORD_ATTRIBUTES = 5;
     private static final int TAG_INTERNAL_WATERMARK = 6;
+    private static final int TAG_GENERALIZED_WATERMARK = 7;
 
     private final TypeSerializer<T> typeSerializer;
 

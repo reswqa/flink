@@ -20,22 +20,29 @@ package org.apache.flink.datastream.impl.operators;
 
 import org.apache.flink.api.common.TaskInfo;
 import org.apache.flink.api.common.state.OperatorStateStore;
+import org.apache.flink.api.common.watermark.WatermarkHandlingResult;
+import org.apache.flink.api.common.watermark.WatermarkHandlingStrategy;
 import org.apache.flink.datastream.api.context.ProcessingTimeManager;
 import org.apache.flink.datastream.api.context.TwoOutputNonPartitionedContext;
 import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.impl.common.OutputCollector;
 import org.apache.flink.datastream.impl.common.TimestampCollector;
-import org.apache.flink.datastream.impl.context.DefaultPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultRuntimeContext;
 import org.apache.flink.datastream.impl.context.DefaultTwoOutputNonPartitionedContext;
+import org.apache.flink.datastream.impl.context.DefaultTwoOutputPartitionedContext;
 import org.apache.flink.datastream.impl.context.UnsupportedProcessingTimeManager;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedOneInput;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
+import org.apache.flink.streaming.runtime.streamrecord.GeneralizedWatermarkElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.streaming.util.watermark.AbstractInternalWatermarkDeclaration;
 import org.apache.flink.util.OutputTag;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Operator for {@link TwoOutputStreamProcessFunction}.
@@ -52,11 +59,13 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     protected transient DefaultRuntimeContext context;
 
-    protected transient DefaultPartitionedContext partitionedContext;
+    protected transient DefaultTwoOutputPartitionedContext partitionedContext;
 
     protected transient TwoOutputNonPartitionedContext<OUT_MAIN, OUT_SIDE> nonPartitionedContext;
 
     protected OutputTag<OUT_SIDE> outputTag;
+
+    protected transient Map<String, WatermarkHandlingStrategy> watermarkHandlingStrategyMap;
 
     public TwoOutputProcessOperator(
             TwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE> userFunction,
@@ -81,15 +90,24 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                         taskInfo.getMaxNumberOfParallelSubtasks(),
                         taskInfo.getTaskName(),
                         operatorContext.getMetricGroup());
+
+        watermarkHandlingStrategyMap =
+                config.getWatermarkDeclarations(getUserCodeClassloader()).stream()
+                        .collect(
+                                Collectors.toMap(
+                                        AbstractInternalWatermarkDeclaration::getIdentifier,
+                                        AbstractInternalWatermarkDeclaration
+                                                ::getDefaultHandlingStrategyForFunction));
         this.partitionedContext =
-                new DefaultPartitionedContext(
+                new DefaultTwoOutputPartitionedContext(
                         context,
                         this::currentKey,
                         this::setCurrentKey,
                         getProcessingTimeManager(),
                         operatorContext,
                         operatorStateStore);
-        this.nonPartitionedContext = getNonPartitionedContext();
+        nonPartitionedContext = getNonPartitionedContext();
+        partitionedContext.setNonPartitionedContext(nonPartitionedContext);
     }
 
     @Override
@@ -98,6 +116,22 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
         sideCollector.setTimestampFromStreamRecord(element);
         userFunction.processRecord(
                 element.getValue(), mainCollector, sideCollector, partitionedContext);
+    }
+
+    @Override
+    public void processGeneralizedWatermark(GeneralizedWatermarkElement watermark)
+            throws Exception {
+        WatermarkHandlingResult watermarkHandlingResultByUserFunction =
+                userFunction.onWatermark(
+                        watermark.getWatermark(),
+                        mainCollector,
+                        sideCollector,
+                        nonPartitionedContext);
+        if (watermarkHandlingResultByUserFunction == WatermarkHandlingResult.PEEK
+                && watermarkHandlingStrategyMap.get(watermark.getWatermark().getIdentifier())
+                        == WatermarkHandlingStrategy.FORWARD) {
+            output.emitGeneralizedWatermark(watermark);
+        }
     }
 
     @Override
@@ -124,6 +158,12 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     protected ProcessingTimeManager getProcessingTimeManager() {
         return UnsupportedProcessingTimeManager.INSTANCE;
+    }
+
+    @Override
+    public void close() throws Exception {
+        super.close();
+        userFunction.close();
     }
 
     /**
