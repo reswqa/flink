@@ -115,9 +115,7 @@ public interface RichFunction extends Function {
      *     decide whether to retry the task execution.
      */
     @PublicEvolving
-    default void open(OpenContext openContext) throws Exception {
-        open(new Configuration());
-    }
+    void open(OpenContext openContext) throws Exception;
 
     /**
      * Tear-down method for the user code. It is called after the last call to the main working

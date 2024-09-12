@@ -72,5 +72,8 @@ public abstract class AbstractRichFunction implements RichFunction, Serializable
     public void open(Configuration parameters) throws Exception {}
 
     @Override
+    public void open(OpenContext openContext) throws Exception {}
+
+    @Override
     public void close() throws Exception {}
 }
