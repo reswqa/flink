@@ -19,9 +19,9 @@
 package org.apache.flink.test.misc;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.test.operators.util.CollectionDataSets;
+import org.apache.flink.test.operators.util.CollectionDataStreams;
+import org.apache.flink.util.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,10 +34,10 @@ public class GenericTypeInfoTest {
     @Test
     public void testSerializerTree() {
         @SuppressWarnings("unchecked")
-        TypeInformation<CollectionDataSets.PojoWithCollectionGeneric> ti =
-                (TypeInformation<CollectionDataSets.PojoWithCollectionGeneric>)
+        TypeInformation<CollectionDataStreams.PojoWithCollectionGeneric> ti =
+                (TypeInformation<CollectionDataStreams.PojoWithCollectionGeneric>)
                         TypeExtractor.createTypeInfo(
-                                CollectionDataSets.PojoWithCollectionGeneric.class);
+                                CollectionDataStreams.PojoWithCollectionGeneric.class);
 
         final String serTree =
                 Utils.getSerializerTree(ti)
