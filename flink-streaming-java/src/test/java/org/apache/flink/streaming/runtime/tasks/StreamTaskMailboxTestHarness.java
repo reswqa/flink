@@ -18,16 +18,23 @@
 
 package org.apache.flink.streaming.runtime.tasks;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.operators.MailboxExecutor;
+import org.apache.flink.metrics.Metric;
+import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.event.AbstractEvent;
 import org.apache.flink.runtime.io.network.partition.consumer.StreamTestSingleInputGate;
 import org.apache.flink.runtime.memory.MemoryManager;
+import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
+import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
 import org.apache.flink.runtime.state.TestTaskStateManager;
 import org.apache.flink.runtime.taskmanager.TestCheckpointResponder;
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.function.Supplier;
 
+import static org.apache.flink.runtime.executiongraph.ExecutionGraphTestUtils.createExecutionAttemptId;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -194,5 +201,14 @@ public class StreamTaskMailboxTestHarness<OUT> implements AutoCloseable {
 
     public TestCheckpointResponder getCheckpointResponder() {
         return (TestCheckpointResponder) taskStateManager.getCheckpointResponder();
+    }
+
+    static TaskMetricGroup createTaskMetricGroup(Map<String, Metric> metrics) {
+        return TaskManagerMetricGroup.createTaskManagerMetricGroup(
+                        new StreamTaskTestHarness.TestMetricRegistry(metrics),
+                        "localhost",
+                        ResourceID.generate())
+                .addJob(new JobID(), "jobName")
+                .addTask(createExecutionAttemptId(), "test");
     }
 }

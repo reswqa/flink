@@ -870,7 +870,7 @@ class MultipleInputStreamTaskTest {
     void testCheckpointBarrierMetrics() throws Exception {
         final Map<String, Metric> metrics = new ConcurrentHashMap<>();
         final TaskMetricGroup taskMetricGroup =
-                StreamTaskTestHarness.createTaskMetricGroup(metrics);
+                StreamTaskMailboxTestHarness.createTaskMetricGroup(metrics);
 
         try (StreamTaskMailboxTestHarness<String> testHarness =
                 new StreamTaskMailboxTestHarnessBuilder<>(
@@ -937,7 +937,7 @@ class MultipleInputStreamTaskTest {
     void testLatencyMarker() throws Exception {
         final Map<String, Metric> metrics = new ConcurrentHashMap<>();
         final TaskMetricGroup taskMetricGroup =
-                StreamTaskTestHarness.createTaskMetricGroup(metrics);
+                StreamTaskMailboxTestHarness.createTaskMetricGroup(metrics);
 
         try (StreamTaskMailboxTestHarness<String> testHarness =
                 new StreamTaskMailboxTestHarnessBuilder<>(

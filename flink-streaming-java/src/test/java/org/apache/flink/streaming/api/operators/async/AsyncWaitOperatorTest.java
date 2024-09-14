@@ -51,7 +51,8 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamElement;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.OneInputStreamTask;
-import org.apache.flink.streaming.runtime.tasks.OneInputStreamTaskTestHarness;
+import org.apache.flink.streaming.runtime.tasks.StreamMockEnvironment;
+import org.apache.flink.streaming.runtime.tasks.StreamTask;
 import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarness;
 import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarnessBuilder;
 import org.apache.flink.streaming.util.OneInputStreamOperatorTestHarness;
@@ -485,26 +486,38 @@ class AsyncWaitOperatorTest {
 
         JobVertex chainedVertex = createChainedVertex(new MyAsyncFunction(), new MyAsyncFunction());
 
-        final OneInputStreamTaskTestHarness<Integer, Integer> testHarness =
-                new OneInputStreamTaskTestHarness<>(
-                        OneInputStreamTask::new,
-                        1,
-                        1,
-                        BasicTypeInfo.INT_TYPE_INFO,
-                        BasicTypeInfo.INT_TYPE_INFO);
-        testHarness.setupOutputForSingletonOperatorChain();
-
-        testHarness.taskConfig = chainedVertex.getConfiguration();
-
-        final StreamConfig streamConfig = testHarness.getStreamConfig();
-        final StreamConfig operatorChainStreamConfig =
-                new StreamConfig(chainedVertex.getConfiguration());
-        streamConfig.setStreamOperatorFactory(
-                operatorChainStreamConfig.getStreamOperatorFactory(
-                        AsyncWaitOperatorTest.class.getClassLoader()));
-
-        testHarness.invoke();
-        testHarness.waitForTaskRunning();
+        StreamTaskMailboxTestHarness<Integer> testHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                OneInputStreamTask::new, BasicTypeInfo.INT_TYPE_INFO)
+                        .modifyStreamConfig(
+                                streamConfig -> {
+                                    final StreamConfig operatorChainStreamConfig =
+                                            new StreamConfig(chainedVertex.getConfiguration());
+                                    streamConfig.setOperatorID(new OperatorID());
+                                    streamConfig.setStreamOperatorFactory(
+                                            operatorChainStreamConfig.getStreamOperatorFactory(
+                                                    AsyncWaitOperatorTest.class.getClassLoader()));
+                                })
+                        .setStreamEnvironmentFactory(
+                                (jobID,
+                                        executionAttemptID,
+                                        jobConfig,
+                                        taskConfig,
+                                        executionConfig,
+                                        offHeapMemorySize,
+                                        inputSplitProvider,
+                                        bufferSize,
+                                        taskStateManager,
+                                        collectNetworkEvents) ->
+                                        new StreamMockEnvironment(
+                                                jobConfig,
+                                                chainedVertex.getConfiguration(),
+                                                offHeapMemorySize,
+                                                inputSplitProvider,
+                                                bufferSize,
+                                                taskStateManager))
+                        .addInput(BasicTypeInfo.INT_TYPE_INFO)
+                        .build();
 
         long initialTimestamp = 0L;
 
@@ -600,31 +613,21 @@ class AsyncWaitOperatorTest {
 
     @Test
     void testStateSnapshotAndRestore() throws Exception {
-        final OneInputStreamTaskTestHarness<Integer, Integer> testHarness =
-                new OneInputStreamTaskTestHarness<>(
-                        OneInputStreamTask::new,
-                        1,
-                        1,
-                        BasicTypeInfo.INT_TYPE_INFO,
-                        BasicTypeInfo.INT_TYPE_INFO);
-
-        testHarness.setupOutputForSingletonOperatorChain();
-
         AsyncWaitOperatorFactory<Integer, Integer> factory =
                 new AsyncWaitOperatorFactory<>(
                         new LazyAsyncFunction(), TIMEOUT, 4, AsyncDataStream.OutputMode.ORDERED);
-
-        final StreamConfig streamConfig = testHarness.getStreamConfig();
         OperatorID operatorID = new OperatorID(42L, 4711L);
-        streamConfig.setStreamOperatorFactory(factory);
-        streamConfig.setOperatorID(operatorID);
+
+        StreamTaskMailboxTestHarness<Integer> testHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                OneInputStreamTask::new, BasicTypeInfo.INT_TYPE_INFO)
+                        .setupOutputForSingletonOperatorChain(factory, operatorID)
+                        .addInput(BasicTypeInfo.INT_TYPE_INFO)
+                        .build();
 
         final TestTaskStateManager taskStateManagerMock = testHarness.getTaskStateManager();
 
-        testHarness.invoke();
-        testHarness.waitForTaskRunning();
-
-        final OneInputStreamTask<Integer, Integer> task = testHarness.getTask();
+        final StreamTask<Integer, ?> task = testHarness.getStreamTask();
 
         final long initialTime = 0L;
 
@@ -633,7 +636,7 @@ class AsyncWaitOperatorTest {
         testHarness.processElement(new StreamRecord<>(3, initialTime + 3));
         testHarness.processElement(new StreamRecord<>(4, initialTime + 4));
 
-        testHarness.waitForInputProcessing();
+        testHarness.processAll();
 
         final long checkpointId = 1L;
         final long checkpointTimestamp = 1L;
@@ -643,6 +646,8 @@ class AsyncWaitOperatorTest {
 
         task.triggerCheckpointAsync(
                 checkpointMetaData, CheckpointOptions.forCheckpointWithDefaultLocation());
+
+        testHarness.processAll();
 
         taskStateManagerMock.getWaitForReportLatch().await();
 
@@ -656,37 +661,29 @@ class AsyncWaitOperatorTest {
         // set the operator state from previous attempt into the restored one
         TaskStateSnapshot subtaskStates = taskStateManagerMock.getLastJobManagerTaskStateSnapshot();
 
-        final OneInputStreamTaskTestHarness<Integer, Integer> restoredTaskHarness =
-                new OneInputStreamTaskTestHarness<>(
-                        OneInputStreamTask::new,
-                        BasicTypeInfo.INT_TYPE_INFO,
-                        BasicTypeInfo.INT_TYPE_INFO);
-
-        restoredTaskHarness.setTaskStateSnapshot(checkpointId, subtaskStates);
-        restoredTaskHarness.setupOutputForSingletonOperatorChain();
-
         AsyncWaitOperatorFactory<Integer, Integer> restoredOperator =
                 new AsyncWaitOperatorFactory<>(
                         new MyAsyncFunction(), TIMEOUT, 6, AsyncDataStream.OutputMode.ORDERED);
 
-        restoredTaskHarness.getStreamConfig().setStreamOperatorFactory(restoredOperator);
-        restoredTaskHarness.getStreamConfig().setOperatorID(operatorID);
+        StreamTaskMailboxTestHarness<Integer> restoredTaskHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                OneInputStreamTask::new, BasicTypeInfo.INT_TYPE_INFO)
+                        .setTaskStateSnapshot(checkpointId, subtaskStates)
+                        .setupOutputForSingletonOperatorChain(restoredOperator, operatorID)
+                        .addInput(BasicTypeInfo.INT_TYPE_INFO)
+                        .build();
 
-        restoredTaskHarness.invoke();
-        restoredTaskHarness.waitForTaskRunning();
-
-        final OneInputStreamTask<Integer, Integer> restoredTask = restoredTaskHarness.getTask();
+        final StreamTask<Integer, ?> restoredTask = restoredTaskHarness.getStreamTask();
 
         restoredTaskHarness.processElement(new StreamRecord<>(5, initialTime + 5));
         restoredTaskHarness.processElement(new StreamRecord<>(6, initialTime + 6));
         restoredTaskHarness.processElement(new StreamRecord<>(7, initialTime + 7));
 
         // trigger the checkpoint while processing stream elements
-        restoredTask
-                .triggerCheckpointAsync(
-                        new CheckpointMetaData(checkpointId, checkpointTimestamp),
-                        CheckpointOptions.forCheckpointWithDefaultLocation())
-                .get();
+        restoredTask.triggerCheckpointAsync(
+                new CheckpointMetaData(checkpointId, checkpointTimestamp),
+                CheckpointOptions.forCheckpointWithDefaultLocation());
+        restoredTaskHarness.processAll();
 
         restoredTaskHarness.processElement(new StreamRecord<>(8, initialTime + 8));
 

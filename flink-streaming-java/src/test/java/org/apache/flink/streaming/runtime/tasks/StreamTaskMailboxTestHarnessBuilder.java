@@ -26,6 +26,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
 import org.apache.flink.runtime.execution.Environment;
+import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.io.network.api.writer.ResultPartitionWriter;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.io.network.partition.consumer.SingleInputGateBuilder;
@@ -36,6 +37,7 @@ import org.apache.flink.runtime.metrics.groups.TaskMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.runtime.operators.testutils.MockInputSplitProvider;
 import org.apache.flink.runtime.state.LocalRecoveryConfig;
+import org.apache.flink.runtime.state.TaskStateManager;
 import org.apache.flink.runtime.state.TestLocalRecoveryConfig;
 import org.apache.flink.runtime.state.TestTaskStateManager;
 import org.apache.flink.runtime.state.TestTaskStateManagerBuilder;
@@ -112,6 +114,9 @@ public class StreamTaskMailboxTestHarnessBuilder<OUT> {
 
     private StreamPartitioner<?> partitioner = new BroadcastPartitioner<>();
 
+    private StreamEnvironmentFactory streamEnvironmentFactory =
+            new DefaultStreamEnvironmentFactory();
+
     public StreamTaskMailboxTestHarnessBuilder(
             FunctionWithException<Environment, ? extends StreamTask<OUT, ?>, Exception> taskFactory,
             TypeInformation<OUT> outputType) {
@@ -135,6 +140,22 @@ public class StreamTaskMailboxTestHarnessBuilder<OUT> {
     public <T> StreamTaskMailboxTestHarnessBuilder<OUT> setCheckpointResponder(
             CheckpointResponder checkpointResponder) {
         this.checkpointResponder = checkpointResponder;
+        return this;
+    }
+
+    public <T> StreamTaskMailboxTestHarnessBuilder<OUT> setLocalRecoveryConfig(LocalRecoveryConfig localRecoveryConfig) {
+        this.localRecoveryConfig = localRecoveryConfig;
+        return this;
+    }
+
+    public <T> StreamTaskMailboxTestHarnessBuilder<OUT> setMemorySize(long memorySize) {
+        this.memorySize = memorySize;
+        return this;
+    }
+
+    public <T> StreamTaskMailboxTestHarnessBuilder<OUT> setStreamEnvironmentFactory(
+            StreamEnvironmentFactory streamEnvironmentFactory) {
+        this.streamEnvironmentFactory = streamEnvironmentFactory;
         return this;
     }
 
@@ -229,7 +250,7 @@ public class StreamTaskMailboxTestHarnessBuilder<OUT> {
 
         TestTaskStateManager taskStateManager = taskStateManagerBuilder.build();
         StreamMockEnvironment streamMockEnvironment =
-                new StreamMockEnvironment(
+                streamEnvironmentFactory.createStreamEnvironment(
                         new JobID(),
                         createExecutionAttemptId(),
                         jobConfig,
@@ -265,6 +286,47 @@ public class StreamTaskMailboxTestHarnessBuilder<OUT> {
 
         return new StreamTaskMailboxTestHarness<>(
                 task, outputList, inputGates, streamMockEnvironment);
+    }
+
+    public interface StreamEnvironmentFactory {
+        StreamMockEnvironment createStreamEnvironment(
+                JobID jobID,
+                ExecutionAttemptID executionAttemptID,
+                Configuration jobConfig,
+                Configuration taskConfig,
+                ExecutionConfig executionConfig,
+                long offHeapMemorySize,
+                MockInputSplitProvider inputSplitProvider,
+                int bufferSize,
+                TaskStateManager taskStateManager,
+                boolean collectNetworkEvents);
+    }
+
+    private static class DefaultStreamEnvironmentFactory implements StreamEnvironmentFactory {
+        @Override
+        public StreamMockEnvironment createStreamEnvironment(
+                JobID jobID,
+                ExecutionAttemptID executionAttemptID,
+                Configuration jobConfig,
+                Configuration taskConfig,
+                ExecutionConfig executionConfig,
+                long offHeapMemorySize,
+                MockInputSplitProvider inputSplitProvider,
+                int bufferSize,
+                TaskStateManager taskStateManager,
+                boolean collectNetworkEvents) {
+            return new StreamMockEnvironment(
+                    jobID,
+                    executionAttemptID,
+                    jobConfig,
+                    taskConfig,
+                    executionConfig,
+                    offHeapMemorySize,
+                    inputSplitProvider,
+                    bufferSize,
+                    taskStateManager,
+                    collectNetworkEvents);
+        }
     }
 
     public StreamTaskMailboxTestHarness<OUT> build() throws Exception {

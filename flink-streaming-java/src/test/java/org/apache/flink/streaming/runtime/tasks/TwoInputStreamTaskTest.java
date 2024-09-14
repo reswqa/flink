@@ -770,7 +770,7 @@ class TwoInputStreamTaskTest {
 
         final Map<String, Metric> metrics = new ConcurrentHashMap<>();
         final TaskMetricGroup taskMetricGroup =
-                StreamTaskTestHarness.createTaskMetricGroup(metrics);
+                StreamTaskMailboxTestHarness.createTaskMetricGroup(metrics);
         final StreamMockEnvironment environment = testHarness.createEnvironment();
         environment.setTaskMetricGroup(taskMetricGroup);
 

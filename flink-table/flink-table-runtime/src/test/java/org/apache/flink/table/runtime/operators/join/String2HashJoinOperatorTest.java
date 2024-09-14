@@ -49,6 +49,7 @@ import org.apache.flink.table.types.logical.VarCharType;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -68,8 +69,7 @@ class String2HashJoinOperatorTest implements Serializable {
     private ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
     private long initialTime = 0L;
 
-    public static LinkedBlockingQueue<Object> transformToBinary(
-            LinkedBlockingQueue<Object> output) {
+    public static LinkedBlockingQueue<Object> transformToBinary(Queue<Object> output) {
         LinkedBlockingQueue<Object> ret = new LinkedBlockingQueue<>();
         for (Object o : output) {
             RowData row = ((StreamRecord<RowData>) o).getValue();

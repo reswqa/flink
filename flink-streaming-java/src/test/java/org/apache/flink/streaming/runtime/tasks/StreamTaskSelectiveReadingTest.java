@@ -20,8 +20,6 @@ package org.apache.flink.streaming.runtime.tasks;
 
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.runtime.execution.Environment;
-import org.apache.flink.runtime.jobgraph.OperatorID;
-import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.BoundedMultiInput;
 import org.apache.flink.streaming.api.operators.InputSelectable;
@@ -37,8 +35,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -113,7 +111,12 @@ class StreamTaskSelectiveReadingTest {
     }
 
     @Test
-    void testReadFinishedInput() {
+    void testReadFinishedInput() throws Exception {
+        //        testBase(
+        //                new TestReadFinishedInputStreamOperator(),
+        //                false,
+        //                new ConcurrentLinkedQueue<>(),
+        //                true);
         assertThatThrownBy(
                         () ->
                                 testBase(
@@ -121,8 +124,7 @@ class StreamTaskSelectiveReadingTest {
                                         false,
                                         new ConcurrentLinkedQueue<>(),
                                         true))
-                .hasCauseInstanceOf(IOException.class)
-                .rootCause()
+                .isInstanceOf(IOException.class)
                 .hasMessageContaining("all selected inputs are already finished");
     }
 
@@ -133,24 +135,19 @@ class StreamTaskSelectiveReadingTest {
             boolean orderedCheck)
             throws Exception {
 
-        final TwoInputStreamTaskTestHarness<String, Integer, String> testHarness =
-                new TwoInputStreamTaskTestHarness<>(
-                        TestSelectiveReadingTask::new,
-                        BasicTypeInfo.STRING_TYPE_INFO,
-                        BasicTypeInfo.INT_TYPE_INFO,
-                        BasicTypeInfo.STRING_TYPE_INFO);
-
-        testHarness.setupOutputForSingletonOperatorChain();
-        StreamConfig streamConfig = testHarness.getStreamConfig();
-        streamConfig.setStreamOperator(streamOperator);
-        streamConfig.setOperatorID(new OperatorID());
-
-        testHarness.invoke();
-        testHarness.waitForTaskRunning();
+        StreamTaskMailboxTestHarness testHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                TestSelectiveReadingTask::new, BasicTypeInfo.STRING_TYPE_INFO)
+                        .setupOutputForSingletonOperatorChain(streamOperator)
+                        .addInput(BasicTypeInfo.STRING_TYPE_INFO)
+                        .addInput(BasicTypeInfo.INT_TYPE_INFO)
+                        .build();
+        // disable auto process to test the listening and blocking logic
+        testHarness.setAutoProcess(false);
 
         boolean isProcessing = false;
         if (!prepareDataBeforeProcessing) {
-            ((TestSelectiveReadingTask) testHarness.getTask()).startProcessing();
+            ((TestSelectiveReadingTask) testHarness.getStreamTask()).startProcessing();
             isProcessing = true;
         }
 
@@ -158,7 +155,7 @@ class StreamTaskSelectiveReadingTest {
 
         // wait until the input is processed to test the listening and blocking logic
         if (!prepareDataBeforeProcessing) {
-            testHarness.waitForInputProcessing();
+            testHarness.processAll();
         }
 
         testHarness.processElement(new StreamRecord<>("Hello-2"), 0, 0);
@@ -172,11 +169,11 @@ class StreamTaskSelectiveReadingTest {
         testHarness.endInput();
 
         if (!isProcessing) {
-            ((TestSelectiveReadingTask) testHarness.getTask()).startProcessing();
+            ((TestSelectiveReadingTask) testHarness.getStreamTask()).startProcessing();
         }
-        testHarness.waitForTaskCompletion(10_000L);
+        testHarness.waitForTaskCompletion();
 
-        LinkedBlockingQueue<Object> output = testHarness.getOutput();
+        Queue<Object> output = testHarness.getOutput();
         if (orderedCheck) {
             TestHarnessUtil.assertOutputEquals("Output was not correct.", expectedOutput, output);
         } else {

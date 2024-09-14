@@ -18,18 +18,15 @@
 
 package org.apache.flink.table.runtime.operators.join;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
-import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarness;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarnessBuilder;
 import org.apache.flink.streaming.runtime.tasks.TwoInputStreamTask;
-import org.apache.flink.streaming.runtime.tasks.TwoInputStreamTaskTestHarness;
 import org.apache.flink.streaming.util.TestHarnessUtil;
 import org.apache.flink.table.api.config.ExecutionConfigOptions;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.data.binary.BinaryRowData;
-import org.apache.flink.table.data.utils.JoinedRowData;
 import org.apache.flink.table.runtime.generated.GeneratedJoinCondition;
 import org.apache.flink.table.runtime.generated.GeneratedNormalizedKeyComputer;
 import org.apache.flink.table.runtime.generated.GeneratedProjection;
@@ -82,8 +79,7 @@ class String2SortMergeJoinOperatorTest {
     @TestTemplate
     void testInnerJoin() throws Exception {
         StreamOperator joinOperator = newOperator(FlinkJoinType.INNER, leftIsSmall);
-        TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData> testHarness =
-                buildSortMergeJoin(joinOperator);
+        StreamTaskMailboxTestHarness<RowData> testHarness = buildSortMergeJoin(joinOperator);
 
         ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
         expectedOutput.add(new StreamRecord<>(newRow("a", "02")));
@@ -98,8 +94,7 @@ class String2SortMergeJoinOperatorTest {
     @TestTemplate
     void testLeftOuterJoin() throws Exception {
         StreamOperator joinOperator = newOperator(FlinkJoinType.LEFT, leftIsSmall);
-        TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData> testHarness =
-                buildSortMergeJoin(joinOperator);
+        StreamTaskMailboxTestHarness<RowData> testHarness = buildSortMergeJoin(joinOperator);
 
         ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
         expectedOutput.add(new StreamRecord<>(newRow("a", "02")));
@@ -115,8 +110,7 @@ class String2SortMergeJoinOperatorTest {
     @TestTemplate
     void testRightOuterJoin() throws Exception {
         StreamOperator joinOperator = newOperator(FlinkJoinType.RIGHT, leftIsSmall);
-        TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData> testHarness =
-                buildSortMergeJoin(joinOperator);
+        StreamTaskMailboxTestHarness<RowData> testHarness = buildSortMergeJoin(joinOperator);
 
         ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
         expectedOutput.add(new StreamRecord<>(newRow("a", "02")));
@@ -132,8 +126,7 @@ class String2SortMergeJoinOperatorTest {
     @TestTemplate
     void testFullJoin() throws Exception {
         StreamOperator joinOperator = newOperator(FlinkJoinType.FULL, leftIsSmall);
-        TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData> testHarness =
-                buildSortMergeJoin(joinOperator);
+        StreamTaskMailboxTestHarness<RowData> testHarness = buildSortMergeJoin(joinOperator);
 
         ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
         expectedOutput.add(new StreamRecord<>(newRow("a", "02")));
@@ -148,31 +141,21 @@ class String2SortMergeJoinOperatorTest {
                 transformToBinary(testHarness.getOutput()));
     }
 
-    private TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData>
-            buildSortMergeJoin(StreamOperator operator) throws Exception {
-        final TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData>
-                testHarness =
-                        new TwoInputStreamTaskTestHarness<>(
-                                TwoInputStreamTask::new,
-                                2,
-                                2,
-                                new int[] {1, 2},
-                                typeInfo,
-                                (TypeInformation) typeInfo,
-                                joinedInfo);
-
-        testHarness.memorySize = 36 * 1024 * 1024;
-        testHarness.setupOutputForSingletonOperatorChain();
-        testHarness.getStreamConfig().setStreamOperator(operator);
-        testHarness.getStreamConfig().setOperatorID(new OperatorID());
-        testHarness
-                .getStreamConfig()
-                .setManagedMemoryFractionOperatorOfUseCase(ManagedMemoryUseCase.OPERATOR, 0.99);
+    private StreamTaskMailboxTestHarness<RowData> buildSortMergeJoin(StreamOperator operator)
+            throws Exception {
+        StreamTaskMailboxTestHarness testHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(TwoInputStreamTask::new, joinedInfo)
+                        .setupOutputForSingletonOperatorChain(operator)
+                        .modifyStreamConfig(
+                                conf ->
+                                        conf.setManagedMemoryFractionOperatorOfUseCase(
+                                                ManagedMemoryUseCase.OPERATOR, 0.99))
+                        .addInput(typeInfo, 2)
+                        .addInput(typeInfo, 2)
+                        .setMemorySize(36 * 1024 * 1024)
+                        .build();
 
         long initialTime = 0L;
-
-        testHarness.invoke();
-        testHarness.waitForTaskRunning();
 
         testHarness.processElement(new StreamRecord<>(newRow("a", "0"), initialTime), 0, 0);
         testHarness.processElement(new StreamRecord<>(newRow("d", "0"), initialTime), 0, 0);
@@ -180,7 +163,7 @@ class String2SortMergeJoinOperatorTest {
         testHarness.processElement(new StreamRecord<>(newRow("b", "1"), initialTime), 0, 1);
         testHarness.processElement(new StreamRecord<>(newRow("c", "2"), initialTime), 1, 1);
         testHarness.processElement(new StreamRecord<>(newRow("b", "4"), initialTime), 1, 0);
-        testHarness.waitForInputProcessing();
+        testHarness.processAll();
 
         testHarness.endInput();
         return testHarness;

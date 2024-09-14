@@ -18,6 +18,8 @@
 
 package org.apache.flink.test.state;
 
+import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -28,18 +30,26 @@ import org.apache.flink.runtime.checkpoint.CheckpointMetaData;
 import org.apache.flink.runtime.checkpoint.CheckpointOptions;
 import org.apache.flink.runtime.checkpoint.JobManagerTaskRestore;
 import org.apache.flink.runtime.checkpoint.TaskStateSnapshot;
+import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
+import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.operators.testutils.MockInputSplitProvider;
+import org.apache.flink.runtime.state.LocalRecoveryConfig;
+import org.apache.flink.runtime.state.LocalSnapshotDirectoryProviderImpl;
 import org.apache.flink.runtime.state.StateInitializationContext;
 import org.apache.flink.runtime.state.StateSnapshotContext;
+import org.apache.flink.runtime.state.TaskStateManager;
 import org.apache.flink.runtime.state.TestTaskStateManager;
 import org.apache.flink.runtime.util.TestingTaskManagerRuntimeInfo;
 import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
+import org.apache.flink.streaming.api.operators.SimpleOperatorFactory;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.tasks.OneInputStreamTask;
-import org.apache.flink.streaming.runtime.tasks.OneInputStreamTaskTestHarness;
 import org.apache.flink.streaming.runtime.tasks.StreamMockEnvironment;
+import org.apache.flink.streaming.runtime.tasks.StreamTask;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarness;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarnessBuilder;
 import org.apache.flink.streaming.util.TestHarnessUtil;
 
 import org.junit.Before;
@@ -52,6 +62,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -111,49 +122,71 @@ public class StatefulOperatorChainedTaskTest {
             throws Exception {
 
         File localRootDir = temporaryFolder.newFolder();
-        final OneInputStreamTaskTestHarness<String, String> testHarness =
-                new OneInputStreamTaskTestHarness<>(
-                        OneInputStreamTask::new,
-                        1,
-                        1,
-                        BasicTypeInfo.STRING_TYPE_INFO,
-                        BasicTypeInfo.STRING_TYPE_INFO,
-                        localRootDir);
-
-        testHarness
-                .setupOperatorChain(headId, headOperator)
-                .chain(tailId, tailOperator, StringSerializer.INSTANCE, true)
-                .finish();
-
-        if (restore.isPresent()) {
-            JobManagerTaskRestore taskRestore = restore.get();
-            testHarness.setTaskStateSnapshot(
-                    taskRestore.getRestoreCheckpointId(), taskRestore.getTaskStateSnapshot());
-        }
-
-        StreamMockEnvironment environment =
-                new StreamMockEnvironment(
-                        testHarness.jobConfig,
-                        testHarness.taskConfig,
-                        testHarness.getExecutionConfig(),
-                        testHarness.memorySize,
-                        new MockInputSplitProvider(),
-                        testHarness.bufferSize,
-                        testHarness.getTaskStateManager());
-
         Configuration configuration = new Configuration();
         configuration.setString(STATE_BACKEND.key(), "rocksdb");
         File file = temporaryFolder.newFolder();
         configuration.setString(CHECKPOINTS_DIRECTORY.key(), file.toURI().toString());
         configuration.setString(INCREMENTAL_CHECKPOINTS.key(), "true");
-        environment.setTaskManagerInfo(
-                new TestingTaskManagerRuntimeInfo(
-                        configuration,
-                        System.getProperty("java.io.tmpdir").split(",|" + File.pathSeparator)));
-        testHarness.invoke(environment);
-        testHarness.waitForTaskRunning();
 
-        OneInputStreamTask<String, String> streamTask = testHarness.getTask();
+        StreamTaskMailboxTestHarnessBuilder<String> builder =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                OneInputStreamTask::new, BasicTypeInfo.STRING_TYPE_INFO)
+                        .setLocalRecoveryConfig(
+                                LocalRecoveryConfig.backupAndRecoveryEnabled(
+                                        new LocalSnapshotDirectoryProviderImpl(
+                                                localRootDir, new JobID(), new JobVertexID(), 0)))
+                        .setKeyType(BasicTypeInfo.STRING_TYPE_INFO)
+                        .setupOperatorChain(headId, headOperator)
+                        .chain(StringSerializer.INSTANCE)
+                        .setCreateKeyedStateBackend(true)
+                        .setOperatorID(tailId)
+                        .setOperatorFactory(SimpleOperatorFactory.of(tailOperator))
+                        .build()
+                        .finish()
+                        .setStreamEnvironmentFactory(
+                                new StreamTaskMailboxTestHarnessBuilder.StreamEnvironmentFactory() {
+                                    @Override
+                                    public StreamMockEnvironment createStreamEnvironment(
+                                            JobID jobID,
+                                            ExecutionAttemptID executionAttemptID,
+                                            Configuration jobConfig,
+                                            Configuration taskConfig,
+                                            ExecutionConfig executionConfig,
+                                            long offHeapMemorySize,
+                                            MockInputSplitProvider inputSplitProvider,
+                                            int bufferSize,
+                                            TaskStateManager taskStateManager,
+                                            boolean collectNetworkEvents) {
+
+                                        StreamMockEnvironment env =
+                                                new StreamMockEnvironment(
+                                                        jobConfig,
+                                                        taskConfig,
+                                                        executionConfig,
+                                                        offHeapMemorySize,
+                                                        inputSplitProvider,
+                                                        bufferSize,
+                                                        taskStateManager);
+                                        env.setTaskManagerInfo(
+                                                new TestingTaskManagerRuntimeInfo(
+                                                        configuration,
+                                                        System.getProperty("java.io.tmpdir")
+                                                                .split(",|" + File.pathSeparator)));
+                                        return env;
+                                    }
+                                })
+                        .addInput(BasicTypeInfo.STRING_TYPE_INFO);
+
+        if (restore.isPresent()) {
+            JobManagerTaskRestore taskRestore = restore.get();
+            builder =
+                    builder.setTaskStateSnapshot(
+                            taskRestore.getRestoreCheckpointId(),
+                            taskRestore.getTaskStateSnapshot());
+        }
+
+        StreamTaskMailboxTestHarness<String> testHarness = builder.build();
+        StreamTask<String, ?> streamTask = testHarness.getStreamTask();
 
         processRecords(testHarness);
         triggerCheckpoint(testHarness, streamTask);
@@ -171,18 +204,18 @@ public class StatefulOperatorChainedTaskTest {
     }
 
     private void triggerCheckpoint(
-            OneInputStreamTaskTestHarness<String, String> testHarness,
-            OneInputStreamTask<String, String> streamTask)
+            StreamTaskMailboxTestHarness<String> testHarness, StreamTask<String, ?> streamTask)
             throws Exception {
 
         long checkpointId = 1L;
         CheckpointMetaData checkpointMetaData = new CheckpointMetaData(checkpointId, 1L);
 
         testHarness.getTaskStateManager().getWaitForReportLatch().reset();
-        while (!streamTask
-                .triggerCheckpointAsync(
-                        checkpointMetaData, CheckpointOptions.forCheckpointWithDefaultLocation())
-                .get()) {}
+        CompletableFuture<Boolean> triggerCheckpointFuture =
+                streamTask.triggerCheckpointAsync(
+                        checkpointMetaData, CheckpointOptions.forCheckpointWithDefaultLocation());
+        testHarness.processAll();
+        while (!triggerCheckpointFuture.get()) {}
 
         testHarness.getTaskStateManager().getWaitForReportLatch().await();
         long reportedCheckpointId = testHarness.getTaskStateManager().getReportedCheckpointId();
@@ -190,15 +223,14 @@ public class StatefulOperatorChainedTaskTest {
         assertEquals(checkpointId, reportedCheckpointId);
     }
 
-    private void processRecords(OneInputStreamTaskTestHarness<String, String> testHarness)
-            throws Exception {
+    private void processRecords(StreamTaskMailboxTestHarness<String> testHarness) throws Exception {
         ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
 
         testHarness.processElement(new StreamRecord<>("10"), 0, 0);
         testHarness.processElement(new StreamRecord<>("20"), 0, 0);
         testHarness.processElement(new StreamRecord<>("30"), 0, 0);
 
-        testHarness.waitForInputProcessing();
+        testHarness.processAll();
 
         expectedOutput.add(new StreamRecord<>("10"));
         expectedOutput.add(new StreamRecord<>("20"));

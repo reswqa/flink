@@ -18,19 +18,18 @@
 
 package org.apache.flink.table.runtime.operators.join;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.core.memory.ManagedMemoryUseCase;
-import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.api.operators.StreamOperatorFactory;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarness;
+import org.apache.flink.streaming.runtime.tasks.StreamTaskMailboxTestHarnessBuilder;
 import org.apache.flink.streaming.runtime.tasks.TwoInputStreamTask;
-import org.apache.flink.streaming.runtime.tasks.TwoInputStreamTaskTestHarness;
 import org.apache.flink.table.api.config.ExecutionConfigOptions;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.binary.BinaryRowData;
-import org.apache.flink.table.data.utils.JoinedRowData;
 import org.apache.flink.table.data.writer.BinaryRowWriter;
 import org.apache.flink.table.runtime.generated.GeneratedJoinCondition;
 import org.apache.flink.table.runtime.generated.GeneratedNormalizedKeyComputer;
@@ -235,32 +234,26 @@ abstract class Int2HashJoinOperatorTestBase implements Serializable {
         InternalTypeInfo<RowData> rowDataTypeInfo =
                 InternalTypeInfo.ofFields(
                         new IntType(), new IntType(), new IntType(), new IntType());
-        TwoInputStreamTaskTestHarness<BinaryRowData, BinaryRowData, JoinedRowData> testHarness =
-                new TwoInputStreamTaskTestHarness<>(
-                        TwoInputStreamTask::new,
-                        2,
-                        1,
-                        new int[] {1, 2},
-                        typeInfo,
-                        (TypeInformation) typeInfo,
-                        rowDataTypeInfo);
-        testHarness.memorySize = 3 * 1024 * 1024;
-        testHarness.getExecutionConfig().enableObjectReuse();
-        testHarness.setupOutputForSingletonOperatorChain();
-        if (operator instanceof StreamOperator) {
-            testHarness.getStreamConfig().setStreamOperator((StreamOperator<?>) operator);
-        } else {
-            testHarness
-                    .getStreamConfig()
-                    .setStreamOperatorFactory((StreamOperatorFactory<?>) operator);
-        }
-        testHarness.getStreamConfig().setOperatorID(new OperatorID());
-        testHarness
-                .getStreamConfig()
-                .setManagedMemoryFractionOperatorOfUseCase(ManagedMemoryUseCase.OPERATOR, 0.99);
 
-        testHarness.invoke();
-        testHarness.waitForTaskRunning();
+        StreamTaskMailboxTestHarnessBuilder<RowData> builder =
+                new StreamTaskMailboxTestHarnessBuilder<>(TwoInputStreamTask::new, rowDataTypeInfo);
+        if (operator instanceof StreamOperator) {
+            builder = builder.setupOutputForSingletonOperatorChain((StreamOperator<?>) operator);
+        } else {
+            builder =
+                    builder.setupOutputForSingletonOperatorChain(
+                            (StreamOperatorFactory<?>) operator);
+        }
+        StreamTaskMailboxTestHarness<RowData> testHarness =
+                builder.setMemorySize(3 * 1024 * 1024)
+                        .modifyExecutionConfig(ExecutionConfig::enableObjectReuse)
+                        .modifyStreamConfig(
+                                conf ->
+                                        conf.setManagedMemoryFractionOperatorOfUseCase(
+                                                ManagedMemoryUseCase.OPERATOR, 0.99))
+                        .addInput(typeInfo)
+                        .addInput(typeInfo)
+                        .build();
 
         Random random = new Random();
         do {
@@ -290,10 +283,10 @@ abstract class Int2HashJoinOperatorTestBase implements Serializable {
             }
         } while (true);
 
-        testHarness.endInput(0, 0);
-        testHarness.endInput(1, 0);
+        testHarness.endInput(0, true);
+        testHarness.endInput(1, true);
 
-        testHarness.waitForInputProcessing();
+        testHarness.processAll();
         testHarness.waitForTaskCompletion();
 
         Queue<Object> actual = testHarness.getOutput();

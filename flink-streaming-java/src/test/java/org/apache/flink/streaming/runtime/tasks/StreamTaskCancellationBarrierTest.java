@@ -22,10 +22,9 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.runtime.checkpoint.CheckpointException;
 import org.apache.flink.runtime.checkpoint.CheckpointFailureReason;
+import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.io.network.api.CancelCheckpointMarker;
-import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.streaming.api.functions.co.CoMapFunction;
-import org.apache.flink.streaming.api.graph.StreamConfig;
 import org.apache.flink.streaming.api.operators.StreamMap;
 import org.apache.flink.streaming.api.operators.co.CoStreamMap;
 
@@ -34,7 +33,7 @@ import org.hamcrest.Description;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.eq;
@@ -44,7 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /** Test checkpoint cancellation barrier. */
-@Timeout(value = 10, unit = TimeUnit.SECONDS)
+@Timeout(value = 10)
 class StreamTaskCancellationBarrierTest {
 
     /**
@@ -54,31 +53,47 @@ class StreamTaskCancellationBarrierTest {
      */
     @Test
     void testDeclineCallOnCancelBarrierOneInput() throws Exception {
-
-        OneInputStreamTaskTestHarness<String, String> testHarness =
-                new OneInputStreamTaskTestHarness<>(
-                        OneInputStreamTask::new,
-                        1,
-                        2,
-                        BasicTypeInfo.STRING_TYPE_INFO,
-                        BasicTypeInfo.STRING_TYPE_INFO);
-        testHarness.setupOutputForSingletonOperatorChain();
-
-        StreamConfig streamConfig = testHarness.getStreamConfig();
         StreamMap<String, String> mapOperator = new StreamMap<>(new IdentityMap());
-        streamConfig.setStreamOperator(mapOperator);
-        streamConfig.setOperatorID(new OperatorID());
-
-        StreamMockEnvironment environment = spy(testHarness.createEnvironment());
-
-        // start the task
-        testHarness.invoke(environment);
-        testHarness.waitForTaskRunning();
+        CompletableFuture<Environment> envFuture = new CompletableFuture<>();
+        StreamTaskMailboxTestHarness<String> testHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                OneInputStreamTask::new, BasicTypeInfo.STRING_TYPE_INFO)
+                        .setupOutputForSingletonOperatorChain(mapOperator)
+                        .setStreamEnvironmentFactory(
+                                (jobID,
+                                        executionAttemptID,
+                                        jobConfig,
+                                        taskConfig,
+                                        executionConfig,
+                                        offHeapMemorySize,
+                                        inputSplitProvider,
+                                        bufferSize,
+                                        taskStateManager,
+                                        collectNetworkEvents) -> {
+                                    StreamMockEnvironment env =
+                                            spy(
+                                                    new StreamMockEnvironment(
+                                                            jobID,
+                                                            executionAttemptID,
+                                                            jobConfig,
+                                                            taskConfig,
+                                                            executionConfig,
+                                                            offHeapMemorySize,
+                                                            inputSplitProvider,
+                                                            bufferSize,
+                                                            taskStateManager,
+                                                            collectNetworkEvents));
+                                    envFuture.complete(env);
+                                    return env;
+                                })
+                        .addInput(BasicTypeInfo.STRING_TYPE_INFO, 2)
+                        .build();
+        Environment environment = envFuture.get();
 
         // emit cancellation barriers
         testHarness.processEvent(new CancelCheckpointMarker(2L), 0, 1);
         testHarness.processEvent(new CancelCheckpointMarker(2L), 0, 0);
-        testHarness.waitForInputProcessing();
+        testHarness.processAll();
 
         // the decline call should go to the coordinator
         verify(environment, times(1))
@@ -109,31 +124,49 @@ class StreamTaskCancellationBarrierTest {
      */
     @Test
     void testDeclineCallOnCancelBarrierTwoInputs() throws Exception {
-
-        TwoInputStreamTaskTestHarness<String, String, String> testHarness =
-                new TwoInputStreamTaskTestHarness<>(
-                        TwoInputStreamTask::new,
-                        BasicTypeInfo.STRING_TYPE_INFO,
-                        BasicTypeInfo.STRING_TYPE_INFO,
-                        BasicTypeInfo.STRING_TYPE_INFO);
-        testHarness.setupOutputForSingletonOperatorChain();
-
-        StreamConfig streamConfig = testHarness.getStreamConfig();
         CoStreamMap<String, String, String> op = new CoStreamMap<>(new UnionCoMap());
-        streamConfig.setStreamOperator(op);
-        streamConfig.setOperatorID(new OperatorID());
 
-        StreamMockEnvironment environment = spy(testHarness.createEnvironment());
-
-        // start the task
-        testHarness.invoke(environment);
-        testHarness.waitForTaskRunning();
+        CompletableFuture<Environment> envFuture = new CompletableFuture<>();
+        StreamTaskMailboxTestHarness<String> testHarness =
+                new StreamTaskMailboxTestHarnessBuilder<>(
+                                TwoInputStreamTask::new, BasicTypeInfo.STRING_TYPE_INFO)
+                        .setupOutputForSingletonOperatorChain(op)
+                        .setStreamEnvironmentFactory(
+                                (jobID,
+                                        executionAttemptID,
+                                        jobConfig,
+                                        taskConfig,
+                                        executionConfig,
+                                        offHeapMemorySize,
+                                        inputSplitProvider,
+                                        bufferSize,
+                                        taskStateManager,
+                                        collectNetworkEvents) -> {
+                                    StreamMockEnvironment env =
+                                            spy(
+                                                    new StreamMockEnvironment(
+                                                            jobID,
+                                                            executionAttemptID,
+                                                            jobConfig,
+                                                            taskConfig,
+                                                            executionConfig,
+                                                            offHeapMemorySize,
+                                                            inputSplitProvider,
+                                                            bufferSize,
+                                                            taskStateManager,
+                                                            collectNetworkEvents));
+                                    envFuture.complete(env);
+                                    return env;
+                                })
+                        .addInput(BasicTypeInfo.STRING_TYPE_INFO)
+                        .addInput(BasicTypeInfo.STRING_TYPE_INFO)
+                        .build();
+        Environment environment = envFuture.get();
 
         // emit cancellation barriers
         testHarness.processEvent(new CancelCheckpointMarker(2L), 0, 0);
         testHarness.processEvent(new CancelCheckpointMarker(2L), 1, 0);
-        testHarness.waitForInputProcessing();
-
+        testHarness.processAll();
         // the decline call should go to the coordinator
         verify(environment, times(1))
                 .declineCheckpoint(
