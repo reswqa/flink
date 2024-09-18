@@ -98,7 +98,6 @@ public class CliFrontend {
 
     // actions
     private static final String ACTION_RUN = "run";
-    private static final String ACTION_RUN_APPLICATION = "run-application";
     private static final String ACTION_INFO = "info";
     private static final String ACTION_LIST = "list";
     private static final String ACTION_CANCEL = "cancel";
@@ -167,23 +166,6 @@ public class CliFrontend {
     // --------------------------------------------------------------------------------------------
     //  Execute Actions
     // --------------------------------------------------------------------------------------------
-
-    @Deprecated
-    protected void runApplication(String[] args) throws Exception {
-        LOG.warn(
-                "DEPRECATION WARNING: The 'run-application' option is deprecated and will be removed in the future. Please use 'run' instead.");
-        LOG.info("Running 'run-application' command.");
-
-        final Options commandOptions = CliFrontendParser.getRunCommandOptions();
-        final CommandLine commandLine = getCommandLine(commandOptions, args, true);
-
-        if (commandLine.hasOption(HELP_OPTION.getOpt())) {
-            CliFrontendParser.printHelpForRunApplication(customCommandLines);
-            return;
-        }
-
-        run(args);
-    }
 
     /**
      * Executions the run action.
@@ -1295,9 +1277,6 @@ public class CliFrontend {
             switch (action) {
                 case ACTION_RUN:
                     run(params);
-                    return 0;
-                case ACTION_RUN_APPLICATION:
-                    runApplication(params);
                     return 0;
                 case ACTION_LIST:
                     list(params);
