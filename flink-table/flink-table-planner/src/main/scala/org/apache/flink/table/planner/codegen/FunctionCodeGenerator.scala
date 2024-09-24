@@ -154,7 +154,7 @@ object FunctionCodeGenerator {
         ${ctx.reuseConstructorCode(funcName)}
 
         @Override
-        public void open(${classOf[Configuration].getCanonicalName} parameters) throws Exception {
+        public void open(${classOf[OpenContext].getCanonicalName} context) throws Exception {
           ${ctx.reuseOpenCode()}
         }
 

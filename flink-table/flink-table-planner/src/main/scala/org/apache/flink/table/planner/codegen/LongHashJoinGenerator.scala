@@ -17,12 +17,13 @@
  */
 package org.apache.flink.table.planner.codegen
 
+import org.apache.flink.api.common.functions.DefaultOpenContext
 import org.apache.flink.configuration.{Configuration, ReadableConfig}
 import org.apache.flink.metrics.Gauge
 import org.apache.flink.table.data.{RowData, TimestampData}
 import org.apache.flink.table.data.utils.JoinedRowData
 import org.apache.flink.table.planner.codegen.CodeGenUtils._
-import org.apache.flink.table.planner.codegen.OperatorCodeGenerator.{generateCollect, INPUT_SELECTION}
+import org.apache.flink.table.planner.codegen.OperatorCodeGenerator.{INPUT_SELECTION, generateCollect}
 import org.apache.flink.table.runtime.generated.{GeneratedJoinCondition, GeneratedProjection}
 import org.apache.flink.table.runtime.hashtable.{LongHashPartition, LongHybridHashTable, ProbeIterator}
 import org.apache.flink.table.runtime.operators.CodeGenOperatorFactory
@@ -157,7 +158,7 @@ object LongHashJoinGenerator {
     val condRefs = ctx.addReusableObject(condFunc.getReferences, "condRefs")
     ctx.addReusableInitStatement(s"condFunc = new ${condFunc.getClassName}($condRefs);")
     ctx.addReusableOpenStatement(s"condFunc.setRuntimeContext(getRuntimeContext());")
-    ctx.addReusableOpenStatement(s"condFunc.open(new ${className[Configuration]}());")
+    ctx.addReusableOpenStatement(s"condFunc.open(new ${className[DefaultOpenContext]}());")
     ctx.addReusableCloseStatement(s"condFunc.close();")
 
     val leftIsBuildTerm = newName(ctx, "leftIsBuild")

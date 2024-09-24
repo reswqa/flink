@@ -17,6 +17,7 @@
  */
 package org.apache.flink.table.planner.codegen
 
+import org.apache.flink.api.common.functions.DefaultOpenContext
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.table.planner.codegen.CodeGenUtils._
 import org.apache.flink.table.planner.codegen.Indenter.toISC
@@ -180,7 +181,7 @@ object CollectorCodeGenerator {
       s"""
          |$collectorTerm = new ${generatedCollector.getClassName}();
          |$collectorTerm.setRuntimeContext(getRuntimeContext());
-         |$collectorTerm.open(new ${className[Configuration]}());
+         |$collectorTerm.open(new ${className[DefaultOpenContext]}());
          |""".stripMargin
     ctx.addReusableOpenStatement(openCollector)
 
