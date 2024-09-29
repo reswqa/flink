@@ -33,6 +33,7 @@ INPUT_TYPE=${1:-embedded}
 case $INPUT_TYPE in
     (embedded)
         INPUT_ARGS=""
+        RESULT_HASH="382f860d4fcf379b96b24f25857326eb"
     ;;
     (dummy-fs)
         source "$(dirname "$0")"/common_dummy_fs.sh
