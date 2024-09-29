@@ -64,9 +64,9 @@ public class GenericTypeInfoTest {
                                 + "    scalaBigInt:scala.math.BigInt\n"
                                 + "        bigInteger:java.math.BigInteger\n"
                                 + "    mixed:java.util.List\n"
-                                + "    makeMeGeneric:org.apache.flink.test.operators.util.CollectionDataSets$PojoWithDateAndEnum\n"
+                                + "    makeMeGeneric:org.apache.flink.test.operators.util.CollectionDataStreams$PojoWithDateAndEnum\n"
                                 + "        group:java.lang.String\n"
                                 + "        date:java.util.Date\n"
-                                + "        cat:org.apache.flink.test.operators.util.CollectionDataSets$Category (is enum)\n"));
+                                + "        cat:org.apache.flink.test.operators.util.CollectionDataStreams$Category (is enum)\n"));
     }
 }
