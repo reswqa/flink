@@ -44,26 +44,20 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.api.java.Utils;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.io.CsvOutputFormat;
-import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.typeutils.InputTypeConfigurable;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.RpcOptions;
 import org.apache.flink.core.execution.JobClient;
-import org.apache.flink.core.fs.FileSystem.WriteMode;
-import org.apache.flink.core.fs.Path;
-import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
 import org.apache.flink.streaming.api.functions.AssignerWithPunctuatedWatermarks;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.api.functions.sink.OutputFormatSinkFunction;
-import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.flink.streaming.api.functions.sink.SocketClientSink;
+import org.apache.flink.streaming.api.functions.sink.legacy.OutputFormatSinkFunction;
+import org.apache.flink.streaming.api.functions.sink.legacy.PrintSinkFunction;
+import org.apache.flink.streaming.api.functions.sink.legacy.SinkFunction;
+import org.apache.flink.streaming.api.functions.sink.legacy.SocketClientSink;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperatorFactory;
 import org.apache.flink.streaming.api.operators.ProcessOperator;
@@ -82,17 +76,11 @@ import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.TimestampsAndWatermarksTransformation;
 import org.apache.flink.streaming.api.transformations.UnionTransformation;
 import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
-import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
-import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.WindowAssigner;
 import org.apache.flink.streaming.api.windowing.evictors.CountEvictor;
-import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger;
 import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
-import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.runtime.operators.util.AssignerWithPeriodicWatermarksAdapter;
 import org.apache.flink.streaming.runtime.operators.util.AssignerWithPunctuatedWatermarksAdapter;
@@ -106,8 +94,8 @@ import org.apache.flink.streaming.runtime.partitioner.ShufflePartitioner;
 import org.apache.flink.streaming.runtime.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.util.keys.KeySelectorUtil;
 import org.apache.flink.util.CloseableIterator;
-import org.apache.flink.util.OutputTag;
 import org.apache.flink.util.Preconditions;
+import org.apache.flink.util.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -506,79 +494,6 @@ public class DataStream<T> {
     }
 
     /**
-     * Initiates an iterative part of the program that feeds back data streams. The iterative part
-     * needs to be closed by calling {@link IterativeStream#closeWith(DataStream)}. The
-     * transformation of this IterativeStream will be the iteration head. The data stream given to
-     * the {@link IterativeStream#closeWith(DataStream)} method is the data stream that will be fed
-     * back and used as the input for the iteration head. The user can also use different feedback
-     * type than the input of the iteration and treat the input and feedback streams as a {@link
-     * ConnectedStreams} be calling {@link IterativeStream#withFeedbackType(TypeInformation)}
-     *
-     * <p>A common usage pattern for streaming iterations is to use output splitting to send a part
-     * of the closing data stream to the head. Refer to {@link
-     * ProcessFunction.Context#output(OutputTag, Object)} for more information.
-     *
-     * <p>The iteration edge will be partitioned the same way as the first input of the iteration
-     * head unless it is changed in the {@link IterativeStream#closeWith(DataStream)} call.
-     *
-     * <p>By default a DataStream with iteration will never terminate, but the user can use the
-     * maxWaitTime parameter to set a max waiting time for the iteration head. If no data received
-     * in the set time, the stream terminates.
-     *
-     * @return The iterative data stream created.
-     * @deprecated This method is deprecated since Flink 1.19. The only known use case of this
-     *     Iteration API comes from Flink ML, which already has its own implementation of iteration
-     *     and no longer uses this API. If there's any use cases other than Flink ML that needs
-     *     iteration support, please reach out to dev@flink.apache.org and we can consider making
-     *     the Flink ML iteration implementation a separate common library.
-     * @see <a
-     *     href="https://cwiki.apache.org/confluence/display/FLINK/FLIP-357%3A+Deprecate+Iteration+API+of+DataStream">
-     *     FLIP-357: Deprecate Iteration API of DataStream </a>
-     * @see <a href="https://nightlies.apache.org/flink/flink-ml-docs-stable/">Flink ML </a>
-     */
-    @Deprecated
-    public IterativeStream<T> iterate() {
-        return new IterativeStream<>(this, 0);
-    }
-
-    /**
-     * Initiates an iterative part of the program that feeds back data streams. The iterative part
-     * needs to be closed by calling {@link IterativeStream#closeWith(DataStream)}. The
-     * transformation of this IterativeStream will be the iteration head. The data stream given to
-     * the {@link IterativeStream#closeWith(DataStream)} method is the data stream that will be fed
-     * back and used as the input for the iteration head. The user can also use different feedback
-     * type than the input of the iteration and treat the input and feedback streams as a {@link
-     * ConnectedStreams} be calling {@link IterativeStream#withFeedbackType(TypeInformation)}
-     *
-     * <p>A common usage pattern for streaming iterations is to use output splitting to send a part
-     * of the closing data stream to the head. Refer to {@link
-     * ProcessFunction.Context#output(OutputTag, Object)} for more information.
-     *
-     * <p>The iteration edge will be partitioned the same way as the first input of the iteration
-     * head unless it is changed in the {@link IterativeStream#closeWith(DataStream)} call.
-     *
-     * <p>By default a DataStream with iteration will never terminate, but the user can use the
-     * maxWaitTime parameter to set a max waiting time for the iteration head. If no data received
-     * in the set time, the stream terminates.
-     *
-     * @param maxWaitTimeMillis Number of milliseconds to wait between inputs before shutting down
-     * @return The iterative data stream created.
-     * @deprecated This method is deprecated since Flink 1.19. The only known use case of this
-     *     Iteration API comes from Flink ML, which already has its own implementation of iteration
-     *     and no longer uses this API. If there's any use cases other than Flink ML that needs
-     *     iteration support, please reach out to dev@flink.apache.org and we can consider making
-     *     the Flink ML iteration implementation a separate common library.
-     * @see <a
-     *     href="https://cwiki.apache.org/confluence/display/FLINK/FLIP-357%3A+Deprecate+Iteration+API+of+DataStream">
-     *     FLIP-357: Deprecate Iteration API of DataStream </a>
-     * @see <a href="https://nightlies.apache.org/flink/flink-ml-docs-stable/">Flink ML </a>
-     */
-    @Deprecated
-    public IterativeStream<T> iterate(long maxWaitTimeMillis) {
-        return new IterativeStream<>(this, maxWaitTimeMillis);
-    }
-
-    /**
      * Applies a Map transformation on a {@link DataStream}. The transformation calls a {@link
      * MapFunction} for each element of the DataStream. Each MapFunction call returns exactly one
      * element. The user can also extend {@link RichMapFunction} to gain access to other features
@@ -746,58 +661,6 @@ public class DataStream<T> {
      */
     public <T2> JoinedStreams<T, T2> join(DataStream<T2> otherStream) {
         return new JoinedStreams<>(this, otherStream);
-    }
-
-    /**
-     * Windows this {@code DataStream} into tumbling time windows.
-     *
-     * <p>This is a shortcut for either {@code .window(TumblingEventTimeWindows.of(size))} or {@code
-     * .window(TumblingProcessingTimeWindows.of(size))} depending on the time characteristic set
-     * using
-     *
-     * <p>Note: This operation is inherently non-parallel since all elements have to pass through
-     * the same operator instance.
-     *
-     * <p>{@link
-     * org.apache.flink.streaming.api.environment.StreamExecutionEnvironment#setStreamTimeCharacteristic(org.apache.flink.streaming.api.TimeCharacteristic)}
-     *
-     * @param size The size of the window.
-     * @deprecated Please use {@link #windowAll(WindowAssigner)} with either {@link
-     *     TumblingEventTimeWindows} or {@link TumblingProcessingTimeWindows}. For more information,
-     *     see the deprecation notice on {@link TimeCharacteristic}
-     */
-    @Deprecated
-    public AllWindowedStream<T, TimeWindow> timeWindowAll(Time size) {
-        if (environment.getStreamTimeCharacteristic() == TimeCharacteristic.ProcessingTime) {
-            return windowAll(TumblingProcessingTimeWindows.of(size));
-        } else {
-            return windowAll(TumblingEventTimeWindows.of(size));
-        }
-    }
-
-    /**
-     * Windows this {@code DataStream} into sliding time windows.
-     *
-     * <p>This is a shortcut for either {@code .window(SlidingEventTimeWindows.of(size, slide))} or
-     * {@code .window(SlidingProcessingTimeWindows.of(size, slide))} depending on the time
-     * characteristic set using {@link
-     * org.apache.flink.streaming.api.environment.StreamExecutionEnvironment#setStreamTimeCharacteristic(org.apache.flink.streaming.api.TimeCharacteristic)}
-     *
-     * <p>Note: This operation is inherently non-parallel since all elements have to pass through
-     * the same operator instance.
-     *
-     * @param size The size of the window.
-     * @deprecated Please use {@link #windowAll(WindowAssigner)} with either {@link
-     *     SlidingEventTimeWindows} or {@link SlidingProcessingTimeWindows}. For more information,
-     *     see the deprecation notice on {@link TimeCharacteristic}
-     */
-    @Deprecated
-    public AllWindowedStream<T, TimeWindow> timeWindowAll(Time size, Time slide) {
-        if (environment.getStreamTimeCharacteristic() == TimeCharacteristic.ProcessingTime) {
-            return windowAll(SlidingProcessingTimeWindows.of(size, slide));
-        } else {
-            return windowAll(SlidingEventTimeWindows.of(size, slide));
-        }
     }
 
     /**
@@ -1007,125 +870,6 @@ public class DataStream<T> {
     }
 
     /**
-     * Writes a DataStream to the file specified by path in text format.
-     *
-     * <p>For every element of the DataStream the result of {@link Object#toString()} is written.
-     *
-     * @param path The path pointing to the location the text file is written to.
-     * @return The closed DataStream.
-     * @deprecated Please use the {@link
-     *     org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} explicitly
-     *     using the {@link #addSink(SinkFunction)} method.
-     */
-    @Deprecated
-    @PublicEvolving
-    public DataStreamSink<T> writeAsText(String path) {
-        return writeUsingOutputFormat(new TextOutputFormat<T>(new Path(path)));
-    }
-
-    /**
-     * Writes a DataStream to the file specified by path in text format.
-     *
-     * <p>For every element of the DataStream the result of {@link Object#toString()} is written.
-     *
-     * @param path The path pointing to the location the text file is written to
-     * @param writeMode Controls the behavior for existing files. Options are NO_OVERWRITE and
-     *     OVERWRITE.
-     * @return The closed DataStream.
-     * @deprecated Please use the {@link
-     *     org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} explicitly
-     *     using the {@link #addSink(SinkFunction)} method.
-     */
-    @Deprecated
-    @PublicEvolving
-    public DataStreamSink<T> writeAsText(String path, WriteMode writeMode) {
-        TextOutputFormat<T> tof = new TextOutputFormat<>(new Path(path));
-        tof.setWriteMode(writeMode);
-        return writeUsingOutputFormat(tof);
-    }
-
-    /**
-     * Writes a DataStream to the file specified by the path parameter.
-     *
-     * <p>For every field of an element of the DataStream the result of {@link Object#toString()} is
-     * written. This method can only be used on data streams of tuples.
-     *
-     * @param path the path pointing to the location the text file is written to
-     * @return the closed DataStream
-     * @deprecated Please use the {@link
-     *     org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} explicitly
-     *     using the {@link #addSink(SinkFunction)} method.
-     */
-    @Deprecated
-    @PublicEvolving
-    public DataStreamSink<T> writeAsCsv(String path) {
-        return writeAsCsv(
-                path,
-                null,
-                CsvOutputFormat.DEFAULT_LINE_DELIMITER,
-                CsvOutputFormat.DEFAULT_FIELD_DELIMITER);
-    }
-
-    /**
-     * Writes a DataStream to the file specified by the path parameter.
-     *
-     * <p>For every field of an element of the DataStream the result of {@link Object#toString()} is
-     * written. This method can only be used on data streams of tuples.
-     *
-     * @param path the path pointing to the location the text file is written to
-     * @param writeMode Controls the behavior for existing files. Options are NO_OVERWRITE and
-     *     OVERWRITE.
-     * @return the closed DataStream
-     * @deprecated Please use the {@link
-     *     org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} explicitly
-     *     using the {@link #addSink(SinkFunction)} method.
-     */
-    @Deprecated
-    @PublicEvolving
-    public DataStreamSink<T> writeAsCsv(String path, WriteMode writeMode) {
-        return writeAsCsv(
-                path,
-                writeMode,
-                CsvOutputFormat.DEFAULT_LINE_DELIMITER,
-                CsvOutputFormat.DEFAULT_FIELD_DELIMITER);
-    }
-
-    /**
-     * Writes a DataStream to the file specified by the path parameter. The writing is performed
-     * periodically every millis milliseconds.
-     *
-     * <p>For every field of an element of the DataStream the result of {@link Object#toString()} is
-     * written. This method can only be used on data streams of tuples.
-     *
-     * @param path the path pointing to the location the text file is written to
-     * @param writeMode Controls the behavior for existing files. Options are NO_OVERWRITE and
-     *     OVERWRITE.
-     * @param rowDelimiter the delimiter for two rows
-     * @param fieldDelimiter the delimiter for two fields
-     * @return the closed DataStream
-     * @deprecated Please use the {@link
-     *     org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} explicitly
-     *     using the {@link #addSink(SinkFunction)} method.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    @PublicEvolving
-    public <X extends Tuple> DataStreamSink<T> writeAsCsv(
-            String path, WriteMode writeMode, String rowDelimiter, String fieldDelimiter) {
-        Preconditions.checkArgument(
-                getType().isTupleType(),
-                "The writeAsCsv() method can only be used on data streams of tuples.");
-
-        CsvOutputFormat<X> of = new CsvOutputFormat<>(new Path(path), rowDelimiter, fieldDelimiter);
-
-        if (writeMode != null) {
-            of.setWriteMode(writeMode);
-        }
-
-        return writeUsingOutputFormat((OutputFormat<T>) of);
-    }
-
-    /**
      * Writes the DataStream to a socket as a byte array. The format of the output is specified by a
      * {@link SerializationSchema}.
      *
@@ -1149,13 +893,14 @@ public class DataStream<T> {
      * <p>The output is not participating in Flink's checkpointing!
      *
      * <p>For writing to a file system periodically, the use of the {@link
-     * org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} is recommended.
+     * org.apache.flink.streaming.api.functions.sink.filesystem.legacy.StreamingFileSink} is
+     * recommended.
      *
      * @param format The output format
      * @return The closed DataStream
      * @deprecated Please use the {@link
-     *     org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink} explicitly
-     *     using the {@link #addSink(SinkFunction)} method.
+     *     org.apache.flink.streaming.api.functions.sink.filesystem.legacy.StreamingFileSink}
+     *     explicitly using the {@link #addSink(SinkFunction)} method.
      */
     @Deprecated
     @PublicEvolving
@@ -1261,38 +1006,6 @@ public class DataStream<T> {
         }
 
         return DataStreamSink.forSinkFunction(this, clean(sinkFunction));
-    }
-
-    /**
-     * Adds the given {@link Sink} to this DataStream. Only streams with sinks added will be
-     * executed once the {@link StreamExecutionEnvironment#execute()} method is called.
-     *
-     * @param sink The user defined sink.
-     * @return The closed DataStream.
-     */
-    @PublicEvolving
-    public DataStreamSink<T> sinkTo(org.apache.flink.api.connector.sink.Sink<T, ?, ?, ?> sink) {
-        return this.sinkTo(sink, CustomSinkOperatorUidHashes.DEFAULT);
-    }
-
-    /**
-     * Adds the given {@link Sink} to this DataStream. Only streams with sinks added will be
-     * executed once the {@link StreamExecutionEnvironment#execute()} method is called.
-     *
-     * <p>This method is intended to be used only to recover a snapshot where no uids have been set
-     * before taking the snapshot.
-     *
-     * @param sink The user defined sink.
-     * @return The closed DataStream.
-     */
-    @PublicEvolving
-    public DataStreamSink<T> sinkTo(
-            org.apache.flink.api.connector.sink.Sink<T, ?, ?, ?> sink,
-            CustomSinkOperatorUidHashes customSinkOperatorUidHashes) {
-        // read the output type of the input Transform to coax out errors about MissingTypeInfo
-        transformation.getOutputType();
-
-        return DataStreamSink.forSinkV1(this, sink, customSinkOperatorUidHashes);
     }
 
     /**
