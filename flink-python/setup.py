@@ -267,7 +267,14 @@ try:
         apache_flink_libraries_dependency = 'apache-flink-libraries==%s' % VERSION
     else:
         split_versions = VERSION.split('.')
-        split_versions[-1] = str(int(split_versions[-1]) + 1)
+        if "preview" in VERSION:
+            minor_split_version = split_versions[-1] # 0-preview1
+            preview_split_version = minor_split_version.split('-')
+            preview_version = preview_split_version[-1] # preview1
+            next_preview_number = str(int(preview_version[-1]) + 1) #2
+            split_versions[-1] = minor_split_version[0] + '-preview' + next_preview_number
+        else:
+            split_versions[-1] = str(int(split_versions[-1]) + 1)
         NEXT_VERSION = '.'.join(split_versions)
         apache_flink_libraries_dependency = 'apache-flink-libraries>=%s,<%s' % \
                                             (VERSION, NEXT_VERSION)
