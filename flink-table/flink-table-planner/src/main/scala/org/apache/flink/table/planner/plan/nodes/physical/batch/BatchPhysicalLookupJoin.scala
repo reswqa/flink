@@ -44,9 +44,9 @@ class BatchPhysicalLookupJoin(
     tableCalcProgram: Option[RexProgram],
     joinInfo: JoinInfo,
     joinType: JoinRelType,
-    lookupHint: Option[RelHint],
-    enableLookupShuffle: Boolean,
-    preferCustomShuffle: Boolean)
+    lookupHint: Option[RelHint] = Option.empty,
+    enableLookupShuffle: Boolean = false,
+    preferCustomShuffle: Boolean = false)
   extends CommonPhysicalLookupJoin(
     cluster,
     traitSet,

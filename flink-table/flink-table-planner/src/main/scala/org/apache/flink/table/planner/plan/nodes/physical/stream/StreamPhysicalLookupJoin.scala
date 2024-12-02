@@ -48,8 +48,8 @@ class StreamPhysicalLookupJoin(
     joinType: JoinRelType,
     lookupHint: Option[RelHint],
     upsertMaterialize: Boolean,
-    enableLookupShuffle: Boolean,
-    preferCustomShuffle: Boolean)
+    enableLookupShuffle: Boolean = false,
+    preferCustomShuffle: Boolean = false)
   extends CommonPhysicalLookupJoin(
     cluster,
     traitSet,
@@ -92,7 +92,9 @@ class StreamPhysicalLookupJoin(
       joinInfo,
       joinType,
       lookupHint,
-      upsertMaterialize
+      upsertMaterialize,
+      enableLookupShuffle,
+      preferCustomShuffle
     )
   }
 
