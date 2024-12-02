@@ -25,8 +25,8 @@ import org.apache.flink.table.planner.codegen.GeneratedExpression.{NEVER_NULL, N
 import org.apache.flink.table.planner.codegen.GenerateUtils.{generateLiteral, generateRecordStatement}
 import org.apache.flink.table.planner.codegen.calls.ScalarOperatorGens
 import org.apache.flink.table.planner.functions.aggfunctions._
-import org.apache.flink.table.planner.plan.utils.LookupJoinUtil.{ConstantLookupKey, LookupKey}
 import org.apache.flink.table.planner.plan.utils.{AggregateInfo, RexLiteralUtil}
+import org.apache.flink.table.planner.plan.utils.LookupJoinUtil.{ConstantLookupKey, LookupKey}
 import org.apache.flink.table.runtime.generated.{GeneratedProjection, Projection}
 import org.apache.flink.table.types.logical.{BigIntType, LogicalType, RowType}
 
@@ -53,13 +53,13 @@ object ProjectionCodeGenerator {
     val exprGenerator = new ExprCodeGenerator(ctx, false)
       .bindInput(inType, inputTerm = inputTerm, inputFieldMapping = Option(inputMapping))
     val accessExprs =
-      inputMapping.map(idx =>
-        if(inputMapping(idx) == EMPTY_INPUT_MAPPING_VALUE){
-          constantExpressions(idx)
-        }else{
-          GenerateUtils.generateFieldAccess(ctx, inType, inputTerm, idx)
-        }
-      )
+      inputMapping.map(
+        idx =>
+          if (inputMapping(idx) == EMPTY_INPUT_MAPPING_VALUE) {
+            constantExpressions(idx)
+          } else {
+            GenerateUtils.generateFieldAccess(ctx, inType, inputTerm, idx)
+          })
     val expression = exprGenerator.generateResultExpression(
       accessExprs,
       outType,
@@ -351,32 +351,32 @@ object ProjectionCodeGenerator {
    * Create projection for lookup keys from left table.
    *
    * @param orderedLookupKeys
-   * lookup keys in the schema order.
+   *   lookup keys in the schema order.
    * @param ctx
-   * the context of code generator.
+   *   the context of code generator.
    * @param name
-   * the name of projection.
+   *   the name of projection.
    * @param inputType
-   * the row type of input.
+   *   the row type of input.
    * @param outputType
-   * the row type of output.
+   *   the row type of output.
    * @param inputMapping
-   * the index array. Each value of the array represents the index in the input row that maps to
-   * the corresponding position in the output row. If the value is equal to -1, it indicates that
-   * the corresponding output should use the value from the constant lookup keys.
+   *   the index array. Each value of the array represents the index in the input row that maps to
+   *   the corresponding position in the output row. If the value is equal to -1, it indicates that
+   *   the corresponding output should use the value from the constant lookup keys.
    * @param outClass
-   * the class of output.
+   *   the class of output.
    * @return
-   * the GeneratedProjection
+   *   the GeneratedProjection
    */
   def generateProjectionForLookupKeysFromLeftTable(
-                                                    orderedLookupKeys: Array[LookupKey],
-                                                    ctx: CodeGeneratorContext,
-                                                    name: String,
-                                                    inputType: RowType,
-                                                    outputType: RowType,
-                                                    inputMapping: Array[Int],
-                                                    outClass: Class[_ <: RowData]): GeneratedProjection = {
+      orderedLookupKeys: Array[LookupKey],
+      ctx: CodeGeneratorContext,
+      name: String,
+      inputType: RowType,
+      outputType: RowType,
+      inputMapping: Array[Int],
+      outClass: Class[_ <: RowData]): GeneratedProjection = {
     val constantExpressions: Array[GeneratedExpression] =
       new Array[GeneratedExpression](orderedLookupKeys.length)
     for (i <- orderedLookupKeys.indices) {

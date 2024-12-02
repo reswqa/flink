@@ -88,7 +88,9 @@ abstract class CommonPhysicalLookupJoin(
     val joinInfo: JoinInfo,
     val joinType: JoinRelType,
     val lookupHint: Option[RelHint] = Option.empty[RelHint],
-    val upsertMaterialize: Boolean = false)
+    val upsertMaterialize: Boolean = false,
+    val enableLookupShuffle: Boolean = false,
+    val preferCustomShuffle: Boolean = false)
   extends SingleRel(cluster, traitSet, inputRel)
   with FlinkRelNode {
 
@@ -113,15 +115,12 @@ abstract class CommonPhysicalLookupJoin(
         "e.g., ON T1.id = T2.id && pythonUdf(T1.a, T2.b)")
   }
 
-  lazy val (enableLookupShuffle, preferCustomShuffle) = checkLookupShuffle(lookupHint, temporalTable)
-
-  // TODO if enable lookup shuffle but !preferCustomShuffle, we should use hash shuffle(via requiredTrait.plus(FlinkRelDistribution.hash))
   lazy val isAsyncEnabled: Boolean = LookupJoinUtil.isAsyncLookup(
     temporalTable,
     allLookupKeys.keys.map(Int.box).toList.asJava,
     lookupHint.orNull,
     upsertMaterialize,
-    preferCustomShuffle)
+    preferCustomShuffle && !upsertMaterialize)
 
   lazy val retryOptions: Option[RetryLookupOptions] =
     Option.apply(LookupJoinUtil.RetryLookupOptions.fromJoinHint(lookupHint.orNull))
@@ -136,20 +135,6 @@ abstract class CommonPhysicalLookupJoin(
   } else {
     // do not create asyncOptions if async is not enabled
     Option.empty[AsyncLookupOptions]
-  }
-
-  private def checkLookupShuffle(
-                                  lookupHint: Option[RelHint],
-                                  temporalTable: RelOptTable
-                                ): (Boolean, Boolean) = {
-    lookupHint match {
-      case Some(hint) =>
-        val enableLookupShuffle = LookupJoinUtil.enableLookupShuffle(hint)
-        val preferCustomShuffle = enableLookupShuffle &&
-          LookupJoinUtil.tableProvidesCustomPartitioner(temporalTable)
-        (enableLookupShuffle, preferCustomShuffle)
-      case None => (false, false)
-    }
   }
 
   override def deriveRowType(): RelDataType = {

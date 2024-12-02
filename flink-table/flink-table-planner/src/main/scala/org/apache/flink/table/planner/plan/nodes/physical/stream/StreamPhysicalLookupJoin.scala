@@ -47,7 +47,9 @@ class StreamPhysicalLookupJoin(
     joinInfo: JoinInfo,
     joinType: JoinRelType,
     lookupHint: Option[RelHint],
-    upsertMaterialize: Boolean)
+    upsertMaterialize: Boolean,
+    enableLookupShuffle: Boolean,
+    preferCustomShuffle: Boolean)
   extends CommonPhysicalLookupJoin(
     cluster,
     traitSet,
@@ -57,7 +59,9 @@ class StreamPhysicalLookupJoin(
     joinInfo,
     joinType,
     lookupHint,
-    upsertMaterialize)
+    upsertMaterialize,
+    enableLookupShuffle,
+    preferCustomShuffle)
   with StreamPhysicalRel {
 
   override def requireWatermark: Boolean = false
@@ -72,7 +76,9 @@ class StreamPhysicalLookupJoin(
       joinInfo,
       joinType,
       lookupHint,
-      upsertMaterialize
+      upsertMaterialize,
+      enableLookupShuffle,
+      preferCustomShuffle
     )
   }
 
