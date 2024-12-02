@@ -113,7 +113,7 @@ abstract class CommonPhysicalLookupJoin(
         "e.g., ON T1.id = T2.id && pythonUdf(T1.a, T2.b)")
   }
 
-  val (enableLookupShuffle, preferCustomShuffle) = checkLookupShuffle(lookupHint, temporalTable)
+  lazy val (enableLookupShuffle, preferCustomShuffle) = checkLookupShuffle(lookupHint, temporalTable)
 
   // TODO if enable lookup shuffle but !preferCustomShuffle, we should use hash shuffle(via requiredTrait.plus(FlinkRelDistribution.hash))
   lazy val isAsyncEnabled: Boolean = LookupJoinUtil.isAsyncLookup(
@@ -145,9 +145,9 @@ abstract class CommonPhysicalLookupJoin(
     lookupHint match {
       case Some(hint) =>
         val enableLookupShuffle = LookupJoinUtil.enableLookupShuffle(hint)
-        val tableProvidesCustomPartitioner = enableLookupShuffle &&
+        val preferCustomShuffle = enableLookupShuffle &&
           LookupJoinUtil.tableProvidesCustomPartitioner(temporalTable)
-        (enableLookupShuffle, tableProvidesCustomPartitioner)
+        (enableLookupShuffle, preferCustomShuffle)
       case None => (false, false)
     }
   }
@@ -219,8 +219,7 @@ abstract class CommonPhysicalLookupJoin(
       .item("select", selection)
       .itemIf("upsertMaterialize", "true", upsertMaterialize)
       .itemIf("async", asyncOptions.getOrElse(""), asyncOptions.isDefined)
-      // TODO add shuffle item.
-      //.itemIf("shuffle", )
+      .itemIf("shuffle", "true", enableLookupShuffle)
       .itemIf("retry", retryOptions.getOrElse(""), retryOptions.isDefined)
   }
 

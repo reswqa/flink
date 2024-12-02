@@ -30,13 +30,10 @@ import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.config.ExecutionConfigOptions;
 import org.apache.flink.table.api.config.LookupJoinHintOptions;
 import org.apache.flink.table.connector.ChangelogMode;
-import org.apache.flink.table.connector.source.AsyncTableFunctionProvider;
 import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.connector.source.InputFormatProvider;
 import org.apache.flink.table.connector.source.LookupTableSource;
 import org.apache.flink.table.connector.source.ScanTableSource;
-import org.apache.flink.table.connector.source.SourceFunctionProvider;
-import org.apache.flink.table.connector.source.TableFunctionProvider;
 import org.apache.flink.table.connector.source.abilities.SupportsLookupCustomShuffle;
 import org.apache.flink.table.connector.source.lookup.AsyncLookupFunctionProvider;
 import org.apache.flink.table.connector.source.lookup.FullCachingLookupProvider;
@@ -70,7 +67,6 @@ import org.apache.flink.table.runtime.operators.join.lookup.RetryableLookupFunct
 import org.apache.flink.table.runtime.partitioner.RowDataCustomStreamPartitioner;
 import org.apache.flink.table.runtime.typeutils.InternalSerializers;
 import org.apache.flink.table.runtime.typeutils.InternalTypeInfo;
-import org.apache.flink.table.sources.LookupableTableSource;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.RowKind;
@@ -197,6 +193,13 @@ public final class LookupJoinUtil {
         public int hashCode() {
             return Objects.hash(index);
         }
+    }
+
+    /** ShuffleLookupOptions includes shuffle related options. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonTypeName("ShuffleOptions")
+    public static class ShuffleLookupOptions {
+        public static final String FIELD_NAME_SHUFFLE = "shuffle";
     }
 
     /** AsyncLookupOptions includes async related options. */
@@ -465,7 +468,7 @@ public final class LookupJoinUtil {
             ClassLoader classLoader,
             boolean async,
             ResultRetryStrategy retryStrategy,
-            boolean applyCustomShuffle) {
+            boolean preferCustomShuffle) {
         UserDefinedFunction lookupFunction = null;
         int[] lookupKeyIndicesInOrder = getOrderedLookupKeys(lookupKeys);
         if (temporalTable instanceof TableSourceTable) {
@@ -476,7 +479,7 @@ public final class LookupJoinUtil {
                             retryStrategy,
                             async,
                             classLoader,
-                            applyCustomShuffle);
+                            preferCustomShuffle);
         } else if (temporalTable instanceof LegacyTableSourceTable) {
             lookupFunction =
                     findLookupFunctionFromLegacySource(
@@ -557,10 +560,10 @@ public final class LookupJoinUtil {
             ResultRetryStrategy retryStrategy,
             boolean async,
             ClassLoader classLoader,
-            boolean applyCustomShuffle) {
+            boolean preferCustomShuffle) {
         LookupTableSource.LookupRuntimeProvider provider =
                 createLookupRuntimeProvider(
-                        temporalTable, lookupKeyIndicesInOrder, applyCustomShuffle);
+                        temporalTable, lookupKeyIndicesInOrder, preferCustomShuffle);
 
         if (async) {
             if (provider instanceof AsyncLookupFunctionProvider) {
@@ -651,7 +654,7 @@ public final class LookupJoinUtil {
     }
 
     private static LookupTableSource.LookupRuntimeProvider createLookupRuntimeProvider(
-            RelOptTable temporalTable, int[] lookupKeyIndicesInOrder, boolean applyCustomShuffle) {
+            RelOptTable temporalTable, int[] lookupKeyIndicesInOrder, boolean preferCustomShuffle) {
         // TODO: support nested lookup keys in the future,
         //  currently we only support top-level lookup keys
         int[][] indices =
@@ -662,7 +665,7 @@ public final class LookupJoinUtil {
         LookupTableSource tableSource =
                 (LookupTableSource) ((TableSourceTable) temporalTable).tableSource();
         LookupRuntimeProviderContext providerContext =
-                new LookupRuntimeProviderContext(indices, applyCustomShuffle);
+                new LookupRuntimeProviderContext(indices, preferCustomShuffle);
         return tableSource.getLookupRuntimeProvider(providerContext);
     }
 
@@ -678,7 +681,9 @@ public final class LookupJoinUtil {
         Optional<SupportsLookupCustomShuffle.InputDataPartitioner> partitioner =
                 ((SupportsLookupCustomShuffle) (((TableSourceTable) table).tableSource()))
                         .getPartitioner();
-        if (!partitioner.isPresent()) {
+        // Empty partitioner means the connector expects the input data to remain in its original
+        // distribution.
+        if (partitioner.isEmpty()) {
             return inputTransformation;
         }
         if (!partitioner.get().isDeterministic()

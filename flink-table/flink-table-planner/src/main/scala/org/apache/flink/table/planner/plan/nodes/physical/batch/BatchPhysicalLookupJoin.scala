@@ -85,6 +85,7 @@ class BatchPhysicalLookupJoin(
       asyncOptions.orNull,
       InputProperty.DEFAULT,
       FlinkTypeFactory.toLogicalRowType(getRowType),
-      getRelDetailedDescription)
+      getRelDetailedDescription,
+      preferCustomShuffle)
   }
 }

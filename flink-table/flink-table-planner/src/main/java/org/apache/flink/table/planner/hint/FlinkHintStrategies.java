@@ -168,6 +168,7 @@ public abstract class FlinkHintStrategies {
                 return true;
             };
 
+    // TODO custom shuffle : check SHUFFLE
     private static final HintOptionChecker LOOKUP_NON_EMPTY_KV_OPTION_CHECKER =
             (lookupHint, litmus) -> {
                 litmus.check(

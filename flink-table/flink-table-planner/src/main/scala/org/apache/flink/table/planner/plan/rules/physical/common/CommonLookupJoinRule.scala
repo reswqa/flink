@@ -26,8 +26,6 @@ import org.apache.flink.table.planner.plan.rules.common.CommonTemporalTableJoinR
 import org.apache.flink.table.planner.plan.schema.TimeIndicatorRelDataType
 import org.apache.flink.table.planner.plan.utils.JoinUtil
 
-import org.apache.flink.table.planner.plan.utils.{JoinUtil, LookupJoinUtil}
-import org.apache.flink.table.sources.LookupableTableSource
 import org.apache.calcite.plan.{RelOptRule, RelOptRuleCall, RelOptTable}
 import org.apache.calcite.plan.RelOptRule.{any, operand}
 import org.apache.calcite.rel.RelNode
@@ -109,18 +107,6 @@ trait CommonLookupJoinRule extends CommonTemporalTableJoinRule {
           s"alternative '(a = b) or (a IS NULL AND b IS NULL)'), the join condition is " +
           s"'${join.getCondition}'")
     }
-  }
-
-  private def extractLookupHint(join: FlinkLogicalJoin): Option[RelHint] = {
-    val lookupRelHint = join.getHints
-      .stream()
-      .filter(hint => JoinStrategy.isLookupHint(hint.hintName))
-      .findFirst()
-    var lookupHint = Option.empty[RelHint]
-    if (lookupRelHint.isPresent) {
-      lookupHint = Option.apply(lookupRelHint.get())
-    }
-    lookupHint
   }
 
   protected def transform(

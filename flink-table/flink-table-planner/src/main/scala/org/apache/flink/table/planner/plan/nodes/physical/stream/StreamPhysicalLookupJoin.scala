@@ -116,7 +116,8 @@ class StreamPhysicalLookupJoin(
       getUpsertKey.orElse(null),
       InputProperty.DEFAULT,
       FlinkTypeFactory.toLogicalRowType(getRowType),
-      getRelDetailedDescription)
+      getRelDetailedDescription,
+      preferCustomShuffle)
   }
 
   override def explainTerms(pw: RelWriter): RelWriter = {
