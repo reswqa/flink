@@ -74,6 +74,7 @@ class DefaultNonPartitionedContextTest {
                         new MockOperatorStateStore());
         DefaultNonPartitionedContext<Integer> nonPartitionedContext =
                 new DefaultNonPartitionedContext<>(
+                        null,
                         runtimeContext,
                         partitionedContext,
                         collector,
@@ -135,6 +136,7 @@ class DefaultNonPartitionedContextTest {
                         new MockOperatorStateStore());
         DefaultNonPartitionedContext<Integer> nonPartitionedContext =
                 new DefaultNonPartitionedContext<>(
+                        null,
                         runtimeContext,
                         partitionedContext,
                         collector,

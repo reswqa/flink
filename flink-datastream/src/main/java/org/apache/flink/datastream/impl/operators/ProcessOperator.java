@@ -37,6 +37,8 @@ import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermark.AbstractInternalWatermarkDeclaration;
+import org.apache.flink.streaming.runtime.watermark.EventTimeWatermarkHandler;
+import org.apache.flink.streaming.runtime.watermark.extension.eventtime.EventTimeExtensionUtil;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -58,6 +60,8 @@ public class ProcessOperator<IN, OUT>
 
     protected transient Map<String, AbstractInternalWatermarkDeclaration<?>>
             watermarkDeclarationMap;
+
+    protected transient EventTimeWatermarkHandler eventTimeWatermarkHandler;
 
     public ProcessOperator(OneInputStreamProcessFunction<IN, OUT> userFunction) {
         super(userFunction);
@@ -97,6 +101,7 @@ public class ProcessOperator<IN, OUT>
                         getOperatorStateBackend());
         nonPartitionedContext = getNonPartitionedContext();
         partitionedContext.setNonPartitionedContext(nonPartitionedContext);
+        eventTimeWatermarkHandler = new EventTimeWatermarkHandler(1, output, timeServiceManager);
         userFunction.open(nonPartitionedContext);
     }
 
@@ -116,6 +121,11 @@ public class ProcessOperator<IN, OUT>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
+            if (EventTimeExtensionUtil.processWatermark(
+                    watermark.getWatermark(), 0, eventTimeWatermarkHandler)) {
+                return;
+            }
+
             output.emitWatermark(watermark);
         }
     }
@@ -154,6 +164,7 @@ public class ProcessOperator<IN, OUT>
 
     protected NonPartitionedContext<OUT> getNonPartitionedContext() {
         return new DefaultNonPartitionedContext<>(
+                this,
                 context,
                 partitionedContext,
                 outputCollector,

@@ -26,6 +26,7 @@ import org.apache.flink.datastream.api.context.TaskInfo;
 import org.apache.flink.datastream.api.function.ApplyPartitionFunction;
 import org.apache.flink.datastream.impl.watermark.DefaultWatermarkManager;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.runtime.watermark.AbstractInternalWatermarkDeclaration;
 
@@ -46,7 +47,10 @@ public class DefaultNonPartitionedContext<OUT> implements NonPartitionedContext<
 
     private final WatermarkManager watermarkManager;
 
+    private AbstractStreamOperator operator;
+
     public DefaultNonPartitionedContext(
+            AbstractStreamOperator operator,
             DefaultRuntimeContext context,
             DefaultPartitionedContext partitionedContext,
             Collector<OUT> collector,
@@ -54,6 +58,7 @@ public class DefaultNonPartitionedContext<OUT> implements NonPartitionedContext<
             Set<Object> keySet,
             Output<?> streamRecordOutput,
             Map<String, AbstractInternalWatermarkDeclaration<?>> watermarkDeclarationMap) {
+        this.operator = operator;
         this.context = context;
         this.partitionedContext = partitionedContext;
         this.collector = collector;
@@ -104,5 +109,9 @@ public class DefaultNonPartitionedContext<OUT> implements NonPartitionedContext<
     @Override
     public MetricGroup getMetricGroup() {
         return context.getMetricGroup();
+    }
+
+    public AbstractStreamOperator getOperator() {
+        return operator;
     }
 }

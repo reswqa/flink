@@ -78,6 +78,7 @@ class DefaultTwoOutputNonPartitionedContextTest {
                         new MockOperatorStateStore());
         DefaultTwoOutputNonPartitionedContext<Integer, Long> nonPartitionedContext =
                 new DefaultTwoOutputNonPartitionedContext<>(
+                        null,
                         runtimeContext,
                         partitionedContext,
                         firstCollector,
@@ -148,6 +149,7 @@ class DefaultTwoOutputNonPartitionedContextTest {
                         new MockOperatorStateStore());
         DefaultTwoOutputNonPartitionedContext<Integer, Long> nonPartitionedContext =
                 new DefaultTwoOutputNonPartitionedContext<>(
+                        null,
                         runtimeContext,
                         partitionedContext,
                         firstCollector,

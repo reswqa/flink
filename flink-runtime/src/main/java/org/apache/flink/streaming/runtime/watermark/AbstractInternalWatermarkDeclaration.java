@@ -81,7 +81,9 @@ public abstract class AbstractInternalWatermarkDeclaration<T> implements Waterma
      */
     public static AbstractInternalWatermarkDeclaration<?> from(
             WatermarkDeclaration watermarkDeclaration) {
-        if (watermarkDeclaration instanceof BoolWatermarkDeclaration) {
+        if (watermarkDeclaration instanceof AbstractInternalWatermarkDeclaration) {
+            return (AbstractInternalWatermarkDeclaration<?>) watermarkDeclaration;
+        } else if (watermarkDeclaration instanceof BoolWatermarkDeclaration) {
             return new InternalBoolWatermarkDeclaration(
                     (BoolWatermarkDeclaration) watermarkDeclaration);
         } else if (watermarkDeclaration instanceof LongWatermarkDeclaration) {

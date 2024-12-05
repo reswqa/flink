@@ -18,17 +18,27 @@
 
 package org.apache.flink.datastream.impl.operators;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.datastream.api.context.NonPartitionedContext;
 import org.apache.flink.datastream.api.context.ProcessingTimeManager;
 import org.apache.flink.datastream.api.context.TwoOutputNonPartitionedContext;
+import org.apache.flink.datastream.api.extension.eventtime.EventTimeExtension;
+import org.apache.flink.datastream.api.extension.eventtime.EventTimeManager;
+import org.apache.flink.datastream.api.extension.eventtime.TwoOutputEventTimerCallback;
 import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.impl.common.KeyCheckedOutputCollector;
 import org.apache.flink.datastream.impl.common.OutputCollector;
 import org.apache.flink.datastream.impl.common.TimestampCollector;
 import org.apache.flink.datastream.impl.context.DefaultProcessingTimeManager;
 import org.apache.flink.datastream.impl.context.DefaultTwoOutputNonPartitionedContext;
+import org.apache.flink.datastream.impl.context.TwoOutputEventTimeManager;
+import org.apache.flink.datastream.impl.operators.extension.eventtime.WithEventTimeExtension;
 import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.VoidNamespaceSerializer;
+import org.apache.flink.runtime.state.v2.MapStateDescriptor;
+import org.apache.flink.runtime.state.v2.adaptor.MapStateAdaptor;
 import org.apache.flink.streaming.api.operators.InternalTimer;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
 import org.apache.flink.streaming.api.operators.Triggerable;
@@ -41,10 +51,12 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.flink.util.Preconditions.checkState;
+
 /** */
 public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
         extends TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
-        implements Triggerable<KEY, VoidNamespace> {
+        implements Triggerable<KEY, VoidNamespace>, WithEventTimeExtension {
     private transient InternalTimerService<VoidNamespace> timerService;
 
     // TODO Restore this keySet when task initialized from checkpoint.
@@ -53,6 +65,20 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
     @Nullable private final KeySelector<OUT_MAIN, KEY> mainOutKeySelector;
 
     @Nullable private final KeySelector<OUT_SIDE, KEY> sideOutKeySelector;
+
+    // -------------------- Event Time Extension --------------------------------
+    /**
+     * The fields below are only created when event time is enabled. Currently, this occurs only
+     * when the {@link EventTimeExtension#getEventTimeManager(NonPartitionedContext)} method enables
+     * the event time extension for a specific operator.
+     */
+    private boolean eventTimeExtensionEnable = false;
+
+    // used to store user-defined event timer callback
+    private transient MapStateAdaptor<KEY, VoidNamespace, Long, TwoOutputEventTimerCallback>
+            eventTimerCallbackMapState;
+
+    private transient EventTimeManager eventTimeManager;
 
     public KeyedTwoOutputProcessOperator(
             TwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE> userFunction,
@@ -113,7 +139,18 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
 
     @Override
     public void onEventTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
-        // do nothing at the moment.
+        checkState(eventTimeExtensionEnable);
+
+        TwoOutputEventTimerCallback eventTimerCallback =
+                eventTimerCallbackMapState.get(timer.getTimestamp());
+        if (eventTimerCallback != null) {
+            eventTimerCallback.onEventTimer(
+                    timer.getTimestamp(),
+                    getMainCollector(),
+                    getSideCollector(),
+                    partitionedContext);
+            eventTimerCallbackMapState.remove(timer.getTimestamp());
+        }
     }
 
     @Override
@@ -125,6 +162,7 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
     @Override
     protected TwoOutputNonPartitionedContext<OUT_MAIN, OUT_SIDE> getNonPartitionedContext() {
         return new DefaultTwoOutputNonPartitionedContext<>(
+                this,
                 context,
                 partitionedContext,
                 mainCollector,
@@ -145,5 +183,30 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
     @Override
     public boolean isAsyncStateProcessingEnabled() {
         return true;
+    }
+
+    @Override
+    public void initEventTimeExtension() throws Exception {
+        MapStateDescriptor<Long, TwoOutputEventTimerCallback> eventTimerCallbackMapStateDescriptor =
+                new MapStateDescriptor<>(
+                        "event-timer-state",
+                        Types.LONG,
+                        TypeInformation.of(TwoOutputEventTimerCallback.class));
+
+        eventTimerCallbackMapState =
+                getOrCreateKeyedState(
+                        VoidNamespace.INSTANCE,
+                        VoidNamespaceSerializer.INSTANCE,
+                        eventTimerCallbackMapStateDescriptor);
+
+        eventTimeManager = new TwoOutputEventTimeManager(timerService, eventTimerCallbackMapState);
+
+        eventTimeExtensionEnable = true;
+    }
+
+    @Override
+    public EventTimeManager getEventTimeManager() {
+        checkState(eventTimeExtensionEnable);
+        return eventTimeManager;
     }
 }

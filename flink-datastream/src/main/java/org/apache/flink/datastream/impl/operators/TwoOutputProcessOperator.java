@@ -39,6 +39,8 @@ import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermark.AbstractInternalWatermarkDeclaration;
+import org.apache.flink.streaming.runtime.watermark.EventTimeWatermarkHandler;
+import org.apache.flink.streaming.runtime.watermark.extension.eventtime.EventTimeExtensionUtil;
 import org.apache.flink.util.OutputTag;
 
 import java.util.Map;
@@ -69,6 +71,8 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     protected transient Map<String, AbstractInternalWatermarkDeclaration<?>>
             watermarkDeclarationMap;
+
+    protected transient EventTimeWatermarkHandler eventTimeWatermarkHandler;
 
     public TwoOutputProcessOperator(
             TwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE> userFunction,
@@ -112,6 +116,8 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                         operatorStateStore);
         this.nonPartitionedContext = getNonPartitionedContext();
         this.partitionedContext.setNonPartitionedContext(nonPartitionedContext);
+        this.eventTimeWatermarkHandler =
+                new EventTimeWatermarkHandler(1, output, timeServiceManager);
         this.userFunction.open(this.nonPartitionedContext);
     }
 
@@ -136,6 +142,11 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
+            if (EventTimeExtensionUtil.processWatermark(
+                    watermark.getWatermark(), 0, eventTimeWatermarkHandler)) {
+                return;
+            }
+
             output.emitWatermark(watermark);
         }
     }
@@ -174,6 +185,7 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
 
     protected TwoOutputNonPartitionedContext<OUT_MAIN, OUT_SIDE> getNonPartitionedContext() {
         return new DefaultTwoOutputNonPartitionedContext<>(
+                this,
                 context,
                 partitionedContext,
                 mainCollector,

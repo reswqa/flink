@@ -39,7 +39,9 @@ import org.apache.flink.datastream.impl.operators.ProcessOperator;
 import org.apache.flink.datastream.impl.operators.TwoInputBroadcastProcessOperator;
 import org.apache.flink.datastream.impl.operators.TwoInputNonBroadcastProcessOperator;
 import org.apache.flink.datastream.impl.operators.TwoOutputProcessOperator;
+import org.apache.flink.datastream.impl.operators.extension.eventtime.ExtractEventTimeProcessOperator;
 import org.apache.flink.datastream.impl.utils.StreamUtils;
+import org.apache.flink.datastream.impl.watermark.ExtractEventTimeProcessFunction;
 import org.apache.flink.streaming.api.transformations.DataStreamV2SinkTransformation;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
@@ -73,9 +75,25 @@ public class NonKeyedPartitionStreamImpl<T> extends AbstractDataStream<T>
 
         TypeInformation<OUT> outType =
                 StreamUtils.getOutputTypeForOneInputProcessFunction(processFunction, getType());
-        ProcessOperator<T, OUT> operator = new ProcessOperator<>(processFunction);
-        OneInputTransformation<T, OUT> outputTransform =
-                StreamUtils.getOneInputTransformation("Process", this, outType, operator);
+
+        ProcessOperator<T, OUT> operator;
+        OneInputTransformation<T, OUT> outputTransform;
+
+        if (processFunction instanceof ExtractEventTimeProcessFunction) {
+            operator =
+                    (ProcessOperator<T, OUT>)
+                            new ExtractEventTimeProcessOperator<T>(
+                                    (ExtractEventTimeProcessFunction<T>) processFunction);
+            outputTransform =
+                    StreamUtils.getOneInputTransformation(
+                            "Event-Time-Extractor", this, outType, operator);
+            outputTransform.setParallelism(getTransformation().getParallelism());
+        } else {
+            operator = new ProcessOperator<>(processFunction);
+            outputTransform =
+                    StreamUtils.getOneInputTransformation("Process", this, outType, operator);
+        }
+
         outputTransform.setAttribute(AttributeParser.parseAttribute(processFunction));
         environment.addOperator(outputTransform);
         return StreamUtils.wrapWithConfigureHandle(

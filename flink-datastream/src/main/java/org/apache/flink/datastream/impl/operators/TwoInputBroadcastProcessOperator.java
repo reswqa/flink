@@ -37,6 +37,8 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.runtime.watermark.AbstractInternalWatermarkDeclaration;
+import org.apache.flink.streaming.runtime.watermark.EventTimeWatermarkHandler;
+import org.apache.flink.streaming.runtime.watermark.extension.eventtime.EventTimeExtensionUtil;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -61,6 +63,8 @@ public class TwoInputBroadcastProcessOperator<IN1, IN2, OUT>
 
     protected transient Map<String, AbstractInternalWatermarkDeclaration<?>>
             watermarkDeclarationMap;
+
+    protected transient EventTimeWatermarkHandler eventTimeWatermarkHandler;
 
     public TwoInputBroadcastProcessOperator(
             TwoInputBroadcastStreamProcessFunction<IN1, IN2, OUT> userFunction) {
@@ -100,6 +104,8 @@ public class TwoInputBroadcastProcessOperator<IN1, IN2, OUT>
                         getOperatorStateBackend());
         this.nonPartitionedContext = getNonPartitionedContext();
         this.partitionedContext.setNonPartitionedContext(this.nonPartitionedContext);
+        this.eventTimeWatermarkHandler =
+                new EventTimeWatermarkHandler(2, output, timeServiceManager);
         this.userFunction.open(this.nonPartitionedContext);
     }
 
@@ -126,6 +132,12 @@ public class TwoInputBroadcastProcessOperator<IN1, IN2, OUT>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
+
+            if (EventTimeExtensionUtil.processWatermark(
+                    watermark.getWatermark(), 0, eventTimeWatermarkHandler)) {
+                return;
+            }
+
             output.emitWatermark(watermark);
         }
     }
@@ -140,6 +152,11 @@ public class TwoInputBroadcastProcessOperator<IN1, IN2, OUT>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
+            if (EventTimeExtensionUtil.processWatermark(
+                    watermark.getWatermark(), 1, eventTimeWatermarkHandler)) {
+                return;
+            }
+
             output.emitWatermark(watermark);
         }
     }
@@ -150,6 +167,7 @@ public class TwoInputBroadcastProcessOperator<IN1, IN2, OUT>
 
     protected NonPartitionedContext<OUT> getNonPartitionedContext() {
         return new DefaultNonPartitionedContext<>(
+                this,
                 context,
                 partitionedContext,
                 collector,

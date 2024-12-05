@@ -26,6 +26,7 @@ import org.apache.flink.datastream.api.context.TwoOutputNonPartitionedContext;
 import org.apache.flink.datastream.api.function.TwoOutputApplyPartitionFunction;
 import org.apache.flink.datastream.impl.watermark.DefaultWatermarkManager;
 import org.apache.flink.metrics.MetricGroup;
+import org.apache.flink.streaming.api.operators.AbstractStreamOperator;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.runtime.watermark.AbstractInternalWatermarkDeclaration;
 
@@ -49,7 +50,10 @@ public class DefaultTwoOutputNonPartitionedContext<OUT1, OUT2>
 
     private final WatermarkManager watermarkManager;
 
+    private AbstractStreamOperator operator;
+
     public DefaultTwoOutputNonPartitionedContext(
+            AbstractStreamOperator operator,
             DefaultRuntimeContext context,
             DefaultTwoOutputPartitionedContext partitionedContext,
             Collector<OUT1> firstCollector,
@@ -58,6 +62,7 @@ public class DefaultTwoOutputNonPartitionedContext<OUT1, OUT2>
             Set<Object> keySet,
             Output<?> streamRecordOutput,
             Map<String, AbstractInternalWatermarkDeclaration<?>> watermarkDeclarationMap) {
+        this.operator = operator;
         this.context = context;
         this.partitionedContext = partitionedContext;
         this.firstCollector = firstCollector;
@@ -112,5 +117,9 @@ public class DefaultTwoOutputNonPartitionedContext<OUT1, OUT2>
     @Override
     public MetricGroup getMetricGroup() {
         return context.getMetricGroup();
+    }
+
+    public AbstractStreamOperator getOperator() {
+        return operator;
     }
 }
