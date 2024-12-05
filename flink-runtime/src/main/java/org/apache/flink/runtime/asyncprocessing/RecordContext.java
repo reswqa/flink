@@ -44,7 +44,7 @@ public class RecordContext<K> extends ReferenceCounted<RecordContext.DisposerRun
     private final Object record;
 
     /** The key inside the record. */
-    private final K key;
+    private K key;
 
     /** Whether this Record(Context) has occupied the corresponding key. */
     private volatile boolean keyOccupied;
@@ -89,6 +89,10 @@ public class RecordContext<K> extends ReferenceCounted<RecordContext.DisposerRun
 
     public K getKey() {
         return this.key;
+    }
+
+    public void setKey(K key) {
+        this.key = key;
     }
 
     /** Check if this context has occupied the key. */

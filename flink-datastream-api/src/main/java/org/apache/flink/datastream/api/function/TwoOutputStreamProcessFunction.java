@@ -89,7 +89,8 @@ public interface TwoOutputStreamProcessFunction<IN, OUT1, OUT2> extends ProcessF
             Watermark watermark,
             Collector<OUT1> output1,
             Collector<OUT2> output2,
-            TwoOutputNonPartitionedContext<OUT1, OUT2> ctx) {
+            TwoOutputNonPartitionedContext<OUT1, OUT2> ctx)
+            throws Exception {
         return WatermarkHandlingResult.PEEK;
     }
 }

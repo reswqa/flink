@@ -21,6 +21,7 @@ package org.apache.flink.datastream.impl.operators;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.datastream.api.context.NonPartitionedContext;
 import org.apache.flink.datastream.api.context.ProcessingTimeManager;
+import org.apache.flink.datastream.api.extension.eventtime.timer.EventTimeManager;
 import org.apache.flink.datastream.api.function.TwoInputBroadcastStreamProcessFunction;
 import org.apache.flink.datastream.api.stream.KeyedPartitionStream;
 import org.apache.flink.datastream.impl.common.KeyCheckedOutputCollector;
@@ -28,6 +29,8 @@ import org.apache.flink.datastream.impl.common.OutputCollector;
 import org.apache.flink.datastream.impl.common.TimestampCollector;
 import org.apache.flink.datastream.impl.context.DefaultNonPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultProcessingTimeManager;
+import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeExtensionWrappedOneInputStreamProcessFunction;
+import org.apache.flink.datastream.impl.extension.eventtime.timer.DefaultEventTimeManager;
 import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.VoidNamespaceSerializer;
 import org.apache.flink.streaming.api.operators.InternalTimer;
@@ -68,6 +71,12 @@ public class KeyedTwoInputBroadcastProcessOperator<KEY, IN1, IN2, OUT>
         this.timerService =
                 getInternalTimerService("processing timer", VoidNamespaceSerializer.INSTANCE, this);
         this.keySet = new HashSet<>();
+        if (userFunction instanceof EventTimeExtensionWrappedOneInputStreamProcessFunction) {
+            EventTimeManager eventTimeManager =
+                    new DefaultEventTimeManager(timerService, this::currentKey);
+            ((EventTimeExtensionWrappedOneInputStreamProcessFunction) userFunction)
+                    .initEventTimeExtension(eventTimeManager, output, timeServiceManager);
+        }
         super.open();
     }
 
@@ -90,7 +99,8 @@ public class KeyedTwoInputBroadcastProcessOperator<KEY, IN1, IN2, OUT>
 
     @Override
     public void onEventTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
-        // do nothing at the moment.
+        ((EventTimeExtensionWrappedOneInputStreamProcessFunction) userFunction)
+                .onEventTime(timer.getTimestamp(), getOutputCollector(), partitionedContext);
     }
 
     @Override

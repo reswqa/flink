@@ -36,6 +36,7 @@ import org.apache.flink.streaming.runtime.tasks.StreamTask.CanEmitBatchOfRecords
 import org.apache.flink.streaming.runtime.watermark.AbstractInternalWatermarkDeclaration;
 import org.apache.flink.streaming.runtime.watermark.WatermarkCombiner;
 import org.apache.flink.streaming.runtime.watermarkstatus.StatusWatermarkValve;
+import org.apache.flink.streaming.util.watermark.WatermarkUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -116,8 +117,14 @@ public abstract class AbstractStreamTaskNetworkInput<
         this.recordAttributesCombiner =
                 new RecordAttributesCombiner(checkpointedInputGate.getNumberOfInputChannels());
 
+        WatermarkUtils.addEventTimeWatermarkCombinerIfNeeded(
+                watermarkDeclarationSet, watermarkCombiners, flattenedChannelIndices.size());
         for (AbstractInternalWatermarkDeclaration<?> watermarkDeclaration :
                 watermarkDeclarationSet) {
+            if (watermarkCombiners.containsKey(watermarkDeclaration.getIdentifier())) {
+                continue;
+            }
+
             watermarkCombiners.put(
                     watermarkDeclaration.getIdentifier(),
                     watermarkDeclaration.watermarkCombiner(

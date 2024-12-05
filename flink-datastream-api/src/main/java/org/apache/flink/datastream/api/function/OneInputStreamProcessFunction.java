@@ -68,7 +68,8 @@ public interface OneInputStreamProcessFunction<IN, OUT> extends ProcessFunction 
 
     /** Callback function when receive watermark. */
     default WatermarkHandlingResult onWatermark(
-            Watermark watermark, Collector<OUT> output, NonPartitionedContext<OUT> ctx) {
+            Watermark watermark, Collector<OUT> output, NonPartitionedContext<OUT> ctx)
+            throws Exception {
         return WatermarkHandlingResult.PEEK;
     }
 }

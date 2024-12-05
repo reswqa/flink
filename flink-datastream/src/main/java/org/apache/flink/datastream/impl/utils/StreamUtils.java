@@ -33,6 +33,8 @@ import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.api.stream.GlobalStream.ProcessConfigurableAndGlobalStream;
 import org.apache.flink.datastream.api.stream.KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream;
 import org.apache.flink.datastream.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
+import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeExtensionWrappedOneInputStreamProcessFunction;
+import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeExtensionWrappedTwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.impl.stream.AbstractDataStream;
 import org.apache.flink.datastream.impl.stream.GlobalStreamImpl;
 import org.apache.flink.datastream.impl.stream.KeyedPartitionStreamImpl;
@@ -64,6 +66,12 @@ public final class StreamUtils {
     public static <IN, OUT> TypeInformation<OUT> getOutputTypeForOneInputProcessFunction(
             OneInputStreamProcessFunction<IN, OUT> processFunction,
             TypeInformation<IN> inTypeInformation) {
+        if (processFunction instanceof EventTimeExtensionWrappedOneInputStreamProcessFunction) {
+            processFunction =
+                    ((EventTimeExtensionWrappedOneInputStreamProcessFunction) processFunction)
+                            .getWrappedUserFunction();
+        }
+
         return TypeExtractor.getUnaryOperatorReturnType(
                 processFunction,
                 OneInputStreamProcessFunction.class,
@@ -129,6 +137,15 @@ public final class StreamUtils {
                             TwoOutputStreamProcessFunction<IN, OUT1, OUT2>
                                     twoOutputStreamProcessFunction,
                             TypeInformation<IN> inTypeInformation) {
+
+        if (twoOutputStreamProcessFunction
+                instanceof EventTimeExtensionWrappedTwoOutputStreamProcessFunction) {
+            twoOutputStreamProcessFunction =
+                    ((EventTimeExtensionWrappedTwoOutputStreamProcessFunction)
+                                    twoOutputStreamProcessFunction)
+                            .getWrappedUserFunction();
+        }
+
         TypeInformation<OUT1> firstOutputType =
                 TypeExtractor.getUnaryOperatorReturnType(
                         twoOutputStreamProcessFunction,

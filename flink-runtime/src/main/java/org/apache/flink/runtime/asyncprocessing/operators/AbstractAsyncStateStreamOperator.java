@@ -73,7 +73,7 @@ public abstract class AbstractAsyncStateStreamOperator<OUT> extends AbstractStre
     private static final Logger LOG =
             LoggerFactory.getLogger(AbstractAsyncStateStreamOperator.class);
 
-    private AsyncExecutionController asyncExecutionController;
+    protected AsyncExecutionController asyncExecutionController;
 
     private RecordContext currentProcessingContext;
 
@@ -303,7 +303,8 @@ public abstract class AbstractAsyncStateStreamOperator<OUT> extends AbstractStre
 
     @Override
     public Object getCurrentKey() {
-        return currentProcessingContext.getKey();
+        //        return currentProcessingContext.getKey();
+        return asyncExecutionController.getCurrentContext().getKey();
     }
 
     // ------------------------------------------------------------------------
@@ -402,10 +403,14 @@ public abstract class AbstractAsyncStateStreamOperator<OUT> extends AbstractStre
     @Override
     public void processWatermark(WatermarkEvent watermark) throws Exception {
         if (!isAsyncStateProcessingEnabled()) {
-            super.processWatermark(watermark);
+            processWatermarkInternal(watermark);
             return;
         }
-        asyncExecutionController.processNonRecord(() -> super.processWatermark(watermark));
+        asyncExecutionController.processNonRecord(() -> processWatermarkInternal(watermark));
+    }
+
+    public void processWatermarkInternal(WatermarkEvent watermarkEvent) throws Exception {
+        super.processWatermark(watermarkEvent);
     }
 
     @Override

@@ -30,6 +30,7 @@ import org.apache.flink.datastream.impl.context.DefaultNonPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultRuntimeContext;
 import org.apache.flink.datastream.impl.context.UnsupportedProcessingTimeManager;
+import org.apache.flink.datastream.impl.watermark.ExtractEventTimeProcessFunction;
 import org.apache.flink.runtime.asyncprocessing.operators.AbstractAsyncStateUdfStreamOperator;
 import org.apache.flink.runtime.event.WatermarkEvent;
 import org.apache.flink.streaming.api.operators.BoundedOneInput;
@@ -98,6 +99,11 @@ public class ProcessOperator<IN, OUT>
         nonPartitionedContext = getNonPartitionedContext();
         partitionedContext.setNonPartitionedContext(nonPartitionedContext);
         userFunction.open(nonPartitionedContext);
+
+        if (userFunction instanceof ExtractEventTimeProcessFunction) {
+            ((ExtractEventTimeProcessFunction<IN>) userFunction)
+                    .init(getExecutionConfig(), partitionedContext, getProcessingTimeService());
+        }
     }
 
     @Override
@@ -107,7 +113,9 @@ public class ProcessOperator<IN, OUT>
     }
 
     @Override
-    public void processWatermark(WatermarkEvent watermark) throws Exception {
+    public void processWatermarkInternal(WatermarkEvent watermark) throws Exception {
+        // TODO: process and filter even time watermark before user-function
+        // TODO: combine event time watermark if this process function is not wrapped
         WatermarkHandlingResult watermarkHandlingResultByUserFunction =
                 userFunction.onWatermark(
                         watermark.getWatermark(), outputCollector, nonPartitionedContext);
@@ -139,6 +147,7 @@ public class ProcessOperator<IN, OUT>
         } else {
             return (r, k) -> {
                 Object oldKey = currentKey();
+                setCurrentKey(k);
                 try {
                     r.run();
                 } finally {
