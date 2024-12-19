@@ -19,7 +19,7 @@
 package org.apache.flink.table.runtime.operators.multipleinput.output;
 
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.api.watermark.Watermark;

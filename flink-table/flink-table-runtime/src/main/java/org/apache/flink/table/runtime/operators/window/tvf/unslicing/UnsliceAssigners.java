@@ -20,7 +20,7 @@ package org.apache.flink.table.runtime.operators.window.tvf.unslicing;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.TimestampData;
 import org.apache.flink.table.runtime.operators.window.MergeCallback;

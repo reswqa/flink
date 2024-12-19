@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.api.operators.collect;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.streaming.api.operators.collect.utils.CollectSinkFunctionTestWrapper;

@@ -18,13 +18,13 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.annotation.Internal
+import org.apache.flink.api.common.memory.{DataInputView, DataOutputView}
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 import org.apache.flink.api.common.typeutils._
-import org.apache.flink.core.memory.{DataInputView, DataOutputView}
 import org.apache.flink.shaded.guava32.com.google.common.cache.{Cache, CacheBuilder}
 
 import java.io.ObjectInputStream
 import java.util.concurrent.Callable
-
 import scala.collection.generic.CanBuildFrom
 import scala.ref.WeakReference
 

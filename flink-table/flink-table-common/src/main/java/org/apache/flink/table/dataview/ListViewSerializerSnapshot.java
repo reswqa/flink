@@ -20,8 +20,8 @@ package org.apache.flink.table.dataview;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.table.api.dataview.ListView;
 
 import java.util.List;

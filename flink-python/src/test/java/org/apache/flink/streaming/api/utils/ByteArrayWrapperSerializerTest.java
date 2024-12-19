@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.api.utils;
 
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 import java.util.Random;
 

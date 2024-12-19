@@ -19,7 +19,7 @@
 package org.apache.flink.table.runtime.typeutils.serializers.python;
 
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /** Test for {@link StringSerializer}. */
 class StringSerializerTest extends SerializerTestBase<String> {

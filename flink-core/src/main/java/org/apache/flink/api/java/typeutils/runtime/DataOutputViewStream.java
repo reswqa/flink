@@ -19,7 +19,7 @@
 package org.apache.flink.api.java.typeutils.runtime;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 
 import java.io.IOException;
 import java.io.OutputStream;

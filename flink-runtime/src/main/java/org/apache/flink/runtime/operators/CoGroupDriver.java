@@ -22,7 +22,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.functions.CoGroupFunction;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypePairComparatorFactory;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.runtime.operators.sort.NonReusingSortMergeCoGroupIterator;
 import org.apache.flink.runtime.operators.sort.ReusingSortMergeCoGroupIterator;

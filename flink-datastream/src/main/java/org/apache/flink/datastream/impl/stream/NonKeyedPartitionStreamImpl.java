@@ -20,6 +20,7 @@ package org.apache.flink.datastream.impl.stream;
 
 import org.apache.flink.api.common.state.StateDeclaration;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.dsv2.Sink;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -35,6 +36,9 @@ import org.apache.flink.datastream.api.stream.NonKeyedPartitionStream;
 import org.apache.flink.datastream.api.stream.ProcessConfigurable;
 import org.apache.flink.datastream.impl.ExecutionEnvironmentImpl;
 import org.apache.flink.datastream.impl.attribute.AttributeParser;
+import org.apache.flink.datastream.impl.extension.window.ParallelismAwareKeySelector;
+import org.apache.flink.datastream.impl.extension.window.function.InternalTwoInputWindowFunction;
+import org.apache.flink.datastream.impl.extension.window.function.InternalWindowFunction;
 import org.apache.flink.datastream.impl.operators.ProcessOperator;
 import org.apache.flink.datastream.impl.operators.TwoInputBroadcastProcessOperator;
 import org.apache.flink.datastream.impl.operators.TwoInputNonBroadcastProcessOperator;
@@ -88,6 +92,18 @@ public class NonKeyedPartitionStreamImpl<T> extends AbstractDataStream<T>
                     StreamUtils.getOneInputTransformation(
                             "Event-Time-Extractor", this, outType, operator);
             outputTransform.setParallelism(getTransformation().getParallelism());
+        } else if (processFunction instanceof InternalWindowFunction) {
+            // Transform to keyed stream.
+            KeyedPartitionStreamImpl<Integer, T> keyedStream =
+                    new KeyedPartitionStreamImpl<>(
+                            this,
+                            getTransformation(),
+                            new ParallelismAwareKeySelector<>(),
+                            Types.INT);
+            Transformation<OUT> transformedWindow = keyedStream.transformWindow(
+                    outType,
+                    processFunction);
+            return StreamUtils.wrapWithConfigureHandle(new NonKeyedPartitionStreamImpl<>(keyedStream.environment, transformedWindow));
         } else {
             operator = new ProcessOperator<>(processFunction);
             outputTransform =
@@ -136,6 +152,12 @@ public class NonKeyedPartitionStreamImpl<T> extends AbstractDataStream<T>
     public <T_OTHER, OUT> ProcessConfigurableAndNonKeyedPartitionStream<OUT> connectAndProcess(
             NonKeyedPartitionStream<T_OTHER> other,
             TwoInputNonBroadcastStreamProcessFunction<T, T_OTHER, OUT> processFunction) {
+        if (processFunction instanceof InternalTwoInputWindowFunction) {
+            //  TODO support this.
+            throw new UnsupportedOperationException(
+                    "Two input window is not supported for non-keyed stream now.");
+        }
+
         validateStates(
                 processFunction.usesStates(),
                 new HashSet<>(

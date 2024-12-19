@@ -19,7 +19,7 @@
 package org.apache.flink.table.data;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.table.data.binary.BinaryRawValueData;
 import org.apache.flink.table.types.logical.RawType;
 

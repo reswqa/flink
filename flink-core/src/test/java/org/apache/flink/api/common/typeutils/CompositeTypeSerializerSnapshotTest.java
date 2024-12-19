@@ -18,11 +18,14 @@
 
 package org.apache.flink.api.common.typeutils;
 
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
 import org.apache.flink.core.memory.DataInputDeserializer;
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputSerializer;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 
 import org.junit.jupiter.api.Test;
 
@@ -189,11 +192,11 @@ class CompositeTypeSerializerSnapshotTest {
                 testSerializer.snapshotConfiguration();
 
         DataOutputSerializer out = new DataOutputSerializer(128);
-        TypeSerializerSnapshot.writeVersionedSnapshot(out, testSerializerSnapshot);
+        TypeSerializerUtils.writeVersionedSnapshot(out, testSerializerSnapshot);
 
         DataInputDeserializer in = new DataInputDeserializer(out.getCopyOfBuffer());
         testSerializerSnapshot =
-                TypeSerializerSnapshot.readVersionedSnapshot(
+                TypeSerializerUtils.readVersionedSnapshot(
                         in, Thread.currentThread().getContextClassLoader());
 
         TestCompositeTypeSerializer newTestSerializer =
@@ -225,11 +228,11 @@ class CompositeTypeSerializerSnapshotTest {
                 testSerializer.snapshotConfiguration();
 
         DataOutputSerializer out = new DataOutputSerializer(128);
-        TypeSerializerSnapshot.writeVersionedSnapshot(out, testSerializerSnapshot);
+        TypeSerializerUtils.writeVersionedSnapshot(out, testSerializerSnapshot);
 
         DataInputDeserializer in = new DataInputDeserializer(out.getCopyOfBuffer());
         testSerializerSnapshot =
-                TypeSerializerSnapshot.readVersionedSnapshot(
+                TypeSerializerUtils.readVersionedSnapshot(
                         in, Thread.currentThread().getContextClassLoader());
 
         // now, restore the composite type serializer;

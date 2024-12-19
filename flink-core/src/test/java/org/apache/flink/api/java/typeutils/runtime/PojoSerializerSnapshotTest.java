@@ -19,9 +19,9 @@
 package org.apache.flink.api.java.typeutils.runtime;
 
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.DoubleSerializer;
 import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.api.common.typeutils.base.StringSerializer;

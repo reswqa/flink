@@ -21,7 +21,7 @@ package org.apache.flink.api.java.typeutils;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeutils.TypeInformationTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple1;
 
 import org.junit.jupiter.api.Test;

@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.typeutils;
+package org.apache.flink.api.common.typeinfo.utils;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 
 import java.io.IOException;
 import java.io.Serializable;

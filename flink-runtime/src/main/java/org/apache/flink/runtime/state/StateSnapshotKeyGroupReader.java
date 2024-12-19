@@ -19,7 +19,7 @@
 package org.apache.flink.runtime.state;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.runtime.state.heap.StateTable;
 
 import javax.annotation.Nonnegative;

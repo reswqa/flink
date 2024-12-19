@@ -19,8 +19,8 @@ package org.apache.flink.table.planner.utils
 
 import org.apache.flink.api.common.io.InputFormat
 import org.apache.flink.api.common.serialization.SerializerConfigImpl
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
-import org.apache.flink.api.common.typeutils.TypeSerializer
 import org.apache.flink.api.java.typeutils.RowTypeInfo
 import org.apache.flink.core.io.InputSplit
 import org.apache.flink.legacy.table.factories.StreamTableSourceFactory

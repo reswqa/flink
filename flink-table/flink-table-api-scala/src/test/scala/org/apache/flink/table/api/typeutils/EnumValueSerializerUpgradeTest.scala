@@ -18,7 +18,8 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.FlinkVersion
-import org.apache.flink.api.common.typeutils.{TypeSerializer, TypeSerializerConditions, TypeSerializerSchemaCompatibility, TypeSerializerUpgradeTestBase}
+import org.apache.flink.api.common.typeinfo.utils.{TypeSerializer, TypeSerializerSchemaCompatibility}
+import org.apache.flink.api.common.typeutils.{TypeSerializerConditions, TypeSerializerUpgradeTestBase}
 import org.apache.flink.api.common.typeutils.TypeSerializerUpgradeTestBase.TestSpecification
 import org.apache.flink.table.api.typeutils.EnumValueSerializerUpgradeTest.{EnumValueSerializerSetup, EnumValueSerializerVerifier}
 import org.apache.flink.test.util.MigrationTest

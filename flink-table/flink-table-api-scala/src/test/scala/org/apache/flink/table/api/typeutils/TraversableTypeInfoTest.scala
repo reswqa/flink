@@ -18,8 +18,9 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.api.common.serialization.SerializerConfig
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
-import org.apache.flink.api.common.typeutils.{TypeInformationTestBase, TypeSerializer}
+import org.apache.flink.api.common.typeutils.TypeInformationTestBase
 
 /** Test for [[TraversableTypeInfo]]. */
 class TraversableTypeInfoTest extends TypeInformationTestBase[TraversableTypeInfo[_, _]] {

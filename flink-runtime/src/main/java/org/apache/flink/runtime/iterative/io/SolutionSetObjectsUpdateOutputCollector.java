@@ -19,7 +19,7 @@
 package org.apache.flink.runtime.iterative.io;
 
 import org.apache.flink.api.common.operators.util.JoinHashMap;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.util.Collector;
 
 /**

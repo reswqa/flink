@@ -18,8 +18,8 @@
 
 package org.apache.flink.test.util;
 
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.types.Value;
 
 import java.io.IOException;

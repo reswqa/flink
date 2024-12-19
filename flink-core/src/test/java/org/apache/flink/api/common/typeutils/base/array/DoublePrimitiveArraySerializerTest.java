@@ -19,7 +19,7 @@
 package org.apache.flink.api.common.typeutils.base.array;
 
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /** A test for the {@link DoublePrimitiveArraySerializer}. */
 class DoublePrimitiveArraySerializerTest extends SerializerTestBase<double[]> {

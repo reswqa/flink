@@ -14,7 +14,7 @@
 package org.apache.flink.api.java.typeutils.runtime;
 
 import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.api.java.tuple.Tuple0;
 
 /** A {@link TypeSerializerSnapshot} for {@link Tuple0Serializer}. */

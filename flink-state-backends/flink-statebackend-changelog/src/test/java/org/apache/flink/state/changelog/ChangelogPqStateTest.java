@@ -18,7 +18,7 @@
 package org.apache.flink.state.changelog;
 
 import org.apache.flink.api.common.typeutils.base.StringSerializer;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.runtime.state.KeyGroupedInternalPriorityQueue;
 import org.apache.flink.util.CloseableIterator;
 import org.apache.flink.util.function.FunctionWithException;

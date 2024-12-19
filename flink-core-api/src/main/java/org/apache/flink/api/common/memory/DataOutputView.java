@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.core.memory;
+package org.apache.flink.api.common.memory;
 
 import org.apache.flink.annotation.Public;
 

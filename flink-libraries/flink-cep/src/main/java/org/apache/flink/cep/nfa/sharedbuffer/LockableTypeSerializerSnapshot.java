@@ -20,8 +20,8 @@ package org.apache.flink.cep.nfa.sharedbuffer;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 
 /** A {@link TypeSerializerSnapshot} for the {@link Lockable.LockableTypeSerializer}. */
 @Internal

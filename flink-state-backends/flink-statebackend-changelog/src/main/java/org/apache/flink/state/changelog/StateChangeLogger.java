@@ -19,7 +19,7 @@ package org.apache.flink.state.changelog;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.util.function.ThrowingConsumer;
 
 import java.io.Closeable;

@@ -19,9 +19,9 @@
 package org.apache.flink.formats.avro.typeutils;
 
 import org.apache.flink.FlinkVersion;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerConditions;
-import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
 import org.apache.flink.api.common.typeutils.TypeSerializerUpgradeTestBase;
 import org.apache.flink.formats.avro.generated.Address;
 

@@ -24,7 +24,7 @@ import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.common.typeutils.TypeComparator;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.runtime.RowComparator;
 import org.apache.flink.api.java.typeutils.runtime.RowSerializer;
 import org.apache.flink.types.Row;

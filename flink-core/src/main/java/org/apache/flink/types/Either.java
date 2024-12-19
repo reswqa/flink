@@ -21,7 +21,7 @@ package org.apache.flink.types;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInfo;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.EitherTypeInfoFactory;
 import org.apache.flink.api.java.typeutils.runtime.EitherSerializer;
 

@@ -19,9 +19,10 @@
 package org.apache.flink.api.common.typeutils;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.core.io.VersionedIOReadableWritable;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.Preconditions;
 
@@ -108,7 +109,7 @@ public class TypeSerializerSnapshotSerializationUtil {
             // write the format version of this utils format
             super.write(out);
 
-            TypeSerializerSnapshot.writeVersionedSnapshot(out, serializerSnapshot);
+            TypeSerializerUtils.writeVersionedSnapshot(out, serializerSnapshot);
         }
 
         @SuppressWarnings("unchecked")
@@ -159,7 +160,7 @@ public class TypeSerializerSnapshotSerializationUtil {
         @VisibleForTesting
         static <T> TypeSerializerSnapshot<T> deserializeV2(DataInputView in, ClassLoader cl)
                 throws IOException {
-            return TypeSerializerSnapshot.readVersionedSnapshot(in, cl);
+            return TypeSerializerUtils.readVersionedSnapshot(in, cl);
         }
     }
 }

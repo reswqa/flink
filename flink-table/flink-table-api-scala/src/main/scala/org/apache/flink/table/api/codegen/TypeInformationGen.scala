@@ -20,13 +20,13 @@ package org.apache.flink.table.api.codegen
 import org.apache.flink.annotation.Internal
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo._
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 import org.apache.flink.api.common.typeutils._
 import org.apache.flink.api.java.typeutils._
 import org.apache.flink.table.api.typeutils.{CaseClassTypeInfo, ScalaCaseClassSerializer, ScalaNothingTypeInfo, UnitTypeInfo}
 import org.apache.flink.types.Value
 
 import java.lang.reflect.{Field, Modifier}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.postfixOps

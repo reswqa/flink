@@ -20,7 +20,7 @@ package org.apache.flink.table.runtime.dataview;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.functions.RuntimeContext;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /** This interface contains methods for registering {@link StateDataView} with a managed store. */
 @Internal

@@ -19,7 +19,7 @@
 package org.apache.flink.formats.avro.typeutils;
 
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.formats.avro.generated.UnionLogicalType;
 
 import java.time.Instant;

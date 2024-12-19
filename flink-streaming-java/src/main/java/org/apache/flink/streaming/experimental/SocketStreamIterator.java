@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.experimental;
 
 import org.apache.flink.annotation.Experimental;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
 import org.apache.flink.util.NetUtils;
 

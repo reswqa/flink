@@ -18,7 +18,7 @@
 package org.apache.flink.state.changelog.restore;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.state.changelog.StateChangeOperation;
 
 /** Applies state data change to some state. */

@@ -19,8 +19,10 @@
 package org.apache.flink.api.common.typeutils;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -108,7 +110,7 @@ public class NestedSerializersSnapshotDelegate {
 
         out.writeInt(nestedSnapshots.length);
         for (TypeSerializerSnapshot<?> snap : nestedSnapshots) {
-            TypeSerializerSnapshot.writeVersionedSnapshot(out, snap);
+            TypeSerializerUtils.writeVersionedSnapshot(out, snap);
         }
     }
 
@@ -133,7 +135,7 @@ public class NestedSerializersSnapshotDelegate {
                 new TypeSerializerSnapshot<?>[numSnapshots];
 
         for (int i = 0; i < numSnapshots; i++) {
-            nestedSnapshots[i] = TypeSerializerSnapshot.readVersionedSnapshot(in, cl);
+            nestedSnapshots[i] = TypeSerializerUtils.readVersionedSnapshot(in, cl);
         }
 
         return new NestedSerializersSnapshotDelegate(nestedSnapshots);

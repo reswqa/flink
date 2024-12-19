@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.disk.iomanager;
 
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.MemorySegment;
 
 import java.io.EOFException;
@@ -27,7 +28,7 @@ import java.util.List;
 import static org.apache.flink.util.Preconditions.checkArgument;
 
 /**
- * A {@link org.apache.flink.core.memory.DataInputView} that is backed by a {@link
+ * A {@link DataInputView} that is backed by a {@link
  * BlockChannelReader}, making it effectively a data input stream. This view is similar to the
  * {@link ChannelReaderInputView}, but does not expect a header for each block, giving a direct
  * stream abstraction over sequence of written blocks. It therefore requires specification of the

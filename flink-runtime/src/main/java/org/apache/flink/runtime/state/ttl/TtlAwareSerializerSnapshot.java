@@ -18,11 +18,12 @@
 
 package org.apache.flink.runtime.state.ttl;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
+import org.apache.flink.api.common.typeutils.TypeSerializerUtils;
 
 import java.io.IOException;
 
@@ -69,7 +70,7 @@ public class TtlAwareSerializerSnapshot<T> implements TypeSerializerSnapshot<T> 
     @Override
     public void writeSnapshot(DataOutputView out) throws IOException {
         out.writeBoolean(isTtlEnabled);
-        TypeSerializerSnapshot.writeVersionedSnapshot(out, typeSerializerSnapshot);
+        TypeSerializerUtils.writeVersionedSnapshot(out, typeSerializerSnapshot);
     }
 
     @Override
@@ -77,7 +78,7 @@ public class TtlAwareSerializerSnapshot<T> implements TypeSerializerSnapshot<T> 
             throws IOException {
         this.isTtlEnabled = in.readBoolean();
         this.typeSerializerSnapshot =
-                TypeSerializerSnapshot.readVersionedSnapshot(in, userCodeClassLoader);
+                TypeSerializerUtils.readVersionedSnapshot(in, userCodeClassLoader);
     }
 
     @Override

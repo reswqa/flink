@@ -19,7 +19,7 @@
 package org.apache.flink.table.runtime.util;
 
 import org.apache.flink.annotation.VisibleForTesting;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.memory.MemorySegment;
 
 import java.io.IOException;

@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.disk;
 
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.io.disk.iomanager.BlockChannelWriter;
 import org.apache.flink.runtime.memory.AbstractPagedOutputView;
@@ -30,7 +31,7 @@ import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 /**
- * A {@link org.apache.flink.core.memory.DataOutputView} that is backed by a {@link
+ * A {@link DataOutputView} that is backed by a {@link
  * BlockChannelWriter}, making it effectively a data output stream. The view writes it data in
  * blocks to the underlying channel.
  */

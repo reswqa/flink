@@ -21,7 +21,7 @@ package org.apache.flink.api.java.typeutils;
 import org.apache.flink.api.common.functions.InvalidTypesException;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /**
  * A special type information signifying that the type extraction failed. It contains additional

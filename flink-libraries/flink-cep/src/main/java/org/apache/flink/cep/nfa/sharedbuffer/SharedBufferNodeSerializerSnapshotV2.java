@@ -19,7 +19,7 @@
 package org.apache.flink.cep.nfa.sharedbuffer;
 
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /** Serializer configuration snapshot for compatibility and format evolution. */
 public final class SharedBufferNodeSerializerSnapshotV2

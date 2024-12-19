@@ -18,6 +18,8 @@
 
 package org.apache.flink.api.common.typeutils;
 
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerUtil.IntermediateCompatibilityResult;
 import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.testutils.migration.SchemaCompatibilityTestingSerializer;

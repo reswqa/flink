@@ -19,6 +19,7 @@
 package org.apache.flink.core.memory;
 
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.api.common.memory.DataInputView;
 
 /**
  * Interface marking a {@link DataInputView} as seekable. Seekable views can set the position where

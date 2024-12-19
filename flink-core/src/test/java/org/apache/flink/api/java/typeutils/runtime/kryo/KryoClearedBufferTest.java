@@ -20,9 +20,9 @@ package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
 import org.apache.flink.configuration.ConfigConstants;
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;

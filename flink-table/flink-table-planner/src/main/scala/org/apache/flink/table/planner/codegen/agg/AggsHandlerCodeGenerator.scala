@@ -17,7 +17,6 @@
  */
 package org.apache.flink.table.planner.codegen.agg
 
-import org.apache.flink.api.common.typeutils.TypeSerializer
 import org.apache.flink.table.api.{DataTypes, TableException}
 import org.apache.flink.table.data.GenericRowData
 import org.apache.flink.table.expressions._
@@ -44,6 +43,7 @@ import org.apache.flink.util.Collector
 
 import org.apache.calcite.rex.RexLiteral
 import org.apache.calcite.tools.RelBuilder
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 
 import java.time.ZoneId
 import java.util.Optional

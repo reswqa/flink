@@ -19,8 +19,9 @@
 package org.apache.flink.table.types.logical;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.TypeSerializerUtils;
 import org.apache.flink.core.memory.DataInputDeserializer;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.table.api.TableException;
@@ -150,7 +151,7 @@ public final class RawType<T> extends LogicalType {
             final byte[] bytes = EncodingUtils.decodeBase64ToBytes(serializerString);
             final DataInputDeserializer inputDeserializer = new DataInputDeserializer(bytes);
             final TypeSerializerSnapshot<?> snapshot =
-                    TypeSerializerSnapshot.readVersionedSnapshot(inputDeserializer, classLoader);
+                    TypeSerializerUtils.readVersionedSnapshot(inputDeserializer, classLoader);
             return (RawType<?>) new RawType(clazz, snapshot.restoreSerializer());
         } catch (Throwable t) {
             throw new ValidationException(
@@ -168,7 +169,7 @@ public final class RawType<T> extends LogicalType {
         if (serializerString == null) {
             final DataOutputSerializer outputSerializer = new DataOutputSerializer(128);
             try {
-                TypeSerializerSnapshot.writeVersionedSnapshot(
+                TypeSerializerUtils.writeVersionedSnapshot(
                         outputSerializer, serializer.snapshotConfiguration());
                 serializerString =
                         EncodingUtils.encodeBytesToBase64(outputSerializer.getCopyOfBuffer());

@@ -19,8 +19,8 @@
 package org.apache.flink.types;
 
 import org.apache.flink.annotation.Public;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.memory.MemoryUtils;
 import org.apache.flink.util.InstantiationUtil;
 
@@ -1221,7 +1221,7 @@ public final class Record implements Value, CopyableValue<Record> {
 
     /**
      * Writes this record to the given output view. This method is similar to {@link
-     * org.apache.flink.core.io.IOReadableWritable#write(org.apache.flink.core.memory.DataOutputView)},
+     * org.apache.flink.core.io.IOReadableWritable#write(DataOutputView)},
      * but it returns the number of bytes written.
      *
      * @param target The view to write the record to.

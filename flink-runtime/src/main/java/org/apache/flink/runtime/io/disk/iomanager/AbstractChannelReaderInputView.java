@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.disk.iomanager;
 
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.memory.AbstractPagedInputView;
 
@@ -25,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * A {@link org.apache.flink.core.memory.DataInputView} that is backed by a {@link FileIOChannel},
+ * A {@link DataInputView} that is backed by a {@link FileIOChannel},
  * making it effectively a data input stream. The view reads it data in blocks from the underlying
  * channel. The view can only read data that has been written by a {@link ChannelWriterOutputView},
  * due to block formatting.

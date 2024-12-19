@@ -19,9 +19,9 @@
 package org.apache.flink.core.io;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.util.IOUtils;
 
 import java.io.IOException;

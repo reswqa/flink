@@ -18,6 +18,7 @@
 
 package org.apache.flink.table.runtime.io;
 
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.core.memory.MemorySegmentFactory;
 import org.apache.flink.runtime.io.compression.BlockCompressionFactory;
@@ -32,7 +33,7 @@ import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * A {@link org.apache.flink.core.memory.DataOutputView} that is backed by a {@link FileIOChannel},
+ * A {@link DataOutputView} that is backed by a {@link FileIOChannel},
  * making it effectively a data output stream. The view will compress its data before writing it in
  * blocks to the underlying channel.
  */

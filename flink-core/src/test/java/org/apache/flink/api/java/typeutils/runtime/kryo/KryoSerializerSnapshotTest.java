@@ -19,16 +19,17 @@
 package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.TypeSerializerUtils;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Animal;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Dog;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.DogKryoSerializer;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.DogV2KryoSerializer;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Parrot;
 import org.apache.flink.core.memory.DataInputDeserializer;
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.testutils.ClassLoaderUtils;
 
@@ -118,7 +119,7 @@ public class KryoSerializerSnapshotTest {
             throws IOException {
         DataInputView in = new DataInputDeserializer(unLoadableSnapshotBytes());
 
-        return TypeSerializerSnapshot.readVersionedSnapshot(
+        return TypeSerializerUtils.readVersionedSnapshot(
                 in, KryoSerializerSnapshotTest.class.getClassLoader());
     }
 
@@ -143,7 +144,7 @@ public class KryoSerializerSnapshotTest {
                     previousSerializer.snapshotConfiguration();
 
             DataOutputSerializer out = new DataOutputSerializer(4096);
-            TypeSerializerSnapshot.writeVersionedSnapshot(out, previousSnapshot);
+            TypeSerializerUtils.writeVersionedSnapshot(out, previousSnapshot);
             return out.getCopyOfBuffer();
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);

@@ -20,7 +20,7 @@ package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
 import org.apache.flink.core.memory.DataOutputSerializer;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.testutils.BlockerSync;
 import org.apache.flink.core.testutils.CheckedThread;
 

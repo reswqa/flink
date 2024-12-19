@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.operators.sorted.state;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.runtime.state.internal.InternalMergingState;
 
 import java.util.Collection;

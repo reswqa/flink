@@ -20,7 +20,7 @@ package org.apache.flink.formats.avro.typeutils;
 
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;

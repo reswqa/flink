@@ -20,7 +20,7 @@ package org.apache.flink.api.common.functions;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /** A factory for {@link TypeSerializer} implementations. */
 @Internal

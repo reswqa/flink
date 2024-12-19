@@ -18,7 +18,7 @@
 
 package org.apache.flink.table.runtime.operators.python.scalar;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.python.PythonFunctionRunner;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;

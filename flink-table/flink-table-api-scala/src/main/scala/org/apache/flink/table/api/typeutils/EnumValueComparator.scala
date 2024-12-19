@@ -18,9 +18,10 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.annotation.Internal
+import org.apache.flink.api.common.memory.{DataInputView, DataOutputView}
 import org.apache.flink.api.common.typeutils.TypeComparator
 import org.apache.flink.api.common.typeutils.base.IntComparator
-import org.apache.flink.core.memory.{DataInputView, DataOutputView, MemorySegment}
+import org.apache.flink.core.memory.MemorySegment
 
 /** Comparator for [[Enumeration]] values. */
 @Internal

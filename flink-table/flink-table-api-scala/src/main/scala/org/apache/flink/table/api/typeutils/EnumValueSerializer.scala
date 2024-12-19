@@ -18,8 +18,8 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.annotation.Internal
-import org.apache.flink.api.common.typeutils.TypeSerializer
-import org.apache.flink.core.memory.{DataInputView, DataOutputView}
+import org.apache.flink.api.common.memory.{DataInputView, DataOutputView}
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 
 /** Serializer for [[Enumeration]] values. */
 @Internal

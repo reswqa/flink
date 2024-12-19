@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.state.metainfo;
 
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 
 import javax.annotation.Nonnull;
 

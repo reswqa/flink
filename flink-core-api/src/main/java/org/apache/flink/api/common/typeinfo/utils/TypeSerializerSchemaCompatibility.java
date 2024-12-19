@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.api.common.typeutils;
+package org.apache.flink.api.common.typeinfo.utils;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.util.Preconditions;
@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 public class TypeSerializerSchemaCompatibility<T> {
 
     /** Enum for the type of the compatibility. */
-    enum Type {
+    public enum Type {
 
         /** This indicates that the new serializer continued to be used as is. */
         COMPATIBLE_AS_IS,
