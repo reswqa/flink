@@ -18,8 +18,9 @@
 
 package org.apache.flink.datastream.api.extension.window.assigner;
 
-
+import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.datastream.api.extension.window.WindowProcessFunction;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
 import org.apache.flink.datastream.api.extension.window.window.Window;
 
@@ -31,13 +32,13 @@ import java.util.Collection;
  *
  * <p>In a window operation, elements are grouped by their key (if available) and by the windows to
  * which it was assigned. The set of elements with the same key and window is called a pane. When a
- * {@link Trigger} decides that a certain pane should fire the {@link
- * org.apache.flink.streaming.api.functions.windowing.WindowFunction} is applied to produce output
- * elements for that pane.
+ * {@link Trigger} decides that a certain pane should fire the {@link WindowProcessFunction} is
+ * applied to produce output elements for that pane.
  *
  * @param <T> The type of elements that this WindowAssigner can assign windows to.
  * @param <W> The type of {@code Window} that this assigner assigns.
  */
+@Experimental
 public abstract class WindowAssigner<T, W extends Window> implements Serializable {
     private static final long serialVersionUID = 1L;
 

@@ -18,21 +18,22 @@
 
 package org.apache.flink.datastream.impl.extension.window.window;
 
-import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeinfo.TypeSerializer;
-import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
 import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.memory.DataOutputView;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
+import org.apache.flink.datastream.api.extension.window.window.GlobalWindow;
 
 import java.io.IOException;
 
-public class GlobalWindow implements UnboundedWindow {
-    private static final GlobalWindow INSTANCE = new GlobalWindow();
+public class GlobalWindowImpl implements UnboundedWindow, GlobalWindow {
+    private static final GlobalWindowImpl INSTANCE = new GlobalWindowImpl();
 
-    private GlobalWindow() {}
+    private GlobalWindowImpl() {}
 
-    public static GlobalWindow get() {
+    public static GlobalWindowImpl get() {
         return INSTANCE;
     }
 
@@ -51,8 +52,8 @@ public class GlobalWindow implements UnboundedWindow {
         return "GlobalWindow";
     }
 
-    /** A {@link TypeSerializer} for {@link GlobalWindow}. */
-    public static class Serializer extends TypeSerializerSingleton<GlobalWindow> {
+    /** A {@link TypeSerializer} for {@link GlobalWindowImpl}. */
+    public static class Serializer extends TypeSerializerSingleton<GlobalWindowImpl> {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -61,17 +62,17 @@ public class GlobalWindow implements UnboundedWindow {
         }
 
         @Override
-        public GlobalWindow createInstance() {
-            return GlobalWindow.INSTANCE;
+        public GlobalWindowImpl createInstance() {
+            return GlobalWindowImpl.INSTANCE;
         }
 
         @Override
-        public GlobalWindow copy(GlobalWindow from) {
+        public GlobalWindowImpl copy(GlobalWindowImpl from) {
             return from;
         }
 
         @Override
-        public GlobalWindow copy(GlobalWindow from, GlobalWindow reuse) {
+        public GlobalWindowImpl copy(GlobalWindowImpl from, GlobalWindowImpl reuse) {
             return from;
         }
 
@@ -81,21 +82,21 @@ public class GlobalWindow implements UnboundedWindow {
         }
 
         @Override
-        public void serialize(GlobalWindow record, DataOutputView target) throws IOException {
+        public void serialize(GlobalWindowImpl record, DataOutputView target) throws IOException {
             target.writeByte(0);
         }
 
         @Override
-        public GlobalWindow deserialize(DataInputView source) throws IOException {
+        public GlobalWindowImpl deserialize(DataInputView source) throws IOException {
             source.readByte();
-            return GlobalWindow.INSTANCE;
+            return GlobalWindowImpl.INSTANCE;
         }
 
         @Override
-        public GlobalWindow deserialize(GlobalWindow reuse, DataInputView source)
+        public GlobalWindowImpl deserialize(GlobalWindowImpl reuse, DataInputView source)
                 throws IOException {
             source.readByte();
-            return GlobalWindow.INSTANCE;
+            return GlobalWindowImpl.INSTANCE;
         }
 
         @Override
@@ -107,17 +108,17 @@ public class GlobalWindow implements UnboundedWindow {
         // ------------------------------------------------------------------------
 
         @Override
-        public TypeSerializerSnapshot<GlobalWindow> snapshotConfiguration() {
-            return new GlobalWindow.Serializer.GlobalWindowSerializerSnapshot();
+        public TypeSerializerSnapshot<GlobalWindowImpl> snapshotConfiguration() {
+            return new GlobalWindowImpl.Serializer.GlobalWindowSerializerSnapshot();
         }
 
         /** Serializer configuration snapshot for compatibility and format evolution. */
         @SuppressWarnings("WeakerAccess")
         public static final class GlobalWindowSerializerSnapshot
-                extends SimpleTypeSerializerSnapshot<GlobalWindow> {
+                extends SimpleTypeSerializerSnapshot<GlobalWindowImpl> {
 
             public GlobalWindowSerializerSnapshot() {
-                super(GlobalWindow.Serializer::new);
+                super(GlobalWindowImpl.Serializer::new);
             }
         }
     }

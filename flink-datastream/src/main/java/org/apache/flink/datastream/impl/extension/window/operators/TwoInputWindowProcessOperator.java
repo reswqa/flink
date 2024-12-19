@@ -18,45 +18,54 @@
 
 package org.apache.flink.datastream.impl.extension.window.operators;
 
-import org.apache.flink.api.common.state.AppendingState;
-import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDeclaration;
-import org.apache.flink.api.common.state.ListStateDescriptor;
-import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDeclaration;
 import org.apache.flink.api.common.state.State;
 import org.apache.flink.api.common.state.StateDeclaration;
-import org.apache.flink.api.common.state.StateDescriptor;
-import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDeclaration;
+import org.apache.flink.api.common.state.v2.AppendingState;
+import org.apache.flink.api.common.state.v2.ListState;
+import org.apache.flink.api.common.state.v2.MapState;
+import org.apache.flink.api.common.state.v2.ValueState;
 import org.apache.flink.api.common.typeinfo.TypeSerializer;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.datastream.api.extension.window.TwoInputWindowProcessFunction;
 import org.apache.flink.datastream.api.extension.window.assigner.WindowAssigner;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
 import org.apache.flink.datastream.api.extension.window.utils.TaggedUnion;
 import org.apache.flink.datastream.api.extension.window.window.Window;
+import org.apache.flink.datastream.api.stream.KeyedPartitionStream;
 import org.apache.flink.datastream.impl.extension.window.ParallelismAwareKeySelector;
 import org.apache.flink.datastream.impl.extension.window.function.InternalTwoInputWindowFunction;
+import org.apache.flink.datastream.impl.extension.window.utils.WindowStateStore;
 import org.apache.flink.datastream.impl.extension.window.window.BoundedWindow;
-import org.apache.flink.datastream.impl.extension.window.window.TimeWindow;
-import org.apache.flink.datastream.impl.operators.TwoInputNonBroadcastProcessOperator;
+import org.apache.flink.datastream.impl.extension.window.window.TimeWindowImpl;
+import org.apache.flink.datastream.impl.operators.BaseKeyedTwoInputNonBroadcastProcessOperator;
 import org.apache.flink.datastream.impl.utils.StateDeclarationConverter;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.MetricGroup;
-import org.apache.flink.runtime.state.internal.InternalAppendingState;
 import org.apache.flink.runtime.state.internal.InternalMergingState;
+import org.apache.flink.runtime.state.v2.StateDescriptor;
+import org.apache.flink.runtime.state.v2.internal.InternalPartitionedState;
 import org.apache.flink.streaming.api.operators.InternalTimer;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
 import org.apache.flink.streaming.api.operators.Triggerable;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Optional;
 
+/** Operator for {@link TwoInputWindowProcessFunction} in {@link KeyedPartitionStream}. */
 public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W extends Window>
-        extends TwoInputNonBroadcastProcessOperator<IN1, IN2, OUT> implements Triggerable<K, W> {
+        extends BaseKeyedTwoInputNonBroadcastProcessOperator<K, IN1, IN2, OUT>
+        implements Triggerable<K, W> {
+
+    protected static final Logger LOG =
+            LoggerFactory.getLogger(TwoInputWindowProcessOperator.class);
+
     private static final long serialVersionUID = 1L;
 
     // ------------------------------------------------------------------------
@@ -67,9 +76,10 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
 
     private final Trigger<? super TaggedUnion<IN1, IN2>, ? super W> trigger;
 
-    private final StateDescriptor<? extends AppendingState<IN1, ACC1>, ?> leftWindowStateDescriptor;
+    private final StateDescriptor<? extends AppendingState<IN1, ACC1, ACC1>>
+            leftWindowStateDescriptor;
 
-    private final StateDescriptor<? extends AppendingState<IN2, ACC2>, ?>
+    private final StateDescriptor<? extends AppendingState<IN2, ACC2, ACC2>>
             rightWindowStateDescriptor;
 
     /** For serializing the window in checkpoints. */
@@ -84,10 +94,10 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
     // ------------------------------------------------------------------------
 
     /** The state in which the window contents is stored. Each window is a namespace */
-    private transient InternalAppendingState<K, W, IN1, ACC1, ACC1> leftWindowState;
+    private transient AppendingState<IN1, ACC1, ACC1> leftWindowState;
 
     /** The state in which the window contents is stored. Each window is a namespace */
-    private transient InternalAppendingState<K, W, IN2, ACC2, ACC2> rightWindowState;
+    private transient AppendingState<IN2, ACC2, ACC2> rightWindowState;
 
     private transient WindowStateStore windowStateStore;
 
@@ -133,8 +143,8 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
             WindowAssigner<? super TaggedUnion<IN1, IN2>, W> windowAssigner,
             Trigger<? super TaggedUnion<IN1, IN2>, ? super W> trigger,
             TypeSerializer<W> windowSerializer,
-            StateDescriptor<? extends AppendingState<IN1, ACC1>, ?> windowStateDescriptor1,
-            StateDescriptor<? extends AppendingState<IN2, ACC2>, ?> windowStateDescriptor2,
+            StateDescriptor<? extends AppendingState<IN1, ACC1, ACC1>> windowStateDescriptor1,
+            StateDescriptor<? extends AppendingState<IN2, ACC2, ACC2>> windowStateDescriptor2,
             long allowedLateness,
             OutputTag<IN1> leftLateOutputTag,
             OutputTag<IN2> rightLateOutputTag,
@@ -154,7 +164,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         this.acc2InitValue = acc2InitValue;
 
         // TODO:
-//        setChainingStrategy(ChainingStrategy.ALWAYS);
+        //        setChainingStrategy(ChainingStrategy.ALWAYS);
     }
 
     @Override
@@ -164,7 +174,8 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         // inject parallelism for ParallelismAwareKeySelector.
         if (getStateKeySelector1() instanceof ParallelismAwareKeySelector) {
             ((ParallelismAwareKeySelector<?>) getStateKeySelector1())
-                    .setParallelismSupplier(() -> getRuntimeContext().getTaskInfo().getIndexOfThisSubtask());
+                    .setParallelismSupplier(
+                            () -> getRuntimeContext().getTaskInfo().getIndexOfThisSubtask());
         }
 
         numLateRecordsDropped = metrics.counter(LATE_ELEMENTS_DROPPED_METRIC_NAME);
@@ -181,14 +192,20 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         // NOTE - the state may be null in the case of the overriding evicting window operator
         if (leftWindowStateDescriptor != null) {
             leftWindowState =
-                    (InternalAppendingState<K, W, IN1, ACC1, ACC1>)
-                            getOrCreateKeyedState(windowSerializer, leftWindowStateDescriptor);
+                    (AppendingState<IN1, ACC1, ACC1>)
+                            getOrCreateKeyedState(
+                                    windowSerializer.createInstance(),
+                                    windowSerializer,
+                                    leftWindowStateDescriptor);
         }
 
         if (rightWindowStateDescriptor != null) {
             rightWindowState =
-                    (InternalAppendingState<K, W, IN2, ACC2, ACC2>)
-                            getOrCreateKeyedState(windowSerializer, rightWindowStateDescriptor);
+                    (AppendingState<IN2, ACC2, ACC2>)
+                            getOrCreateKeyedState(
+                                    windowSerializer.createInstance(),
+                                    windowSerializer,
+                                    rightWindowStateDescriptor);
         }
     }
 
@@ -203,7 +220,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         // if element is handled by none of assigned elementWindows
         boolean isSkippedElement = true;
 
-        final K key = this.<K>getKeyedStateBackend().getCurrentKey();
+        final K key = (K) this.getCurrentKey();
 
         for (W window : elementWindows) {
             // drop if the window is already late
@@ -212,7 +229,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
             }
             isSkippedElement = false;
 
-            leftWindowState.setCurrentNamespace(window);
+            ((InternalPartitionedState<W>) leftWindowState).setCurrentNamespace(window);
             leftWindowState.add(element.getValue());
 
             triggerContext.key = key;
@@ -267,7 +284,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         // if element is handled by none of assigned elementWindows
         boolean isSkippedElement = true;
 
-        final K key = this.<K>getKeyedStateBackend().getCurrentKey();
+        final K key = (K) this.getCurrentKey();
 
         for (W window : elementWindows) {
             // drop if the window is already late
@@ -276,7 +293,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
             }
             isSkippedElement = false;
 
-            rightWindowState.setCurrentNamespace(window);
+            ((InternalPartitionedState<W>) rightWindowState).setCurrentNamespace(window);
             rightWindowState.add(element.getValue());
 
             triggerContext.key = key;
@@ -325,11 +342,10 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         triggerContext.key = timer.getKey();
         triggerContext.window = timer.getNamespace();
 
-        leftWindowState.setCurrentNamespace(triggerContext.window);
-        rightWindowState.setCurrentNamespace(triggerContext.window);
+        ((InternalPartitionedState<W>) leftWindowState).setCurrentNamespace(triggerContext.window);
+        ((InternalPartitionedState<W>) rightWindowState).setCurrentNamespace(triggerContext.window);
 
-        Trigger.TriggerResult triggerResult =
-                triggerContext.onEventTime(timer.getTimestamp());
+        Trigger.TriggerResult triggerResult = triggerContext.onEventTime(timer.getTimestamp());
 
         if (triggerResult.isFire()) {
             ACC1 leftContent = leftWindowState.get();
@@ -351,9 +367,9 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         }
 
         // TODO this can be removed in the future
-        if (windowAssigner.isEventTime() && triggerContext.window instanceof TimeWindow) {
+        if (windowAssigner.isEventTime() && triggerContext.window instanceof TimeWindowImpl) {
             windowAssignerContext.currentEventTime = timer.getTimestamp();
-            if (((TimeWindow) triggerContext.window).isBoundaryReached(windowAssignerContext)) {
+            if (((TimeWindowImpl) triggerContext.window).isBoundaryReached(windowAssignerContext)) {
                 clearAllState(triggerContext.window, leftWindowState, rightWindowState);
             }
         }
@@ -364,8 +380,8 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         triggerContext.key = timer.getKey();
         triggerContext.window = timer.getNamespace();
 
-        leftWindowState.setCurrentNamespace(triggerContext.window);
-        rightWindowState.setCurrentNamespace(triggerContext.window);
+        ((InternalPartitionedState<W>) leftWindowState).setCurrentNamespace(triggerContext.window);
+        ((InternalPartitionedState<W>) rightWindowState).setCurrentNamespace(triggerContext.window);
 
         Trigger.TriggerResult triggerResult = triggerContext.onProcessingTime(timer.getTimestamp());
 
@@ -388,13 +404,12 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
             rightWindowState.clear();
         }
 
-        if (!windowAssigner.isEventTime() && triggerContext.window instanceof TimeWindow) {
-            if (((TimeWindow) triggerContext.window).isBoundaryReached(windowAssignerContext)) {
+        if (!windowAssigner.isEventTime() && triggerContext.window instanceof TimeWindowImpl) {
+            if (((TimeWindowImpl) triggerContext.window).isBoundaryReached(windowAssignerContext)) {
                 clearAllState(triggerContext.window, leftWindowState, rightWindowState);
             }
         }
     }
-
 
     /**
      * Drops all state for the given window and calls {@link Trigger#clear(Window,
@@ -404,7 +419,9 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
      * triggerContext object.
      */
     private void clearAllState(
-            W window, AppendingState<IN1, ACC1> leftState, AppendingState<IN2, ACC2> rightState)
+            W window,
+            AppendingState<IN1, ACC1, ACC1> leftState,
+            AppendingState<IN2, ACC2, ACC2> rightState)
             throws Exception {
         leftState.clear();
         rightState.clear();
@@ -418,12 +435,12 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
     private void emitWindowContents(W window, ACC1 leftContents, ACC2 rightContents)
             throws Exception {
         // only time window touch the time concept.
-        if (window instanceof TimeWindow) {
-            collector.setTimestamp(((TimeWindow) window).maxTimeStamp());
+        if (window instanceof TimeWindowImpl) {
+            collector.setTimestamp(((TimeWindowImpl) window).maxTimeStamp());
         }
         windowFunctionContext.window = window;
         windowProcessFunction.processRecord(
-                leftContents, rightContents, collector, context, windowFunctionContext);
+                leftContents, rightContents, collector, partitionedContext, windowFunctionContext);
     }
 
     /**
@@ -445,8 +462,8 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
      */
     // TODO Provide a common later strategy.
     protected boolean isWindowLate(W window) {
-        if (window instanceof TimeWindow) {
-            return ((TimeWindow) window).isWindowLate(internalTimerService.currentWatermark());
+        if (window instanceof TimeWindowImpl) {
+            return ((TimeWindowImpl) window).isWindowLate(internalTimerService.currentWatermark());
         }
         return false;
     }
@@ -460,55 +477,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
     protected boolean isElementLate(StreamRecord<?> element) {
         return (windowAssigner.isEventTime())
                 && (element.getTimestamp() + allowedLateness
-                <= internalTimerService.currentWatermark());
-    }
-
-    // -------------------------------------------------------------------------
-    //                             Window State Store
-    // -------------------------------------------------------------------------
-
-    private class WindowStateStore {
-        @SuppressWarnings("unchecked")
-        public <T> Optional<ListState<T>> getWindowState(
-                ListStateDeclaration stateDeclaration, W namespace) {
-            if (!windowProcessFunction.useWindowStates().contains(stateDeclaration)) {
-                return Optional.empty();
-            }
-
-            ListStateDescriptor<T> listStateDescriptor = new ListStateDescriptor<T>(
-                    stateDeclaration.getName(),
-                    TypeExtractor.createTypeInfo(stateDeclaration
-                            .getTypeDescriptor()
-                            .getTypeClass()));
-
-            StateDeclaration.RedistributionMode redistributionMode =
-                    stateDeclaration.getRedistributionMode();
-            if (redistributionMode == StateDeclaration.RedistributionMode.NONE) {
-                try {
-                    return Optional.ofNullable(
-                            getPartitionedState(namespace, windowSerializer, listStateDescriptor));
-                } catch (Exception e) {
-                    return Optional.empty();
-                }
-            } else {
-                throw new UnsupportedOperationException(
-                        "RedistributionMode "
-                                + redistributionMode.name()
-                                + " is not supported for window state.");
-            }
-        }
-
-        public <KEY, V> Optional<MapState<KEY, V>> getWindowState(
-                MapStateDeclaration stateDeclaration, W namespace) {
-            // TODO impl
-            return null;
-        }
-
-        public <T> Optional<ValueState<T>> getWindowState(
-                ValueStateDeclaration stateDeclaration, W namespace) {
-            // TODO impl;
-            return null;
-        }
+                        <= internalTimerService.currentWatermark());
     }
 
     // -------------------------------------------------------------------------
@@ -562,7 +531,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
             return TwoInputWindowProcessOperator.this.getMetricGroup();
         }
 
-        public long getCurrentWatermark() {
+        public long getCurrentEventTime() {
             return internalTimerService.currentWatermark();
         }
 
@@ -578,8 +547,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
 
         @Override
         public void registerEventTimeListener(long time) {
-            internalTimerService.registerEventTimeTimer(
-                    window, time);
+            internalTimerService.registerEventTimeTimer(window, time);
             // TODO handle generalized watermark.
         }
 
@@ -589,26 +557,24 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
 
         @Override
         public void deleteEventTimeListener(long time) {
-            internalTimerService.deleteProcessingTimeTimer(
-                    window, time);
+            internalTimerService.deleteProcessingTimeTimer(window, time);
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        public <T> Optional<ListState<T>> getWindowState(
-                ListStateDeclaration stateDeclaration) {
+        public <T> Optional<ListState<T>> getWindowState(ListStateDeclaration<T> stateDeclaration) {
             return windowStateStore.getWindowState(stateDeclaration, window);
         }
 
         @Override
         public <KEY, V> Optional<MapState<KEY, V>> getWindowState(
-                MapStateDeclaration stateDeclaration) {
+                MapStateDeclaration<KEY, V> stateDeclaration) {
             return windowStateStore.getWindowState(stateDeclaration, window);
         }
 
         @Override
         public <T> Optional<ValueState<T>> getWindowState(
-                ValueStateDeclaration stateDeclaration) {
+                ValueStateDeclaration<T> stateDeclaration) {
             return windowStateStore.getWindowState(stateDeclaration, window);
         }
 
@@ -660,7 +626,7 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         public long getCurrentEventTime() {
             return currentEventTime;
         }
-    };
+    }
 
     // -------------------------------------------------------------------------
     //                             Window Context
@@ -674,20 +640,20 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
         }
 
         @Override
-        public <T> Optional<ListState<T>> getWindowState(
-                ListStateDeclaration stateDeclaration) throws Exception {
-            return windowStateStore.getWindowState(stateDeclaration, window);
-        }
-
-        @Override
-        public <T> Optional<ValueState<T>> getWindowState(
-                ValueStateDeclaration stateDeclaration) throws Exception {
+        public <T> Optional<ListState<T>> getWindowState(ListStateDeclaration<T> stateDeclaration)
+                throws Exception {
             return windowStateStore.getWindowState(stateDeclaration, window);
         }
 
         @Override
         public <KEY, V> Optional<MapState<KEY, V>> getWindowState(
-                MapStateDeclaration stateDeclaration) throws Exception {
+                MapStateDeclaration<KEY, V> stateDeclaration) throws Exception {
+            return windowStateStore.getWindowState(stateDeclaration, window);
+        }
+
+        @Override
+        public <T> Optional<ValueState<T>> getWindowState(ValueStateDeclaration<T> stateDeclaration)
+                throws Exception {
             return windowStateStore.getWindowState(stateDeclaration, window);
         }
     }

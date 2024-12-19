@@ -18,16 +18,17 @@
 
 package org.apache.flink.datastream.impl.extension.window.window;
 
-import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.memory.DataOutputView;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.datastream.api.extension.eventtime.EventTimeManager;
 import org.apache.flink.datastream.api.extension.window.assigner.MergingWindowAssigner;
 import org.apache.flink.datastream.api.extension.window.assigner.WindowAssigner;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
+import org.apache.flink.datastream.api.extension.window.window.TimeWindow;
 import org.apache.flink.util.MathUtils;
 
 import java.io.IOException;
@@ -38,7 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class TimeWindow implements BoundedWindow<Long> {
+public class TimeWindowImpl implements BoundedWindow<Long>, TimeWindow {
     private final long start;
     private final long end;
 
@@ -46,7 +47,7 @@ public class TimeWindow implements BoundedWindow<Long> {
 
     private EventTimeManager eventTimeManager;
 
-    public TimeWindow(long start, long end, boolean isEventTime) {
+    public TimeWindowImpl(long start, long end, boolean isEventTime) {
         this.start = start;
         this.end = end;
         this.isEventTime = isEventTime;
@@ -58,6 +59,7 @@ public class TimeWindow implements BoundedWindow<Long> {
      *
      * @return The starting timestamp of this window.
      */
+    @Override
     public long getStart() {
         return start;
     }
@@ -68,6 +70,7 @@ public class TimeWindow implements BoundedWindow<Long> {
      *
      * @return The exclusive end timestamp of this window.
      */
+    @Override
     public long getEnd() {
         return end;
     }
@@ -80,7 +83,7 @@ public class TimeWindow implements BoundedWindow<Long> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        TimeWindow that = (TimeWindow) o;
+        TimeWindowImpl that = (TimeWindowImpl) o;
         return getStart() == that.getStart() && getEnd() == that.getEnd();
     }
 
@@ -98,13 +101,14 @@ public class TimeWindow implements BoundedWindow<Long> {
      * Returns {@code true} if this window intersects the given window or if this window is just
      * after or before the given window.
      */
-    public boolean intersects(TimeWindow other) {
+    public boolean intersects(TimeWindowImpl other) {
         return this.start <= other.end && this.end >= other.start;
     }
 
     /** Returns the minimal window covers both this window and the given window. */
-    public TimeWindow cover(TimeWindow other) {
-        return new TimeWindow(Math.min(start, other.start), Math.max(end, other.end), isEventTime);
+    public TimeWindowImpl cover(TimeWindowImpl other) {
+        return new TimeWindowImpl(
+                Math.min(start, other.start), Math.max(end, other.end), isEventTime);
     }
 
     /**
@@ -164,7 +168,7 @@ public class TimeWindow implements BoundedWindow<Long> {
     // ------------------------------------------------------------------------
 
     /** The serializer used to write the TimeWindow type. */
-    public static class Serializer extends TypeSerializerSingleton<TimeWindow> {
+    public static class Serializer extends TypeSerializerSingleton<TimeWindowImpl> {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -173,17 +177,17 @@ public class TimeWindow implements BoundedWindow<Long> {
         }
 
         @Override
-        public TimeWindow createInstance() {
-            return new TimeWindow(0L, 1L, false);
+        public TimeWindowImpl createInstance() {
+            return new TimeWindowImpl(0L, 1L, false);
         }
 
         @Override
-        public TimeWindow copy(TimeWindow from) {
+        public TimeWindowImpl copy(TimeWindowImpl from) {
             return from;
         }
 
         @Override
-        public TimeWindow copy(TimeWindow from, TimeWindow reuse) {
+        public TimeWindowImpl copy(TimeWindowImpl from, TimeWindowImpl reuse) {
             return from;
         }
 
@@ -193,22 +197,23 @@ public class TimeWindow implements BoundedWindow<Long> {
         }
 
         @Override
-        public void serialize(TimeWindow record, DataOutputView target) throws IOException {
+        public void serialize(TimeWindowImpl record, DataOutputView target) throws IOException {
             target.writeLong(record.start);
             target.writeLong(record.end);
             target.writeBoolean(record.isEventTime);
         }
 
         @Override
-        public TimeWindow deserialize(DataInputView source) throws IOException {
+        public TimeWindowImpl deserialize(DataInputView source) throws IOException {
             long start = source.readLong();
             long end = source.readLong();
             boolean isEventTime = source.readBoolean();
-            return new TimeWindow(start, end, isEventTime);
+            return new TimeWindowImpl(start, end, isEventTime);
         }
 
         @Override
-        public TimeWindow deserialize(TimeWindow reuse, DataInputView source) throws IOException {
+        public TimeWindowImpl deserialize(TimeWindowImpl reuse, DataInputView source)
+                throws IOException {
             return deserialize(source);
         }
 
@@ -222,17 +227,17 @@ public class TimeWindow implements BoundedWindow<Long> {
         // ------------------------------------------------------------------------
 
         @Override
-        public TypeSerializerSnapshot<TimeWindow> snapshotConfiguration() {
-            return new TimeWindow.Serializer.TimeWindowSerializerSnapshot();
+        public TypeSerializerSnapshot<TimeWindowImpl> snapshotConfiguration() {
+            return new TimeWindowImpl.Serializer.TimeWindowSerializerSnapshot();
         }
 
         /** Serializer configuration snapshot for compatibility and format evolution. */
         @SuppressWarnings("WeakerAccess")
         public static final class TimeWindowSerializerSnapshot
-                extends SimpleTypeSerializerSnapshot<TimeWindow> {
+                extends SimpleTypeSerializerSnapshot<TimeWindowImpl> {
 
             public TimeWindowSerializerSnapshot() {
-                super(TimeWindow.Serializer::new);
+                super(TimeWindowImpl.Serializer::new);
             }
         }
     }
@@ -242,22 +247,23 @@ public class TimeWindow implements BoundedWindow<Long> {
     // ------------------------------------------------------------------------
 
     /**
-     * Merge overlapping {@link TimeWindow}s. For use by merging {@link WindowAssigner
+     * Merge overlapping {@link TimeWindowImpl}s. For use by merging {@link WindowAssigner
      * WindowAssigners}.
      */
     public static void mergeWindows(
-            Collection<TimeWindow> windows, MergingWindowAssigner.MergeCallback<TimeWindow> c) {
+            Collection<TimeWindowImpl> windows,
+            MergingWindowAssigner.MergeCallback<TimeWindowImpl> c) {
 
         // sort the windows by the start time and then merge overlapping windows
 
-        List<TimeWindow> sortedWindows = new ArrayList<>(windows);
+        List<TimeWindowImpl> sortedWindows = new ArrayList<>(windows);
 
         Collections.sort(sortedWindows, (o1, o2) -> Long.compare(o1.getStart(), o2.getStart()));
 
-        List<Tuple2<TimeWindow, Set<TimeWindow>>> merged = new ArrayList<>();
-        Tuple2<TimeWindow, Set<TimeWindow>> currentMerge = null;
+        List<Tuple2<TimeWindowImpl, Set<TimeWindowImpl>>> merged = new ArrayList<>();
+        Tuple2<TimeWindowImpl, Set<TimeWindowImpl>> currentMerge = null;
 
-        for (TimeWindow candidate : sortedWindows) {
+        for (TimeWindowImpl candidate : sortedWindows) {
             if (currentMerge == null) {
                 currentMerge = new Tuple2<>();
                 currentMerge.f0 = candidate;
@@ -279,7 +285,7 @@ public class TimeWindow implements BoundedWindow<Long> {
             merged.add(currentMerge);
         }
 
-        for (Tuple2<TimeWindow, Set<TimeWindow>> m : merged) {
+        for (Tuple2<TimeWindowImpl, Set<TimeWindowImpl>> m : merged) {
             if (m.f1.size() > 1) {
                 c.merge(m.f1, m.f0);
             }

@@ -18,8 +18,8 @@
 
 package org.apache.flink.table.runtime.operators.deduplicate;
 
-import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.Collector;
 

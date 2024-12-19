@@ -22,73 +22,77 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.datastream.api.extension.window.assigner.WindowAssigner;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
-import org.apache.flink.datastream.impl.extension.window.window.GlobalWindow;
+import org.apache.flink.datastream.api.extension.window.window.GlobalWindow;
+import org.apache.flink.datastream.impl.extension.window.window.GlobalWindowImpl;
 
 import java.util.Collection;
 import java.util.Collections;
 
-public class GlobalWindowAssigner extends WindowAssigner<Object, GlobalWindow> {
+/** A special {@link WindowAssigner} for {@link GlobalWindow}. */
+public class GlobalWindowAssigner extends WindowAssigner<Object, GlobalWindowImpl> {
+
     private static final long serialVersionUID = 1L;
 
     private GlobalWindowAssigner() {}
 
     @Override
-    public Collection<GlobalWindow> assignWindows(
+    public Collection<GlobalWindowImpl> assignWindows(
             Object element, long timestamp, WindowAssigner.WindowAssignerContext context) {
-        return Collections.singletonList(GlobalWindow.get());
+        return Collections.singletonList(GlobalWindowImpl.get());
     }
 
     @Override
-    public Trigger<Object, GlobalWindow> getDefaultTrigger() {
+    public Trigger<Object, GlobalWindowImpl> getDefaultTrigger() {
         return new GlobalWindowAssigner.NeverTrigger();
     }
 
     @Override
     public String toString() {
-        return "GlobalWindows()";
+        return "GlobalWindowAssigner()";
     }
 
     /**
      * Creates a new {@code GlobalWindows} {@link WindowAssigner} that assigns all elements to the
      * same {@link GlobalWindow}.
      *
-     * @return The global window policy.
+     * @return The global window assigner.
      */
     public static GlobalWindowAssigner create() {
         return new GlobalWindowAssigner();
     }
 
-    /** A trigger that never fires, as default Trigger for GlobalWindows. */
+    /** A trigger that never fires, as default Trigger for {@link GlobalWindow}s. */
     @Internal
-    public static class NeverTrigger extends Trigger<Object, GlobalWindow> {
+    public static class NeverTrigger extends Trigger<Object, GlobalWindowImpl> {
         private static final long serialVersionUID = 1L;
 
         @Override
         public TriggerResult onElement(
-                Object element, long timestamp, GlobalWindow window, TriggerContext ctx) {
+                Object element, long timestamp, GlobalWindowImpl window, TriggerContext ctx) {
             return TriggerResult.CONTINUE;
         }
 
-        public TriggerResult onEventTime(
-                long time, GlobalWindow window, TriggerContext ctx) throws Exception {
-            return TriggerResult.CONTINUE;
-        }
-
-        @Override
-        public TriggerResult onProcessingTime(long time, GlobalWindow window, TriggerContext ctx) {
+        public TriggerResult onEventTime(long time, GlobalWindowImpl window, TriggerContext ctx)
+                throws Exception {
             return TriggerResult.CONTINUE;
         }
 
         @Override
-        public void clear(GlobalWindow window, TriggerContext ctx) throws Exception {}
+        public TriggerResult onProcessingTime(
+                long time, GlobalWindowImpl window, TriggerContext ctx) {
+            return TriggerResult.CONTINUE;
+        }
 
         @Override
-        public void onMerge(GlobalWindow window, OnMergeContext ctx) {}
+        public void clear(GlobalWindowImpl window, TriggerContext ctx) throws Exception {}
+
+        @Override
+        public void onMerge(GlobalWindowImpl window, OnMergeContext ctx) {}
     }
 
     @Override
-    public TypeSerializer<GlobalWindow> getWindowSerializer() {
-        return new GlobalWindow.Serializer();
+    public TypeSerializer<GlobalWindowImpl> getWindowSerializer() {
+        return new GlobalWindowImpl.Serializer();
     }
 
     @Override

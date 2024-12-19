@@ -21,49 +21,55 @@ package org.apache.flink.datastream.impl.extension.window.assigner;
 import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.datastream.api.extension.window.assigner.WindowAssigner;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
+import org.apache.flink.datastream.api.extension.window.window.TimeWindow;
 import org.apache.flink.datastream.impl.extension.window.trigger.ProcessingTimeTrigger;
-import org.apache.flink.datastream.impl.extension.window.window.TimeWindow;
+import org.apache.flink.datastream.impl.extension.window.window.TimeWindowImpl;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class SlidingProcessingTimeWindowsAssigner extends WindowAssigner<Object, TimeWindow> {
+/** A special {@link WindowAssigner} for sliding processing time {@link TimeWindow}. */
+public class SlidingProcessingTimeWindowsAssigner extends WindowAssigner<Object, TimeWindowImpl> {
+
     private static final long serialVersionUID = 1L;
 
-    private final long size;
+    // The size of the generated windows.
+    private final long windowSize;
 
-    private final long offset;
-
+    // The slide interval of the generated windows.
     private final long slide;
 
-    private SlidingProcessingTimeWindowsAssigner(long size, long slide, long offset) {
-        if (Math.abs(offset) >= slide || size <= 0) {
+    // The offset which window start would be shifted by.
+    private final long offset;
+
+    private SlidingProcessingTimeWindowsAssigner(long windowSize, long slide, long offset) {
+        if (Math.abs(offset) >= slide || windowSize <= 0) {
             throw new IllegalArgumentException(
                     "SlidingProcessingTimeWindows parameters must satisfy "
-                            + "abs(offset) < slide and size > 0");
+                            + "windowSize > 0 and abs(offset) < slide");
         }
 
-        this.size = size;
+        this.windowSize = windowSize;
         this.slide = slide;
         this.offset = offset;
     }
 
     @Override
-    public Collection<TimeWindow> assignWindows(
+    public Collection<TimeWindowImpl> assignWindows(
             Object element, long timestamp, WindowAssigner.WindowAssignerContext context) {
         timestamp = context.getCurrentProcessingTime();
-        List<TimeWindow> windows = new ArrayList<>((int) (size / slide));
-        long lastStart = TimeWindow.getWindowStartWithOffset(timestamp, offset, slide);
-        for (long start = lastStart; start > timestamp - size; start -= slide) {
-            windows.add(new TimeWindow(start, start + size, false));
+        List<TimeWindowImpl> windows = new ArrayList<>((int) (windowSize / slide));
+        long lastStart = TimeWindowImpl.getWindowStartWithOffset(timestamp, offset, slide);
+        for (long start = lastStart; start > timestamp - windowSize; start -= slide) {
+            windows.add(new TimeWindowImpl(start, start + windowSize, false));
         }
         return windows;
     }
 
-    public long getSize() {
-        return size;
+    public long getWindowSize() {
+        return windowSize;
     }
 
     public long getSlide() {
@@ -71,18 +77,18 @@ public class SlidingProcessingTimeWindowsAssigner extends WindowAssigner<Object,
     }
 
     @Override
-    public Trigger<Object, TimeWindow> getDefaultTrigger() {
+    public Trigger<Object, TimeWindowImpl> getDefaultTrigger() {
         return ProcessingTimeTrigger.create();
     }
 
     @Override
     public String toString() {
-        return "SlidingProcessingTimeWindows(" + size + ", " + slide + ")";
+        return "SlidingProcessingTimeWindowsAssigner(" + windowSize + ", " + slide + ")";
     }
 
     @Override
-    public TypeSerializer<TimeWindow> getWindowSerializer() {
-        return new TimeWindow.Serializer();
+    public TypeSerializer<TimeWindowImpl> getWindowSerializer() {
+        return new TimeWindowImpl.Serializer();
     }
 
     @Override
@@ -91,23 +97,20 @@ public class SlidingProcessingTimeWindowsAssigner extends WindowAssigner<Object,
     }
 
     /**
-     * Creates a new {@code SlidingProcessingTimeWindows} {@link
-     * org.apache.flink.streaming.api.windowing.assigners.WindowAssigner} that assigns elements to
-     * sliding time windows based on the element timestamp.
+     * Creates a new {@code SlidingProcessingTimeWindows} {@link WindowAssigner} that assigns
+     * elements to sliding time windows based on the processing timestamp.
      *
-     * @param size The size of the generated windows.
+     * @param windowSize The size of the generated windows.
      * @param slide The slide interval of the generated windows.
-     * @return The time policy.
+     * @return The created window assigner.
      */
-    public static SlidingProcessingTimeWindowsAssigner of(Duration size, Duration slide) {
-        return new SlidingProcessingTimeWindowsAssigner(
-                size.toMillis(), slide.toMillis(), 0);
+    public static SlidingProcessingTimeWindowsAssigner of(Duration windowSize, Duration slide) {
+        return new SlidingProcessingTimeWindowsAssigner(windowSize.toMillis(), slide.toMillis(), 0);
     }
 
     /**
-     * Creates a new {@code SlidingProcessingTimeWindows} {@link
-     * org.apache.flink.streaming.api.windowing.assigners.WindowAssigner} that assigns elements to
-     * time windows based on the element timestamp and offset.
+     * Creates a new {@code SlidingProcessingTimeWindows} {@link WindowAssigner} that assigns
+     * elements to time windows based on the processing timestamp and offset.
      *
      * <p>For example, if you want window a stream by hour,but window begins at the 15th minutes of
      * each hour, you can use {@code of(Time.hours(1),Time.minutes(15))},then you will get time
@@ -119,13 +122,14 @@ public class SlidingProcessingTimeWindowsAssigner extends WindowAssigner<Object,
      * The parameter of offset is {@code Time.hours(-8))} since UTC+08:00 is 8 hours earlier than
      * UTC time.
      *
-     * @param size The size of the generated windows.
+     * @param windowSize The size of the generated windows.
      * @param slide The slide interval of the generated windows.
      * @param offset The offset which window start would be shifted by.
      * @return The time policy.
      */
-    public static SlidingProcessingTimeWindowsAssigner of(Duration size, Duration slide, Duration offset) {
+    public static SlidingProcessingTimeWindowsAssigner of(
+            Duration windowSize, Duration slide, Duration offset) {
         return new SlidingProcessingTimeWindowsAssigner(
-                size.toMillis(), slide.toMillis(), offset.toMillis());
+                windowSize.toMillis(), slide.toMillis(), offset.toMillis());
     }
 }

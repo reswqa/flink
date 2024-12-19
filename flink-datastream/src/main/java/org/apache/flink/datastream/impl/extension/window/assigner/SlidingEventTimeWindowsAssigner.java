@@ -21,50 +21,55 @@ package org.apache.flink.datastream.impl.extension.window.assigner;
 import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.datastream.api.extension.window.assigner.WindowAssigner;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
+import org.apache.flink.datastream.api.extension.window.window.TimeWindow;
 import org.apache.flink.datastream.impl.extension.window.trigger.EventTimeTrigger;
-import org.apache.flink.datastream.impl.extension.window.window.TimeWindow;
+import org.apache.flink.datastream.impl.extension.window.window.TimeWindowImpl;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class SlidingEventTimeWindowsAssigner extends WindowAssigner<Object, TimeWindow> {
+/** A special {@link WindowAssigner} for sliding event time {@link TimeWindow}. */
+public class SlidingEventTimeWindowsAssigner extends WindowAssigner<Object, TimeWindowImpl> {
+
     private static final long serialVersionUID = 1L;
 
-    private final long size;
+    // The size of the generated windows.
+    private final long windowSize;
 
+    // The slide interval of the generated windows.
     private final long slide;
 
+    // The offset which window start would be shifted by.
     private final long offset;
 
-    private final long allowedLateness = 0;
-
-    protected SlidingEventTimeWindowsAssigner(long size, long slide, long offset) {
-        if (Math.abs(offset) >= slide || size <= 0) {
+    protected SlidingEventTimeWindowsAssigner(long windowSize, long slide, long offset) {
+        if (Math.abs(offset) >= slide || windowSize <= 0) {
             throw new IllegalArgumentException(
                     "SlidingEventTimeWindows parameters must satisfy "
-                            + "abs(offset) < slide and size > 0");
+                            + "windowSize > 0 and abs(offset) < slide");
         }
 
-        this.size = size;
+        this.windowSize = windowSize;
         this.slide = slide;
         this.offset = offset;
     }
 
     @Override
-    public Collection<TimeWindow> assignWindows(
+    public Collection<TimeWindowImpl> assignWindows(
             Object element, long timestamp, WindowAssignerContext context) {
         if (timestamp > Long.MIN_VALUE) {
-            List<TimeWindow> windows = new ArrayList<>((int) (size / slide));
+            List<TimeWindowImpl> windows = new ArrayList<>((int) (windowSize / slide));
             long lastStart =
                     org.apache.flink.streaming.api.windowing.windows.TimeWindow
                             .getWindowStartWithOffset(timestamp, offset, slide);
-            for (long start = lastStart; start > timestamp - size; start -= slide) {
-                windows.add(new TimeWindow(start, start + size, true));
+            for (long start = lastStart; start > timestamp - windowSize; start -= slide) {
+                windows.add(new TimeWindowImpl(start, start + windowSize, true));
             }
             return windows;
         } else {
+            // TODO update error message
             throw new RuntimeException(
                     "Record has Long.MIN_VALUE timestamp (= no timestamp marker). "
                             + "Is the time characteristic set to 'ProcessingTime', or did you forget to call "
@@ -72,8 +77,8 @@ public class SlidingEventTimeWindowsAssigner extends WindowAssigner<Object, Time
         }
     }
 
-    public long getSize() {
-        return size;
+    public long getWindowSize() {
+        return windowSize;
     }
 
     public long getSlide() {
@@ -81,18 +86,18 @@ public class SlidingEventTimeWindowsAssigner extends WindowAssigner<Object, Time
     }
 
     @Override
-    public Trigger<Object, TimeWindow> getDefaultTrigger() {
+    public Trigger<Object, TimeWindowImpl> getDefaultTrigger() {
         return EventTimeTrigger.create();
     }
 
     @Override
     public String toString() {
-        return "SlidingEventTimeWindows(" + size + ", " + slide + ")";
+        return "SlidingEventTimeWindowsAssigner(" + windowSize + ", " + slide + ", " + offset + ")";
     }
 
     @Override
-    public TypeSerializer<TimeWindow> getWindowSerializer() {
-        return new TimeWindow.Serializer();
+    public TypeSerializer<TimeWindowImpl> getWindowSerializer() {
+        return new TimeWindowImpl.Serializer();
     }
 
     @Override
@@ -101,22 +106,19 @@ public class SlidingEventTimeWindowsAssigner extends WindowAssigner<Object, Time
     }
 
     /**
-     * Creates a new {@code SlidingEventTimeWindows} {@link
-     * org.apache.flink.streaming.api.windowing.assigners.WindowAssigner} that assigns elements to
+     * Creates a new {@code SlidingEventTimeWindows} {@link WindowAssigner} that assigns elements to
      * sliding time windows based on the element timestamp.
      *
-     * @param size The size of the generated windows.
+     * @param windowSize The size of the generated windows.
      * @param slide The slide interval of the generated windows.
-     * @return The time policy.
+     * @return The created {@link WindowAssigner}.
      */
-    public static SlidingEventTimeWindowsAssigner of(Duration size, Duration slide) {
-        return new SlidingEventTimeWindowsAssigner(
-                size.toMillis(), slide.toMillis(), 0);
+    public static SlidingEventTimeWindowsAssigner of(Duration windowSize, Duration slide) {
+        return new SlidingEventTimeWindowsAssigner(windowSize.toMillis(), slide.toMillis(), 0);
     }
 
     /**
-     * Creates a new {@code SlidingEventTimeWindows} {@link
-     * org.apache.flink.streaming.api.windowing.assigners.WindowAssigner} that assigns elements to
+     * Creates a new {@code SlidingEventTimeWindows} {@link WindowAssigner} that assigns elements to
      * time windows based on the element timestamp and offset.
      *
      * <p>For example, if you want window a stream by hour,but window begins at the 15th minutes of
@@ -129,13 +131,14 @@ public class SlidingEventTimeWindowsAssigner extends WindowAssigner<Object, Time
      * The parameter of offset is {@code Time.hours(-8))} since UTC+08:00 is 8 hours earlier than
      * UTC time.
      *
-     * @param size The size of the generated windows.
+     * @param windowSize The size of the generated windows.
      * @param slide The slide interval of the generated windows.
      * @param offset The offset which window start would be shifted by.
      * @return The time policy.
      */
-    public static SlidingEventTimeWindowsAssigner of(Duration size, Duration slide, Duration offset) {
+    public static SlidingEventTimeWindowsAssigner of(
+            Duration windowSize, Duration slide, Duration offset) {
         return new SlidingEventTimeWindowsAssigner(
-                size.toMillis(), slide.toMillis(), offset.toMillis());
+                windowSize.toMillis(), slide.toMillis(), offset.toMillis());
     }
 }

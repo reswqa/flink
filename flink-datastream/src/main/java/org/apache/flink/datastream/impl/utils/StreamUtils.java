@@ -26,6 +26,10 @@ import org.apache.flink.api.connector.dsv2.WrappedSink;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.datastream.api.extension.join.JoinFunction;
+import org.apache.flink.datastream.api.extension.window.TwoInputWindowProcessFunction;
+import org.apache.flink.datastream.api.extension.window.WindowProcessFunction;
+import org.apache.flink.datastream.api.extension.window.window.Window;
 import org.apache.flink.datastream.api.function.OneInputStreamProcessFunction;
 import org.apache.flink.datastream.api.function.TwoInputBroadcastStreamProcessFunction;
 import org.apache.flink.datastream.api.function.TwoInputNonBroadcastStreamProcessFunction;
@@ -33,6 +37,10 @@ import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.api.stream.GlobalStream.ProcessConfigurableAndGlobalStream;
 import org.apache.flink.datastream.api.stream.KeyedPartitionStream.ProcessConfigurableAndKeyedPartitionStream;
 import org.apache.flink.datastream.api.stream.NonKeyedPartitionStream.ProcessConfigurableAndNonKeyedPartitionStream;
+import org.apache.flink.datastream.impl.extension.join.function.JoinedWindowProcessFunction;
+import org.apache.flink.datastream.impl.extension.window.function.InternalReduceWindowFunction;
+import org.apache.flink.datastream.impl.extension.window.function.InternalTwoInputWindowFunction;
+import org.apache.flink.datastream.impl.extension.window.function.InternalWindowFunction;
 import org.apache.flink.datastream.impl.stream.AbstractDataStream;
 import org.apache.flink.datastream.impl.stream.GlobalStreamImpl;
 import org.apache.flink.datastream.impl.stream.KeyedPartitionStreamImpl;
@@ -64,6 +72,24 @@ public final class StreamUtils {
     public static <IN, OUT> TypeInformation<OUT> getOutputTypeForOneInputProcessFunction(
             OneInputStreamProcessFunction<IN, OUT> processFunction,
             TypeInformation<IN> inTypeInformation) {
+        TypeInformation<OUT> outType;
+        if (processFunction instanceof InternalReduceWindowFunction) {
+            //noinspection unchecked
+            return (TypeInformation<OUT>) inTypeInformation;
+        } else if (processFunction instanceof InternalWindowFunction) {
+            // Iterator window function.
+            return TypeExtractor.getUnaryOperatorReturnType(
+                    ((InternalWindowFunction<IN, ?, OUT, ?>) processFunction)
+                            .getWindowProcessFunction(),
+                    WindowProcessFunction.class,
+                    0,
+                    1,
+                    new int[] {1, 0},
+                    null,
+                    "windowFunction",
+                    false);
+        }
+
         return TypeExtractor.getUnaryOperatorReturnType(
                 processFunction,
                 OneInputStreamProcessFunction.class,
@@ -84,6 +110,43 @@ public final class StreamUtils {
                     TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> processFunction,
                     TypeInformation<IN1> in1TypeInformation,
                     TypeInformation<IN2> in2TypeInformation) {
+
+        // for window
+        if (processFunction instanceof InternalTwoInputWindowFunction) {
+            TwoInputWindowProcessFunction<?, ?, OUT, ?> windowProcessFunction =
+                    ((InternalTwoInputWindowFunction<IN1, IN2, ?, ?, OUT, ?>) processFunction)
+                            .getWindowProcessFunction();
+            if (windowProcessFunction instanceof JoinedWindowProcessFunction) {
+                JoinFunction<?, ?, ?> joinFunction =
+                        ((JoinedWindowProcessFunction<?, ?, ?, ?>) windowProcessFunction)
+                                .getJoinFunction();
+                return TypeExtractor.getBinaryOperatorReturnType(
+                        joinFunction,
+                        JoinFunction.class,
+                        0,
+                        1,
+                        2,
+                        new int[] {2, 0},
+                        null,
+                        null,
+                        Utils.getCallLocationName(),
+                        false);
+            } else {
+                return TypeExtractor.getBinaryOperatorReturnType(
+                        ((InternalTwoInputWindowFunction<IN1, IN2, ?, ?, OUT, ?>) processFunction)
+                                .getWindowProcessFunction(),
+                        TwoInputWindowProcessFunction.class,
+                        0,
+                        1,
+                        2,
+                        new int[] {2, 0},
+                        null,
+                        null,
+                        Utils.getCallLocationName(),
+                        false);
+            }
+        }
+
         return TypeExtractor.getBinaryOperatorReturnType(
                 processFunction,
                 TwoInputNonBroadcastStreamProcessFunction.class,
@@ -95,6 +158,21 @@ public final class StreamUtils {
                 in2TypeInformation,
                 Utils.getCallLocationName(),
                 true);
+    }
+
+    public static <IN, OUT, W extends Window> TypeInformation<OUT> getWindowFunctionReturnType(
+            WindowProcessFunction<IN, OUT, W> function,
+            TypeInformation<IN> inType,
+            String functionName) {
+        return TypeExtractor.getUnaryOperatorReturnType(
+                function,
+                OneInputStreamProcessFunction.class,
+                0,
+                1,
+                new int[] {1, 0},
+                inType,
+                functionName,
+                false);
     }
 
     /**
