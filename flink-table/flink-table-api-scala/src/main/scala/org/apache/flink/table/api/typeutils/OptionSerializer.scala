@@ -18,8 +18,8 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.annotation.Internal
+import org.apache.flink.api.common.memory.{DataInputView, DataOutputView}
 import org.apache.flink.api.common.typeutils._
-import org.apache.flink.core.memory.{DataInputView, DataOutputView}
 
 /** Serializer for [[Option]]. */
 @Internal

@@ -18,13 +18,13 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.core.memory.DataInputDeserializer;
-import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputSerializer;
-import org.apache.flink.core.memory.DataOutputView;
 
 import javax.annotation.Nonnull;
 

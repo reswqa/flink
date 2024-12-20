@@ -18,6 +18,8 @@
 
 package org.apache.flink.core.memory;
 
+import org.apache.flink.api.common.memory.DataInputView;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 

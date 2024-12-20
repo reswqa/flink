@@ -18,8 +18,8 @@
 
 package org.apache.flink.runtime.state;
 
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.memory.ByteArrayOutputStreamWithPos;
-import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
 import org.apache.flink.util.CollectionUtil;
 

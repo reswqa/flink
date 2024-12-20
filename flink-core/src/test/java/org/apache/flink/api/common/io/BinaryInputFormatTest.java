@@ -19,9 +19,9 @@
 package org.apache.flink.api.common.io;
 
 import org.apache.flink.api.common.io.statistics.BaseStatistics;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.FileInputSplit;
-import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.testutils.junit.utils.TempDirUtils;
 import org.apache.flink.types.Record;
 

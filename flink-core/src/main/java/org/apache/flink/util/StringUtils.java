@@ -19,8 +19,8 @@
 package org.apache.flink.util;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.types.StringValue;
 
 import javax.annotation.Nonnull;

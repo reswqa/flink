@@ -19,11 +19,11 @@
 package org.apache.flink.runtime.event;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.api.common.watermark.BoolWatermark;
 import org.apache.flink.api.common.watermark.LongWatermark;
 import org.apache.flink.api.common.watermark.Watermark;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
 
 import java.io.IOException;
 import java.util.Objects;

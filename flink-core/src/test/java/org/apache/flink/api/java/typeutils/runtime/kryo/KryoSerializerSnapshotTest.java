@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime.kryo;
 
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
@@ -28,7 +29,6 @@ import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTes
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.DogV2KryoSerializer;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Parrot;
 import org.apache.flink.core.memory.DataInputDeserializer;
-import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputSerializer;
 import org.apache.flink.testutils.ClassLoaderUtils;
 

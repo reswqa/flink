@@ -18,11 +18,11 @@
 
 package org.apache.flink.state.forst.snapshot;
 
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.core.fs.Path;
-import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
 import org.apache.flink.runtime.checkpoint.filemerging.FileMergingSnapshotManager;
 import org.apache.flink.runtime.state.CheckpointStreamFactory;

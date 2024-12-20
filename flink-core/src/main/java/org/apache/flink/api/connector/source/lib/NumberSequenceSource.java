@@ -19,6 +19,8 @@
 package org.apache.flink.api.connector.source.lib;
 
 import org.apache.flink.annotation.Public;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -33,9 +35,7 @@ import org.apache.flink.api.connector.source.lib.util.IteratorSourceSplit;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.core.memory.DataInputDeserializer;
-import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputSerializer;
-import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.util.NumberSequenceIterator;
 
 import java.io.IOException;

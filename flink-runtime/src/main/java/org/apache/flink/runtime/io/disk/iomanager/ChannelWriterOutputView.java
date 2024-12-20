@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.disk.iomanager;
 
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.runtime.memory.AbstractPagedOutputView;
 
@@ -27,10 +28,10 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * A {@link org.apache.flink.core.memory.DataOutputView} that is backed by a {@link
- * BlockChannelWriter}, making it effectively a data output stream. The view writes its data in
- * blocks to the underlying channel, adding a minimal header to each block. The data can be re-read
- * by a {@link ChannelReaderInputView}, if it uses the same block size.
+ * A {@link DataOutputView} that is backed by a {@link BlockChannelWriter}, making it effectively a
+ * data output stream. The view writes its data in blocks to the underlying channel, adding a
+ * minimal header to each block. The data can be re-read by a {@link ChannelReaderInputView}, if it
+ * uses the same block size.
  */
 public final class ChannelWriterOutputView extends AbstractPagedOutputView {
 

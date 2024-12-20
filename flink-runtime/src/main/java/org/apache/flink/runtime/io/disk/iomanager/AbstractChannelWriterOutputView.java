@@ -18,14 +18,14 @@
 
 package org.apache.flink.runtime.io.disk.iomanager;
 
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.runtime.memory.AbstractPagedOutputView;
 
 import java.io.IOException;
 
 /**
- * A {@link org.apache.flink.core.memory.DataOutputView} that is backed by a {@link FileIOChannel},
- * making it effectively a data output stream. The view writes it data in blocks to the underlying
- * channel.
+ * A {@link DataOutputView} that is backed by a {@link FileIOChannel}, making it effectively a data
+ * output stream. The view writes it data in blocks to the underlying channel.
  */
 public abstract class AbstractChannelWriterOutputView extends AbstractPagedOutputView {
 

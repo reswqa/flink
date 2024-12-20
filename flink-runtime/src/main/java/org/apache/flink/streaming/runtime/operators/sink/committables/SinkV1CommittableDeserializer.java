@@ -20,9 +20,9 @@ package org.apache.flink.streaming.runtime.operators.sink.committables;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.io.SimpleVersionedSerialization;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.apache.flink.core.memory.DataInputView;
 
 import java.io.IOException;
 import java.util.List;

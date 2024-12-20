@@ -17,7 +17,7 @@
 
 package org.apache.flink.state.changelog;
 
-import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.util.CloseableIterator;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.function.BiConsumerWithException;

@@ -19,9 +19,9 @@
 package org.apache.flink.api.common.typeutils;
 
 import org.apache.flink.annotation.VisibleForTesting;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.core.io.VersionedIOReadableWritable;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.Preconditions;
 

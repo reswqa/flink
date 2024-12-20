@@ -19,11 +19,11 @@
 package org.apache.flink.connector.file.sink.compactor.operator;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.connector.file.sink.FileSinkCommittable;
 import org.apache.flink.core.io.SimpleVersionedSerialization;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.core.memory.DataInputDeserializer;
-import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputSerializer;
 
 import java.io.IOException;

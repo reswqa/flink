@@ -18,7 +18,7 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 
 import org.junit.jupiter.api.Test;
 

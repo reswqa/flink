@@ -20,6 +20,8 @@ package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.SerializableSerializer;
+import org.apache.flink.api.common.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -30,8 +32,6 @@ import org.apache.flink.api.java.typeutils.runtime.DataOutputViewStream;
 import org.apache.flink.api.java.typeutils.runtime.KryoRegistration;
 import org.apache.flink.api.java.typeutils.runtime.KryoUtils;
 import org.apache.flink.api.java.typeutils.runtime.NoFetchingInput;
-import org.apache.flink.core.memory.DataInputView;
-import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.TernaryBoolean;

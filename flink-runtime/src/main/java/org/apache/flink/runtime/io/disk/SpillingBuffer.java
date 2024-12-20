@@ -18,7 +18,7 @@
 
 package org.apache.flink.runtime.io.disk;
 
-import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.core.memory.MemorySegment;
 import org.apache.flink.core.memory.MemorySegmentSource;
 import org.apache.flink.runtime.io.disk.iomanager.BlockChannelReader;
