@@ -23,6 +23,7 @@ import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.memory.DataOutputView;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeutils.TypeSerializerUtils;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.util.CollectionUtil;
 
@@ -149,9 +150,9 @@ public class InternalTimersSnapshotReaderWriters {
 
         @Override
         protected void writeKeyAndNamespaceSerializers(DataOutputView out) throws IOException {
-            TypeSerializerSnapshot.writeVersionedSnapshot(
+            TypeSerializerUtils.writeVersionedSnapshot(
                     out, timersSnapshot.getKeySerializerSnapshot());
-            TypeSerializerSnapshot.writeVersionedSnapshot(
+            TypeSerializerUtils.writeVersionedSnapshot(
                     out, timersSnapshot.getNamespaceSerializerSnapshot());
         }
     }
@@ -264,9 +265,9 @@ public class InternalTimersSnapshotReaderWriters {
                 throws IOException {
 
             restoredTimersSnapshot.setKeySerializerSnapshot(
-                    TypeSerializerSnapshot.readVersionedSnapshot(in, userCodeClassLoader));
+                    TypeSerializerUtils.readVersionedSnapshot(in, userCodeClassLoader));
             restoredTimersSnapshot.setNamespaceSerializerSnapshot(
-                    TypeSerializerSnapshot.readVersionedSnapshot(in, userCodeClassLoader));
+                    TypeSerializerUtils.readVersionedSnapshot(in, userCodeClassLoader));
         }
     }
 

@@ -189,11 +189,11 @@ class CompositeTypeSerializerSnapshotTest {
                 testSerializer.snapshotConfiguration();
 
         DataOutputSerializer out = new DataOutputSerializer(128);
-        TypeSerializerSnapshot.writeVersionedSnapshot(out, testSerializerSnapshot);
+        TypeSerializerUtils.writeVersionedSnapshot(out, testSerializerSnapshot);
 
         DataInputDeserializer in = new DataInputDeserializer(out.getCopyOfBuffer());
         testSerializerSnapshot =
-                TypeSerializerSnapshot.readVersionedSnapshot(
+                TypeSerializerUtils.readVersionedSnapshot(
                         in, Thread.currentThread().getContextClassLoader());
 
         TestCompositeTypeSerializer newTestSerializer =
@@ -225,11 +225,11 @@ class CompositeTypeSerializerSnapshotTest {
                 testSerializer.snapshotConfiguration();
 
         DataOutputSerializer out = new DataOutputSerializer(128);
-        TypeSerializerSnapshot.writeVersionedSnapshot(out, testSerializerSnapshot);
+        TypeSerializerUtils.writeVersionedSnapshot(out, testSerializerSnapshot);
 
         DataInputDeserializer in = new DataInputDeserializer(out.getCopyOfBuffer());
         testSerializerSnapshot =
-                TypeSerializerSnapshot.readVersionedSnapshot(
+                TypeSerializerUtils.readVersionedSnapshot(
                         in, Thread.currentThread().getContextClassLoader());
 
         // now, restore the composite type serializer;

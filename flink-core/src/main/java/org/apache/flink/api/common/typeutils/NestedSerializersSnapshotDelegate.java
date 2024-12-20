@@ -108,7 +108,7 @@ public class NestedSerializersSnapshotDelegate {
 
         out.writeInt(nestedSnapshots.length);
         for (TypeSerializerSnapshot<?> snap : nestedSnapshots) {
-            TypeSerializerSnapshot.writeVersionedSnapshot(out, snap);
+            TypeSerializerUtils.writeVersionedSnapshot(out, snap);
         }
     }
 
@@ -133,7 +133,7 @@ public class NestedSerializersSnapshotDelegate {
                 new TypeSerializerSnapshot<?>[numSnapshots];
 
         for (int i = 0; i < numSnapshots; i++) {
-            nestedSnapshots[i] = TypeSerializerSnapshot.readVersionedSnapshot(in, cl);
+            nestedSnapshots[i] = TypeSerializerUtils.readVersionedSnapshot(in, cl);
         }
 
         return new NestedSerializersSnapshotDelegate(nestedSnapshots);
