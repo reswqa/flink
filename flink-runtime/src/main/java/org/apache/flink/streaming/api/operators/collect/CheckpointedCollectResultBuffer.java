@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.operators.collect;
 
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 
 /**
  * A buffer which encapsulates the logic of dealing with the response from the {@link

@@ -19,8 +19,8 @@
 package org.apache.flink.state.forst.restore;
 
 import org.apache.flink.api.common.memory.DataInputView;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSchemaCompatibility;
 import org.apache.flink.core.fs.CloseableRegistry;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;

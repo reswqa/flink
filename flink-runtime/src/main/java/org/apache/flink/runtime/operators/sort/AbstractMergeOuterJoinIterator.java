@@ -20,7 +20,7 @@ package org.apache.flink.runtime.operators.sort;
 
 import org.apache.flink.api.common.functions.FlatJoinFunction;
 import org.apache.flink.api.common.operators.base.OuterJoinOperatorBase.OuterJoinType;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypePairComparator;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;

@@ -18,8 +18,8 @@
 
 package org.apache.flink.streaming.tests.verify;
 
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.CompositeSerializer;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
 import org.apache.flink.util.FlinkRuntimeException;

@@ -19,8 +19,8 @@
 package org.apache.flink.runtime.state;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSchemaCompatibility;
 import org.apache.flink.runtime.state.heap.HeapPriorityQueueElement;
 import org.apache.flink.runtime.state.heap.HeapPriorityQueueSet;
 import org.apache.flink.runtime.state.heap.HeapPriorityQueueSetFactory;

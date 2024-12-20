@@ -20,7 +20,7 @@ package org.apache.flink.runtime.state.ttl;
 
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.state.StateDescriptor;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerUtil;
 import org.apache.flink.api.common.typeutils.base.ListSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.MapSerializerSnapshot;

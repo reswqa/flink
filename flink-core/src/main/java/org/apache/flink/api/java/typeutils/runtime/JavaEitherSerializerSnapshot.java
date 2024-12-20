@@ -18,9 +18,9 @@
 
 package org.apache.flink.api.java.typeutils.runtime;
 
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSchemaCompatibility;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.CompositeTypeSerializerSnapshot;
 import org.apache.flink.types.Either;
 

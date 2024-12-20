@@ -20,7 +20,7 @@ package org.apache.flink.table.api.typeutils
 import org.apache.flink.annotation.Internal
 import org.apache.flink.api.common.memory.{DataInputView, DataOutputView}
 import org.apache.flink.api.common.serialization.SerializerConfig
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
+import org.apache.flink.api.common.typeinfo.TypeSerializer
 import org.apache.flink.api.common.typeutils._
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer
 

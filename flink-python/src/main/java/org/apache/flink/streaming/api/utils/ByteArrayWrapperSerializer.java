@@ -21,7 +21,7 @@ package org.apache.flink.streaming.api.utils;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.memory.DataOutputView;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
 

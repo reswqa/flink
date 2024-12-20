@@ -18,7 +18,7 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.annotation.Internal
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
+import org.apache.flink.api.common.typeinfo.TypeSerializer
 import org.apache.flink.api.common.typeutils.TypeComparator
 import org.apache.flink.api.java.typeutils.runtime.TupleComparatorBase
 import org.apache.flink.core.memory.MemorySegment

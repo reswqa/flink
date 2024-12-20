@@ -21,7 +21,7 @@ package org.apache.flink.queryablestate.client;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 
 /**
  * {@link TypeInformation} for {@link VoidNamespace}.

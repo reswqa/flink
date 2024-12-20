@@ -24,7 +24,7 @@ import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.IntSerializer;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;

@@ -19,7 +19,7 @@
 package org.apache.flink.runtime.iterative.io;
 
 import org.apache.flink.api.common.memory.DataOutputView;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.util.Collector;
 
 import java.io.IOException;

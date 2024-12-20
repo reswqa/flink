@@ -19,8 +19,8 @@
 package org.apache.flink.runtime.state.metainfo;
 
 import org.apache.flink.api.common.state.StateDescriptor;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializerSnapshot;
 import org.apache.flink.runtime.state.RegisteredKeyValueStateBackendMetaInfo;
 
 import javax.annotation.Nonnull;

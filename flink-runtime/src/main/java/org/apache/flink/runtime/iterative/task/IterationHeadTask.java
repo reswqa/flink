@@ -21,7 +21,7 @@ package org.apache.flink.runtime.iterative.task;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.operators.util.JoinHashMap;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeComparatorFactory;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;

@@ -20,7 +20,7 @@ package org.apache.flink.streaming.tests.artificialstate;
 
 import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.memory.DataOutputView;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
 import org.apache.flink.api.java.typeutils.runtime.DataInputViewStream;
 import org.apache.flink.util.InstantiationUtil;

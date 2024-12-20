@@ -20,7 +20,7 @@ package org.apache.flink.api.java.typeutils.runtime;
 
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.TypeSerializer;
 import org.apache.flink.api.common.typeutils.ComparatorTestBase.TestInputView;
 import org.apache.flink.api.common.typeutils.ComparatorTestBase.TestOutputView;
 import org.apache.flink.api.common.typeutils.SerializerTestInstance;
