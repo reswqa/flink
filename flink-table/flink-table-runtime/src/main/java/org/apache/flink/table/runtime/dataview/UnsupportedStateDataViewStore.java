@@ -19,7 +19,7 @@
 package org.apache.flink.table.runtime.dataview;
 
 import org.apache.flink.api.common.functions.RuntimeContext;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /**
  * A {@link StateDataViewStore} to throw {@link UnsupportedOperationException} when creating {@link

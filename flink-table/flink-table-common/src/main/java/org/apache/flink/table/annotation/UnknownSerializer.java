@@ -18,7 +18,7 @@
 package org.apache.flink.table.annotation;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 
 /**
  * Helper class for {@link DataTypeHint} for representing an unknown serializer that should be

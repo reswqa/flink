@@ -18,8 +18,8 @@
 
 package org.apache.flink.api.common.typeutils.base;
 
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
 
 /** A test for the {@link org.apache.flink.api.common.typeutils.base.StringSerializer}. */
 class StringSerializerTest extends SerializerTestBase<String> {

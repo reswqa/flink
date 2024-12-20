@@ -19,7 +19,8 @@ package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo
-import org.apache.flink.api.common.typeutils.{TypeInformationTestBase, TypeSerializer}
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
+import org.apache.flink.api.common.typeutils.TypeInformationTestBase
 
 /** Test for [[CaseClassTypeInfo]]. */
 class CaseClassTypeInfoTest extends TypeInformationTestBase[CaseClassTypeInfo[_]] {

@@ -20,7 +20,7 @@ package org.apache.flink.streaming.api.runners.python.beam.state;
 
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.MapState;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.runtime.state.KeyedStateBackend;
 import org.apache.flink.runtime.state.OperatorStateBackend;

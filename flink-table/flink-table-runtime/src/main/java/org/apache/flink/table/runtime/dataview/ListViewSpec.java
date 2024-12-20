@@ -19,7 +19,7 @@
 package org.apache.flink.table.runtime.dataview;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.table.api.dataview.ListView;
 import org.apache.flink.table.types.CollectionDataType;
 import org.apache.flink.table.types.DataType;

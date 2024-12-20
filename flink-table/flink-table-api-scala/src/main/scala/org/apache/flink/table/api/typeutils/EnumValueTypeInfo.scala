@@ -21,7 +21,8 @@ import org.apache.flink.annotation.{Public, PublicEvolving}
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.{AtomicType, TypeInformation}
-import org.apache.flink.api.common.typeutils.{TypeComparator, TypeSerializer}
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
+import org.apache.flink.api.common.typeutils.TypeComparator
 
 import scala.collection.JavaConverters._
 

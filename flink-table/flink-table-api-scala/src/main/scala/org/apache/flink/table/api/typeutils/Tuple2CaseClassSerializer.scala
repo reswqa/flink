@@ -18,7 +18,7 @@
 package org.apache.flink.table.api.typeutils
 
 import org.apache.flink.annotation.Internal
-import org.apache.flink.api.common.typeutils.{TypeSerializer, TypeSerializerSnapshot}
+import org.apache.flink.api.common.typeinfo.utils.{TypeSerializer, TypeSerializerSnapshot}
 
 /** Serializer for [[Tuple2]]. */
 @Internal

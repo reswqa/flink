@@ -21,7 +21,7 @@ package org.apache.flink.table.typeutils;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.serialization.SerializerConfig;
 import org.apache.flink.api.common.typeinfo.SqlTimeTypeInfo;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.common.typeutils.base.SqlTimestampComparator;
 import org.apache.flink.api.common.typeutils.base.SqlTimestampSerializer;

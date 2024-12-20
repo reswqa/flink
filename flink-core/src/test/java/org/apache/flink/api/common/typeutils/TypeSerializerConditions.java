@@ -18,6 +18,9 @@
 
 package org.apache.flink.api.common.typeutils;
 
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
+
 import org.assertj.core.api.Condition;
 
 import java.util.function.Predicate;

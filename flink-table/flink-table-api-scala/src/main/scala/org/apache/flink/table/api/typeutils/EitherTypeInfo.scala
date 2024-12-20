@@ -20,7 +20,7 @@ package org.apache.flink.table.api.typeutils
 import org.apache.flink.annotation.{Public, PublicEvolving}
 import org.apache.flink.api.common.serialization.SerializerConfig
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.common.typeutils.TypeSerializer
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer
 
 import scala.collection.JavaConverters._
 

@@ -18,7 +18,7 @@
 
 package org.apache.flink.table.types.extraction.utils;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.table.annotation.DataTypeHint;
 import org.apache.flink.table.annotation.ExtractionVersion;
 import org.apache.flink.table.annotation.HintFlag;

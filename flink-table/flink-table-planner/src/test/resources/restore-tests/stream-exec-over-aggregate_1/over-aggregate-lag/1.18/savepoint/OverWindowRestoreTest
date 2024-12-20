@@ -21,7 +21,7 @@ package org.apache.flink.table.planner.plan.nodes.exec.stream;
 import org.apache.commons.collections.CollectionUtils;
 
 import org.apache.flink.api.common.JobStatus;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.api.connector.source.SourceReader;

@@ -22,8 +22,9 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.memory.DataInputView;
 import org.apache.flink.api.common.memory.DataOutputView;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.SimpleTypeSerializerSnapshot;
-import org.apache.flink.api.common.typeutils.TypeSerializerSnapshot;
 import org.apache.flink.api.common.typeutils.base.TypeSerializerSingleton;
 import org.apache.flink.api.java.typeutils.runtime.DataInputViewStream;
 import org.apache.flink.api.java.typeutils.runtime.DataOutputViewStream;
@@ -33,10 +34,7 @@ import org.apache.flink.util.InstantiationUtil;
 import java.io.IOException;
 import java.io.Serializable;
 
-/**
- * A {@link org.apache.flink.api.common.typeutils.TypeSerializer} that uses Java serialization. This
- * should not be used for anything.
- */
+/** A {@link TypeSerializer} that uses Java serialization. This should not be used for anything. */
 @Internal
 @VisibleForTesting
 public final class JavaSerializer<T extends Serializable> extends TypeSerializerSingleton<T> {

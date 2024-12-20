@@ -21,7 +21,7 @@ package org.apache.flink.streaming.tests.artificialstate.builder;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.runtime.state.FunctionInitializationContext;
 
 import java.util.Iterator;

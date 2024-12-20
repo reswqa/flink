@@ -18,6 +18,7 @@
 
 package org.apache.flink.api.common.typeutils;
 
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.testutils.DeeplyEqualsChecker;
 
 import org.junit.jupiter.api.Test;

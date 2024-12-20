@@ -19,7 +19,7 @@
 package org.apache.flink.streaming.api.runners.python.beam.state;
 
 import org.apache.flink.api.common.state.ListState;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.core.memory.ByteArrayInputStreamWithPos;
 import org.apache.flink.core.memory.DataInputViewStreamWrapper;
 import org.apache.flink.runtime.state.internal.InternalListState;

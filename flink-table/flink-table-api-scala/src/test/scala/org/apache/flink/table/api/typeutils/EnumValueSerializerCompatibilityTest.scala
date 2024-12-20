@@ -17,7 +17,8 @@
  */
 package org.apache.flink.table.api.typeutils
 
-import org.apache.flink.api.common.typeutils.{TypeSerializerSchemaCompatibility, TypeSerializerSnapshotSerializationUtil}
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility
+import org.apache.flink.api.common.typeutils.TypeSerializerSnapshotSerializationUtil
 import org.apache.flink.core.memory.{DataInputViewStreamWrapper, DataOutputViewStreamWrapper}
 
 import org.assertj.core.api.Assertions.{assertThat, fail}

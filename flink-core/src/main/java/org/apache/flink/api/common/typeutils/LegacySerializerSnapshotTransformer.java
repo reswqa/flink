@@ -19,6 +19,8 @@
 package org.apache.flink.api.common.typeutils;
 
 import org.apache.flink.annotation.Internal;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSnapshot;
 
 /**
  * This interface provides a way for {@link TypeSerializer}s to transform a legacy {@link

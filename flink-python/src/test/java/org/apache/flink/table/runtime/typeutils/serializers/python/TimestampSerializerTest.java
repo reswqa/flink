@@ -18,8 +18,8 @@
 
 package org.apache.flink.table.runtime.typeutils.serializers.python;
 
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.SerializerTestBase;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
 
 import java.sql.Timestamp;
 

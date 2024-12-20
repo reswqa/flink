@@ -20,9 +20,9 @@ package org.apache.flink.api.java.typeutils.runtime.kryo;
 
 import org.apache.flink.FlinkVersion;
 import org.apache.flink.api.common.serialization.SerializerConfigImpl;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility;
 import org.apache.flink.api.common.typeutils.TypeSerializerConditions;
-import org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility;
 import org.apache.flink.api.common.typeutils.TypeSerializerUpgradeTestBase;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Animal;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoPojosForMigrationTests.Cat;
@@ -35,8 +35,8 @@ import org.assertj.core.api.Condition;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import static org.apache.flink.api.common.typeinfo.utils.TypeSerializerSchemaCompatibility.compatibleWithReconfiguredSerializer;
 import static org.apache.flink.api.common.typeutils.TypeSerializerConditions.hasSameCompatibilityAs;
-import static org.apache.flink.api.common.typeutils.TypeSerializerSchemaCompatibility.compatibleWithReconfiguredSerializer;
 
 /** Tests migrations for {@link KryoSerializerSnapshot}. */
 @SuppressWarnings("WeakerAccess")

@@ -18,7 +18,7 @@
 
 package org.apache.flink.streaming.api.operators.collect.utils;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.common.typeinfo.utils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.memory.DataOutputViewStreamWrapper;
 import org.apache.flink.streaming.api.operators.collect.CollectCoordinationResponse;
