@@ -125,11 +125,12 @@ public class WindowExtension {
     }
 
     /**
-     * {@link WindowBuilder} is used to create the {@link Window}, it contains the relevant components needed to create the Window, such as {@link WindowAssigner} and {@link Trigger}.
+     * {@link WindowBuilder} is used to create the {@link Window}, it contains the relevant
+     * components needed to create the Window, such as {@link WindowAssigner} and {@link Trigger}.
      *
      * @param <IN> The type of the input value.
      * @param <W> The type of {@code Window} that this window function can be applied on.
-     * */
+     */
     @Experimental
     public static class WindowBuilder<IN, W extends Window> {
         private final WindowAssigner<IN, W> assigner;

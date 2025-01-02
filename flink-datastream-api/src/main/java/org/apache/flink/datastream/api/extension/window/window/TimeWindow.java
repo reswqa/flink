@@ -1,5 +1,9 @@
 package org.apache.flink.datastream.api.extension.window.window;
 
+/**
+ * A {@link Window} that represents a time interval from {@code start} (inclusive) to {@code end}
+ * (exclusive).
+ */
 public interface TimeWindow extends Window {
 
     /**

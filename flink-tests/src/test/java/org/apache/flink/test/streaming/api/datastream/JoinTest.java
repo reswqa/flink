@@ -18,7 +18,6 @@
 
 package org.apache.flink.test.streaming.api.datastream;
 
-import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.dsv2.WrappedSink;
 import org.apache.flink.api.connector.dsv2.WrappedSource;
@@ -100,6 +99,80 @@ class JoinTest implements Serializable {
                                 WindowExtension.TimeWindows.<Long, Long>ofTwoInputTumbling(
                                         Duration.ofSeconds(5),
                                         WindowExtension.TimeWindows.TimeType.EVENT),
+                                new JoinFunction<Long, Long, String>() {
+                                    @Override
+                                    public void processRecord(
+                                            Long leftRecord,
+                                            Long rightRecord,
+                                            Collector<String> output,
+                                            RuntimeContext ctx)
+                                            throws Exception {
+                                        output.collect(
+                                                String.format(
+                                                        "joined: (%s, %s)",
+                                                        leftRecord, rightRecord));
+                                    }
+                                },
+                                JoinExtension.JoinType.INNER))
+                .toSink(new WrappedSink<>(new PrintSink<>()));
+        env.execute("testJoin");
+    }
+
+    @Test
+    public void testNonWindowJoin() throws Exception {
+        ExecutionEnvironment env = ExecutionEnvironment.getInstance();
+
+        KeyedPartitionStream<Long, Long> source1 =
+                env.fromSource(
+                                new WrappedSource<ValueWithTimestamp>(
+                                        new DataGeneratorSource<ValueWithTimestamp>(
+                                                new WindowOperatorTest.TestGeneratorFunction(),
+                                                100_000,
+                                                TypeInformation.of(ValueWithTimestamp.class))),
+                                "source")
+                        .process(
+                                EventTimeExtension.extractEventTime(
+                                        element -> element.getTimestamp()))
+                        .process(
+                                new OneInputStreamProcessFunction<ValueWithTimestamp, Long>() {
+                                    @Override
+                                    public void processRecord(
+                                            ValueWithTimestamp record,
+                                            Collector<Long> output,
+                                            PartitionedContext ctx)
+                                            throws Exception {
+                                        output.collect((long) record.getValue());
+                                    }
+                                })
+                        .keyBy(x -> x % 2);
+
+        KeyedPartitionStream<Long, Long> source2 =
+                env.fromSource(
+                                new WrappedSource<ValueWithTimestamp>(
+                                        new DataGeneratorSource<ValueWithTimestamp>(
+                                                new WindowOperatorTest.TestGeneratorFunction(),
+                                                100_000,
+                                                TypeInformation.of(ValueWithTimestamp.class))),
+                                "source")
+                        .process(
+                                EventTimeExtension.extractEventTime(
+                                        element -> element.getTimestamp()))
+                        .process(
+                                new OneInputStreamProcessFunction<ValueWithTimestamp, Long>() {
+                                    @Override
+                                    public void processRecord(
+                                            ValueWithTimestamp record,
+                                            Collector<Long> output,
+                                            PartitionedContext ctx)
+                                            throws Exception {
+                                        output.collect((long) record.getValue());
+                                    }
+                                })
+                        .keyBy(x -> x % 2);
+
+        source1.connectAndProcess(
+                        source2,
+                        JoinExtension.join(
                                 new JoinFunction<Long, Long, String>() {
                                     @Override
                                     public void processRecord(

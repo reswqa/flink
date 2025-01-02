@@ -36,7 +36,6 @@ import org.apache.flink.datastream.api.extension.eventtime.EventTimeExtension;
 import org.apache.flink.datastream.api.extension.window.WindowExtension;
 import org.apache.flink.datastream.api.extension.window.WindowProcessFunction;
 import org.apache.flink.datastream.api.extension.window.window.TimeWindow;
-import org.apache.flink.datastream.api.extension.window.window.Window;
 import org.apache.flink.datastream.api.function.OneInputStreamProcessFunction;
 import org.apache.flink.datastream.api.stream.GlobalStream;
 import org.apache.flink.datastream.api.stream.NonKeyedPartitionStream;

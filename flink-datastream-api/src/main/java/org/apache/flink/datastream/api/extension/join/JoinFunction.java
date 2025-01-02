@@ -20,19 +20,16 @@ package org.apache.flink.datastream.api.extension.join;
 
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.api.common.state.StateDeclaration;
 import org.apache.flink.datastream.api.common.Collector;
 import org.apache.flink.datastream.api.context.RuntimeContext;
 
-import java.util.Collections;
-import java.util.Set;
-
 /**
- * A functional interface that defines a join operation between two input records of types {@code IN1} and {@code IN2}.
+ * A functional interface that defines a join operation between two input records of types {@code
+ * IN1} and {@code IN2}.
  *
- * <p>This interface is used to process a pair of records from two different data streams and produce an output record
- * of type {@code OUT}. Implementations of this interface can be used to define custom join logic in stream processing
- * frameworks.</p>
+ * <p>This interface is used to process a pair of records from two different data streams and
+ * produce an output record of type {@code OUT}. Implementations of this interface can be used to
+ * define custom join logic in stream processing frameworks.
  *
  * @param <IN1> the type of the first input record
  * @param <IN2> the type of the second input record

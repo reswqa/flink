@@ -52,7 +52,7 @@ public class JoinExtension {
 
     /** Non-Window join. */
     @SuppressWarnings("unchecked")
-    public <IN1, IN2, OUT> TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> join(
+    public static <IN1, IN2, OUT> TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> join(
             JoinFunction<IN1, IN2, OUT> joinFunction, JoinType joinType) {
         try {
             return (TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT>)
