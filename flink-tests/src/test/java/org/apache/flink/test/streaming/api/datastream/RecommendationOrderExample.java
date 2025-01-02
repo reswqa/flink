@@ -42,7 +42,7 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * This is an example of an e-commerce scenario used to count recommendation successes. If a product
+ * This is an example of an e-commerce scenario used to calculate successful recommended orders. If a product
  * is recommended to a user and the user completes the purchase within five minutes, we call this
  * order as {@link RecommendationOrder}. This example expects to count the {@link
  * RecommendationOrder}s every ten minutes for the past hour.
@@ -273,7 +273,7 @@ class RecommendationOrderExample implements Serializable {
                         WindowExtension.apply(
                                 // build sliding processing time window of 1 hour with 10 minute
                                 // slide
-                                WindowExtension.TimeWindows.ofTwoInputSliding(
+                                WindowExtension.TimeWindows.ofSliding(
                                         Duration.ofHours(10),
                                         Duration.ofMinutes(2),
                                         WindowExtension.TimeWindows.TimeType.PROCESSING),

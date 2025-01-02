@@ -85,6 +85,24 @@ public class WindowExtension {
         }
     }
 
+    public static <IN1, IN2, OUT, W extends Window>
+    TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> apply(
+            WindowBuilder<?, W> window,
+            TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W>
+                    windowProcessFunction) {
+        try {
+            return (TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT>)
+                    INSTANCE.getMethod(
+                                    "process",
+                                    TwoInputWindowProcessFunction.class,
+                                    WindowAssigner.class,
+                                    Trigger.class)
+                            .invoke(null, windowProcessFunction, window.getAssigner(), window.getTrigger());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public static <IN1, IN2, OUT, W extends Window>
             TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> apply(
@@ -145,6 +163,14 @@ public class WindowExtension {
         public WindowBuilder<IN, W> withTrigger(Trigger<IN, W> trigger) {
             this.trigger = checkNotNull(trigger);
             return this;
+        }
+
+        public WindowAssigner<IN, W> getAssigner() {
+            return assigner;
+        }
+
+        public Trigger<IN, W> getTrigger() {
+            return trigger;
         }
     }
 
