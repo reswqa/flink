@@ -30,7 +30,6 @@ import org.apache.flink.datastream.impl.context.DefaultNonPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultRuntimeContext;
 import org.apache.flink.datastream.impl.context.UnsupportedProcessingTimeManager;
-import org.apache.flink.datastream.impl.extension.eventtime.InternalEventTimeUtils;
 import org.apache.flink.runtime.asyncprocessing.operators.AbstractAsyncStateUdfStreamOperator;
 import org.apache.flink.runtime.event.WatermarkEvent;
 import org.apache.flink.runtime.state.OperatorStateBackend;
@@ -136,12 +135,6 @@ public class TwoInputNonBroadcastProcessOperator<IN1, IN2, OUT>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
-
-            if (InternalEventTimeUtils.processWatermark(
-                    watermark.getWatermark(), 0, eventTimeWatermarkHandler)) {
-                return;
-            }
-
             output.emitWatermark(watermark);
         }
     }
@@ -156,11 +149,6 @@ public class TwoInputNonBroadcastProcessOperator<IN1, IN2, OUT>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
-            if (InternalEventTimeUtils.processWatermark(
-                    watermark.getWatermark(), 1, eventTimeWatermarkHandler)) {
-                return;
-            }
-
             output.emitWatermark(watermark);
         }
     }

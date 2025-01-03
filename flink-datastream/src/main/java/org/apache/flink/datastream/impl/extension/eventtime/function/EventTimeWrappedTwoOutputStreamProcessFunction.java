@@ -1,7 +1,6 @@
 package org.apache.flink.datastream.impl.extension.eventtime.function;
 
 import org.apache.flink.api.common.state.StateDeclaration;
-import org.apache.flink.api.common.watermark.LongWatermark;
 import org.apache.flink.api.common.watermark.Watermark;
 import org.apache.flink.api.common.watermark.WatermarkDeclaration;
 import org.apache.flink.api.common.watermark.WatermarkHandlingResult;
@@ -10,7 +9,6 @@ import org.apache.flink.datastream.api.context.TwoOutputNonPartitionedContext;
 import org.apache.flink.datastream.api.context.TwoOutputPartitionedContext;
 import org.apache.flink.datastream.api.extension.eventtime.EventTimeExtension;
 import org.apache.flink.datastream.api.extension.eventtime.timer.EventTimeManager;
-import org.apache.flink.datastream.api.extension.eventtime.timer.EventTimeProcessFunction;
 import org.apache.flink.datastream.api.extension.eventtime.timer.TwoOutputEventTimeStreamProcessFunction;
 import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.impl.extension.eventtime.InternalEventTimeUtils;
@@ -18,40 +16,42 @@ import org.apache.flink.datastream.impl.extension.eventtime.timer.DefaultEventTi
 import org.apache.flink.streaming.api.operators.InternalTimeServiceManager;
 import org.apache.flink.streaming.api.operators.Output;
 import org.apache.flink.streaming.runtime.watermark.extension.eventtime.EventTimeWatermarkHandler;
+import org.apache.flink.util.Preconditions;
 
 import java.util.Collection;
 import java.util.Set;
 
-public class EventTimeExtensionWrappedTwoOutputStreamProcessFunction<IN, OUT1, OUT2>
+/**
+ * The wrapped {@link TwoOutputEventTimeStreamProcessFunction} that take care of event-time
+ * alignment with idleness.
+ */
+public class EventTimeWrappedTwoOutputStreamProcessFunction<IN, OUT1, OUT2>
         implements TwoOutputStreamProcessFunction<IN, OUT1, OUT2> {
 
-    private final TwoOutputStreamProcessFunction<IN, OUT1, OUT2> wrappedUserFunction;
+    private final TwoOutputEventTimeStreamProcessFunction<IN, OUT1, OUT2> wrappedUserFunction;
 
     private EventTimeManager eventTimeManager;
 
     protected transient EventTimeWatermarkHandler eventTimeWatermarkHandler;
 
-    public EventTimeExtensionWrappedTwoOutputStreamProcessFunction(
-            TwoOutputStreamProcessFunction<IN, OUT1, OUT2> wrappedUserFunction) {
-        this.wrappedUserFunction = wrappedUserFunction;
+    public EventTimeWrappedTwoOutputStreamProcessFunction(
+            TwoOutputEventTimeStreamProcessFunction<IN, OUT1, OUT2> wrappedUserFunction) {
+        this.wrappedUserFunction = Preconditions.checkNotNull(wrappedUserFunction);
     }
 
     @Override
     public void open(TwoOutputNonPartitionedContext<OUT1, OUT2> ctx) throws Exception {
-        ((EventTimeProcessFunction) wrappedUserFunction).initEventTimeExtension(eventTimeManager);
+        wrappedUserFunction.initEventTimeProcessFunction(eventTimeManager);
         wrappedUserFunction.open(ctx);
     }
 
-    // should be executed before open
+    // This method have to invoke before open
     public void initEventTimeExtension(
             EventTimeManager eventTimeManager,
             Output<?> output,
             InternalTimeServiceManager<?> timeServiceManager) {
         this.eventTimeManager = eventTimeManager;
-        if (wrappedUserFunction instanceof TwoOutputEventTimeStreamProcessFunction) {
-            ((DefaultEventTimeManager) this.eventTimeManager).setCanRegisterTimer(true);
-        }
-
+        ((DefaultEventTimeManager) this.eventTimeManager).setCanRegisterTimer(true);
         eventTimeWatermarkHandler = new EventTimeWatermarkHandler(1, output, timeServiceManager);
     }
 
@@ -86,17 +86,16 @@ public class EventTimeExtensionWrappedTwoOutputStreamProcessFunction<IN, OUT1, O
             Collector<OUT2> output2,
             TwoOutputNonPartitionedContext<OUT1, OUT2> ctx)
             throws Exception {
-        // TODO InternalEventTimeUtils.processWatermark then send it to user function
-        if (EventTimeExtension.isEventTimeWatermark(watermark.getIdentifier())
-                && (wrappedUserFunction instanceof TwoOutputEventTimeStreamProcessFunction)) {
-            //
-            ((TwoOutputEventTimeStreamProcessFunction<IN, OUT1, OUT2>) wrappedUserFunction)
-                    .onEventTimeWatermark(
-                            ((LongWatermark) watermark).getValue(), output1, output2, ctx);
-        }
-
-        if (InternalEventTimeUtils.processWatermark(watermark, 0, eventTimeWatermarkHandler)) {
-            return WatermarkHandlingResult.PEEK;
+        if (EventTimeExtension.isEventTimeWatermark(watermark)
+                || EventTimeExtension.isIdleStatusWatermark(watermark)) {
+            EventTimeWatermarkHandler.EventTimeUpdateStatus eventTimeUpdateStatus =
+                    InternalEventTimeUtils.processWatermark(
+                            watermark, 0, eventTimeWatermarkHandler);
+            if (eventTimeUpdateStatus.isEventTimeUpdated()) {
+                wrappedUserFunction.onEventTimeWatermark(
+                        eventTimeUpdateStatus.getNewEventTime(), output1, output2, ctx);
+            }
+            return WatermarkHandlingResult.POLL;
         } else {
             return wrappedUserFunction.onWatermark(watermark, output1, output2, ctx);
         }
@@ -113,7 +112,6 @@ public class EventTimeExtensionWrappedTwoOutputStreamProcessFunction<IN, OUT1, O
 
     @Override
     public Set<StateDeclaration> usesStates() {
-        // TODO: may declare time service state
         return wrappedUserFunction.usesStates();
     }
 

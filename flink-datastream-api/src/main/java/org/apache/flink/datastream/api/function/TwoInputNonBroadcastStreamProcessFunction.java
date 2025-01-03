@@ -93,7 +93,8 @@ public interface TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> extend
      * @param ctx runtime context in which this function is executed.
      */
     default WatermarkHandlingResult onWatermarkFromFirstInput(
-            Watermark watermark, Collector<OUT> output, NonPartitionedContext<OUT> ctx) {
+            Watermark watermark, Collector<OUT> output, NonPartitionedContext<OUT> ctx)
+            throws Exception {
         return WatermarkHandlingResult.PEEK;
     }
 
@@ -105,7 +106,8 @@ public interface TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> extend
      * @param ctx runtime context in which this function is executed.
      */
     default WatermarkHandlingResult onWatermarkFromSecondInput(
-            Watermark watermark, Collector<OUT> output, NonPartitionedContext<OUT> ctx) {
+            Watermark watermark, Collector<OUT> output, NonPartitionedContext<OUT> ctx)
+            throws Exception {
         return WatermarkHandlingResult.PEEK;
     }
 }

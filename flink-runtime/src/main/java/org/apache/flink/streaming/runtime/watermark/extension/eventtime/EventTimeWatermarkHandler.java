@@ -41,7 +41,7 @@ public class EventTimeWatermarkHandler {
 
     public EventTimeWatermarkHandler(
             int numOfInput,
-            Output output,
+            Output<?> output,
             @Nullable InternalTimeServiceManager<?> timeServiceManager) {
         checkArgument(numOfInput >= 1 && numOfInput <= 2, "numOfInput should between 1 and 2");
         this.numOfInput = numOfInput;
@@ -53,15 +53,15 @@ public class EventTimeWatermarkHandler {
         this.timeServiceManager = timeServiceManager;
     }
 
-    public void processEventTime(long timestamp, int inputIndex) throws Exception {
+    public EventTimeUpdateStatus processEventTime(long timestamp, int inputIndex) throws Exception {
         checkState(inputIndex < numOfInput);
         eventTimePerInput.get(inputIndex).setEventTime(timestamp);
         eventTimePerInput.get(inputIndex).setIdleStatus(false);
 
-        tryEmitEventTimeWatermark();
+        return tryAdvanceEventTimeAndEmitWatermark();
     }
 
-    private void tryEmitEventTimeWatermark() throws Exception {
+    private EventTimeUpdateStatus tryAdvanceEventTimeAndEmitWatermark() throws Exception {
         // if current event time is larger than last emit watermark, emit it
         long currentEventTime = getCurrentEventTime();
         if (currentEventTime > lastEmitWatermark) {
@@ -74,7 +74,9 @@ public class EventTimeWatermarkHandler {
             if (timeServiceManager != null) {
                 timeServiceManager.advanceWatermark(new Watermark(currentEventTime));
             }
+            return EventTimeUpdateStatus.ofUpdatedWatermark(lastEmitWatermark);
         }
+        return EventTimeUpdateStatus.noUpdate();
     }
 
     public void processEventTimeIdleStatus(boolean isIdle, int inputIndex) {
@@ -113,6 +115,34 @@ public class EventTimeWatermarkHandler {
             allInputIsIdle &= eventTimeWithIdleStatus.isIdle();
         }
         return allInputIsIdle;
+    }
+
+    /** This class represents event-time updated status. */
+    public static class EventTimeUpdateStatus {
+        private final boolean isEventTimeUpdated;
+
+        private final long newEventTime;
+
+        private EventTimeUpdateStatus(boolean isEventTimeUpdated, long newEventTime) {
+            this.isEventTimeUpdated = isEventTimeUpdated;
+            this.newEventTime = newEventTime;
+        }
+
+        public static EventTimeUpdateStatus ofUpdatedWatermark(long newEventTime) {
+            return new EventTimeUpdateStatus(true, newEventTime);
+        }
+
+        public static EventTimeUpdateStatus noUpdate() {
+            return new EventTimeUpdateStatus(false, -1L);
+        }
+
+        public boolean isEventTimeUpdated() {
+            return isEventTimeUpdated;
+        }
+
+        public long getNewEventTime() {
+            return newEventTime;
+        }
     }
 
     static class EventTimeWithIdleStatus {

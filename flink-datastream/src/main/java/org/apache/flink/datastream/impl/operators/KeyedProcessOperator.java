@@ -29,7 +29,7 @@ import org.apache.flink.datastream.impl.common.OutputCollector;
 import org.apache.flink.datastream.impl.common.TimestampCollector;
 import org.apache.flink.datastream.impl.context.DefaultNonPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultProcessingTimeManager;
-import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeExtensionWrappedOneInputStreamProcessFunction;
+import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeWrappedOneInputStreamProcessFunction;
 import org.apache.flink.datastream.impl.extension.eventtime.timer.DefaultEventTimeManager;
 import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.VoidNamespaceSerializer;
@@ -69,10 +69,10 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
         this.timerService =
                 getInternalTimerService("processing timer", VoidNamespaceSerializer.INSTANCE, this);
         this.keySet = new HashSet<>();
-        if (userFunction instanceof EventTimeExtensionWrappedOneInputStreamProcessFunction) {
+        if (userFunction instanceof EventTimeWrappedOneInputStreamProcessFunction) {
             EventTimeManager eventTimeManager =
                     new DefaultEventTimeManager(timerService, this::currentKey);
-            ((EventTimeExtensionWrappedOneInputStreamProcessFunction) userFunction)
+            ((EventTimeWrappedOneInputStreamProcessFunction<IN, OUT>) userFunction)
                     .initEventTimeExtension(eventTimeManager, output, timeServiceManager);
         }
         super.open();
@@ -93,8 +93,10 @@ public class KeyedProcessOperator<KEY, IN, OUT> extends ProcessOperator<IN, OUT>
 
     @Override
     public void onEventTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
-        ((EventTimeExtensionWrappedOneInputStreamProcessFunction) userFunction)
-                .onEventTime(timer.getTimestamp(), getOutputCollector(), partitionedContext);
+        if (userFunction instanceof EventTimeWrappedOneInputStreamProcessFunction) {
+            ((EventTimeWrappedOneInputStreamProcessFunction<IN, OUT>) userFunction)
+                    .onEventTime(timer.getTimestamp(), getOutputCollector(), partitionedContext);
+        }
     }
 
     @Override

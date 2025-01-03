@@ -29,7 +29,7 @@ import org.apache.flink.datastream.impl.common.OutputCollector;
 import org.apache.flink.datastream.impl.common.TimestampCollector;
 import org.apache.flink.datastream.impl.context.DefaultNonPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultProcessingTimeManager;
-import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeExtensionWrappedOneInputStreamProcessFunction;
+import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeWrappedTwoInputBroadcastStreamProcessFunction;
 import org.apache.flink.datastream.impl.extension.eventtime.timer.DefaultEventTimeManager;
 import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.VoidNamespaceSerializer;
@@ -71,10 +71,10 @@ public class KeyedTwoInputBroadcastProcessOperator<KEY, IN1, IN2, OUT>
         this.timerService =
                 getInternalTimerService("processing timer", VoidNamespaceSerializer.INSTANCE, this);
         this.keySet = new HashSet<>();
-        if (userFunction instanceof EventTimeExtensionWrappedOneInputStreamProcessFunction) {
+        if (userFunction instanceof EventTimeWrappedTwoInputBroadcastStreamProcessFunction) {
             EventTimeManager eventTimeManager =
                     new DefaultEventTimeManager(timerService, this::currentKey);
-            ((EventTimeExtensionWrappedOneInputStreamProcessFunction) userFunction)
+            ((EventTimeWrappedTwoInputBroadcastStreamProcessFunction<IN1, IN2, OUT>) userFunction)
                     .initEventTimeExtension(eventTimeManager, output, timeServiceManager);
         }
         super.open();
@@ -99,8 +99,10 @@ public class KeyedTwoInputBroadcastProcessOperator<KEY, IN1, IN2, OUT>
 
     @Override
     public void onEventTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
-        ((EventTimeExtensionWrappedOneInputStreamProcessFunction) userFunction)
-                .onEventTime(timer.getTimestamp(), getOutputCollector(), partitionedContext);
+        if (userFunction instanceof EventTimeWrappedTwoInputBroadcastStreamProcessFunction) {
+            ((EventTimeWrappedTwoInputBroadcastStreamProcessFunction<IN1, IN2, OUT>) userFunction)
+                    .onEventTime(timer.getTimestamp(), getOutputCollector(), partitionedContext);
+        }
     }
 
     @Override

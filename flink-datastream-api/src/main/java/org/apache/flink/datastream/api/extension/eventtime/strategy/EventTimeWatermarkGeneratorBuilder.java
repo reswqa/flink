@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 public class EventTimeWatermarkGeneratorBuilder<T> {
 
-    private EventTimeWatermarkStrategy<T> strategy;
+    private final EventTimeWatermarkStrategy<T> strategy;
 
     public EventTimeWatermarkGeneratorBuilder(EventTimeExtractor<T> eventTimeExtractor) {
         this.strategy = new EventTimeWatermarkStrategy<>(eventTimeExtractor);
@@ -21,13 +21,6 @@ public class EventTimeWatermarkGeneratorBuilder<T> {
     public EventTimeWatermarkGeneratorBuilder<T> noWatermark() {
         this.strategy.setGenerateMode(
                 EventTimeWatermarkStrategy.EventTimeWatermarkGenerateMode.NO_WATERMARK);
-        return this;
-    }
-
-    public EventTimeWatermarkGeneratorBuilder<T> periodicWatermark() {
-        this.strategy.setGenerateMode(
-                EventTimeWatermarkStrategy.EventTimeWatermarkGenerateMode.PERIODIC);
-        // use config default interval
         return this;
     }
 

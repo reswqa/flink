@@ -6,7 +6,7 @@ import org.apache.flink.datastream.api.context.TwoOutputNonPartitionedContext;
 import org.apache.flink.datastream.api.context.TwoOutputPartitionedContext;
 import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 
-/** A {@code EventTimeProcessFunction} interface for {@link TwoOutputStreamProcessFunction}. */
+/** The {@link TwoOutputStreamProcessFunction} that extends with event time support. */
 @Experimental
 public interface TwoOutputEventTimeStreamProcessFunction<IN, OUT1, OUT2>
         extends EventTimeProcessFunction, TwoOutputStreamProcessFunction<IN, OUT1, OUT2> {

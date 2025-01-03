@@ -6,7 +6,7 @@ import org.apache.flink.datastream.api.context.NonPartitionedContext;
 import org.apache.flink.datastream.api.context.PartitionedContext;
 import org.apache.flink.datastream.api.function.OneInputStreamProcessFunction;
 
-/** A {@code EventTimeProcessFunction} interface for {@link OneInputStreamProcessFunction}. */
+/** The {@link OneInputStreamProcessFunction} that extends with event time support. */
 @Experimental
 public interface OneInputEventTimeStreamProcessFunction<IN, OUT>
         extends EventTimeProcessFunction, OneInputStreamProcessFunction<IN, OUT> {

@@ -21,14 +21,13 @@ package org.apache.flink.datastream.impl.operators;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.datastream.api.context.ProcessingTimeManager;
 import org.apache.flink.datastream.api.context.TwoOutputNonPartitionedContext;
-import org.apache.flink.datastream.api.extension.eventtime.timer.EventTimeManager;
 import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.impl.common.KeyCheckedOutputCollector;
 import org.apache.flink.datastream.impl.common.OutputCollector;
 import org.apache.flink.datastream.impl.common.TimestampCollector;
 import org.apache.flink.datastream.impl.context.DefaultProcessingTimeManager;
 import org.apache.flink.datastream.impl.context.DefaultTwoOutputNonPartitionedContext;
-import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeExtensionWrappedTwoOutputStreamProcessFunction;
+import org.apache.flink.datastream.impl.extension.eventtime.function.EventTimeWrappedTwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.impl.extension.eventtime.timer.DefaultEventTimeManager;
 import org.apache.flink.runtime.state.VoidNamespace;
 import org.apache.flink.runtime.state.VoidNamespaceSerializer;
@@ -82,11 +81,12 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
         this.timerService =
                 getInternalTimerService("processing timer", VoidNamespaceSerializer.INSTANCE, this);
         this.keySet = new HashSet<>();
-        if (userFunction instanceof EventTimeExtensionWrappedTwoOutputStreamProcessFunction) {
-            EventTimeManager eventTimeManager =
-                    new DefaultEventTimeManager(timerService, this::currentKey);
-            ((EventTimeExtensionWrappedTwoOutputStreamProcessFunction) userFunction)
-                    .initEventTimeExtension(eventTimeManager, output, timeServiceManager);
+        if (userFunction instanceof EventTimeWrappedTwoOutputStreamProcessFunction) {
+            ((EventTimeWrappedTwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE>) userFunction)
+                    .initEventTimeExtension(
+                            new DefaultEventTimeManager(timerService, this::currentKey),
+                            output,
+                            timeServiceManager);
         }
         super.open();
     }
@@ -122,16 +122,14 @@ public class KeyedTwoOutputProcessOperator<KEY, IN, OUT_MAIN, OUT_SIDE>
 
     @Override
     public void onEventTime(InternalTimer<KEY, VoidNamespace> timer) throws Exception {
-        // TODO support two output function
-        //
-        // ((EventTimeExtensionWrappedOneInputStreamProcessFunction)userFunction).onEventTimer(timer.getTimestamp(), getOutputCollector(), partitionedContext);
-
-        ((EventTimeExtensionWrappedTwoOutputStreamProcessFunction) userFunction)
-                .onEventTime(
-                        timer.getTimestamp(),
-                        getMainCollector(),
-                        getSideCollector(),
-                        partitionedContext);
+        if (userFunction instanceof EventTimeWrappedTwoOutputStreamProcessFunction) {
+            ((EventTimeWrappedTwoOutputStreamProcessFunction<IN, OUT_MAIN, OUT_SIDE>) userFunction)
+                    .onEventTime(
+                            timer.getTimestamp(),
+                            getMainCollector(),
+                            getSideCollector(),
+                            partitionedContext);
+        }
     }
 
     @Override

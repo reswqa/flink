@@ -30,7 +30,6 @@ import org.apache.flink.datastream.impl.context.DefaultRuntimeContext;
 import org.apache.flink.datastream.impl.context.DefaultTwoOutputNonPartitionedContext;
 import org.apache.flink.datastream.impl.context.DefaultTwoOutputPartitionedContext;
 import org.apache.flink.datastream.impl.context.UnsupportedProcessingTimeManager;
-import org.apache.flink.datastream.impl.extension.eventtime.InternalEventTimeUtils;
 import org.apache.flink.runtime.asyncprocessing.operators.AbstractAsyncStateUdfStreamOperator;
 import org.apache.flink.runtime.event.WatermarkEvent;
 import org.apache.flink.runtime.state.v2.OperatorStateStore;
@@ -142,11 +141,6 @@ public class TwoOutputProcessOperator<IN, OUT_MAIN, OUT_SIDE>
                                 .get(watermark.getWatermark().getIdentifier())
                                 .getDefaultHandlingStrategy()
                         == WatermarkHandlingStrategy.FORWARD) {
-            if (InternalEventTimeUtils.processWatermark(
-                    watermark.getWatermark(), 0, eventTimeWatermarkHandler)) {
-                return;
-            }
-
             output.emitWatermark(watermark);
         }
     }

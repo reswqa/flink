@@ -13,5 +13,5 @@ import org.apache.flink.datastream.api.function.ProcessFunction;
  */
 @Experimental
 public interface EventTimeProcessFunction extends ProcessFunction {
-    void initEventTimeExtension(EventTimeManager eventTimeManager);
+    void initEventTimeProcessFunction(EventTimeManager eventTimeManager);
 }

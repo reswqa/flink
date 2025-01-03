@@ -3,26 +3,29 @@ package org.apache.flink.datastream.api.extension.eventtime;
 import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.watermark.BoolWatermarkDeclaration;
 import org.apache.flink.api.common.watermark.LongWatermarkDeclaration;
+import org.apache.flink.api.common.watermark.Watermark;
 import org.apache.flink.api.common.watermark.WatermarkDeclarations;
 import org.apache.flink.datastream.api.extension.eventtime.strategy.EventTimeWatermarkGeneratorBuilder;
 import org.apache.flink.datastream.api.extension.eventtime.strategy.EventTimeWatermarkStrategy;
 import org.apache.flink.datastream.api.extension.eventtime.timer.EventTimeManager;
 import org.apache.flink.datastream.api.extension.eventtime.timer.EventTimeProcessFunction;
 import org.apache.flink.datastream.api.extension.eventtime.timer.OneInputEventTimeStreamProcessFunction;
+import org.apache.flink.datastream.api.extension.eventtime.timer.TwoInputBroadcastEventTimeStreamProcessFunction;
+import org.apache.flink.datastream.api.extension.eventtime.timer.TwoInputNonBroadcastEventTimeStreamProcessFunction;
 import org.apache.flink.datastream.api.extension.eventtime.timer.TwoOutputEventTimeStreamProcessFunction;
 import org.apache.flink.datastream.api.function.OneInputStreamProcessFunction;
 import org.apache.flink.datastream.api.function.TwoOutputStreamProcessFunction;
 import org.apache.flink.datastream.api.stream.EventTimeExtractor;
 
 /**
- * The entry point for the Event Time extension, which provides the following functionality:
+ * The entry point for the event-time extension, which provides the following functionality:
  *
  * <ul>
- *   <li>defines the event time watermark.
+ *   <li>defines the event-time watermark.
  *   <li>provides the {@link EventTimeWatermarkGeneratorBuilder} to facilitate the generation of
  *       event time watermarks.
- *   <li>provides a tool method to encapsulate a user-defined {@link EventTimeProcessFunction} to
- *       provide the relevant components of the EventTime Extension.
+ *   <li>provides a tool to encapsulate a user-defined {@link EventTimeProcessFunction} to provide
+ *       the relevant components of the event-time extension.
  * </ul>
  */
 @Experimental
@@ -40,7 +43,7 @@ public class EventTimeExtension {
         }
     }
 
-    public static <T> EventTimeWatermarkGeneratorBuilder<T> newEventTimeWatermarkGeneratorBuilder(
+    public static <T> EventTimeWatermarkGeneratorBuilder<T> newWatermarkGeneratorBuilder(
             EventTimeExtractor<T> eventTimeExtractor) {
         return new EventTimeWatermarkGeneratorBuilder<>(eventTimeExtractor);
     }
@@ -64,25 +67,14 @@ public class EventTimeExtension {
      * such as {@link EventTimeManager} and declare the necessary built-in state required for the
      * Timer, etc.
      */
-    public static <IN, OUT> OneInputStreamProcessFunction<IN, OUT> wrapAsEventTimeProcessFunction(
+    public static <IN, OUT> OneInputStreamProcessFunction<IN, OUT> wrapProcessFunction(
             OneInputEventTimeStreamProcessFunction<IN, OUT> processFunction) {
         // TODO: check whether the stream is keyed
-
-        if (!(processFunction instanceof EventTimeProcessFunction)) {
-            throw new IllegalArgumentException(
-                    "The processFunction must be an instance of EventTimeProcessFunction");
-        }
-
-        if (processFunction instanceof TwoOutputEventTimeStreamProcessFunction) {
-            throw new IllegalArgumentException(
-                    "The ProcessFunction should implement OneOutputEventTimeProcessFunction rather than TwoOutputEventTimeProcessFunction.");
-        }
-
         try {
             return (OneInputStreamProcessFunction<IN, OUT>)
                     INSTANCE.getMethod(
-                                    "wrapAsEventTimeProcessFunction",
-                                    OneInputStreamProcessFunction.class)
+                                    "wrapProcessFunction",
+                                    OneInputEventTimeStreamProcessFunction.class)
                             .invoke(null, processFunction);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -90,25 +82,46 @@ public class EventTimeExtension {
     }
 
     public static <IN, OUT1, OUT2>
-            TwoOutputStreamProcessFunction<IN, OUT1, OUT2> wrapAsEventTimeProcessFunction(
-                    TwoOutputStreamProcessFunction<IN, OUT1, OUT2> processFunction) {
+            TwoOutputStreamProcessFunction<IN, OUT1, OUT2> wrapProcessFunction(
+                    TwoOutputEventTimeStreamProcessFunction<IN, OUT1, OUT2> processFunction) {
         // TODO: check whether the stream is keyed
-
-        if (!(processFunction instanceof EventTimeProcessFunction)) {
-            throw new IllegalArgumentException(
-                    "The processFunction must be an instance of EventTimeProcessFunction");
-        }
-
-        if (processFunction instanceof OneInputEventTimeStreamProcessFunction) {
-            throw new IllegalArgumentException(
-                    "The ProcessFunction should implement TwoOutputEventTimeProcessFunction rather than OneOutputEventTimeProcessFunction.");
-        }
-
         try {
             return (TwoOutputStreamProcessFunction<IN, OUT1, OUT2>)
                     INSTANCE.getMethod(
-                                    "wrapAsEventTimeProcessFunction",
-                                    TwoOutputStreamProcessFunction.class)
+                                    "wrapProcessFunction",
+                                    TwoOutputEventTimeStreamProcessFunction.class)
+                            .invoke(null, processFunction);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <IN1, IN2, OUT>
+            TwoInputNonBroadcastEventTimeStreamProcessFunction<IN1, IN2, OUT> wrapProcessFunction(
+                    TwoInputNonBroadcastEventTimeStreamProcessFunction<IN1, IN2, OUT>
+                            processFunction) {
+        // TODO: check whether the stream is keyed
+        try {
+            return (TwoInputNonBroadcastEventTimeStreamProcessFunction<IN1, IN2, OUT>)
+                    INSTANCE.getMethod(
+                                    "wrapProcessFunction",
+                                    TwoInputNonBroadcastEventTimeStreamProcessFunction.class)
+                            .invoke(null, processFunction);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <IN1, IN2, OUT>
+            TwoInputBroadcastEventTimeStreamProcessFunction<IN1, IN2, OUT> wrapProcessFunction(
+                    TwoInputBroadcastEventTimeStreamProcessFunction<IN1, IN2, OUT>
+                            processFunction) {
+        // TODO: check whether the stream is keyed
+        try {
+            return (TwoInputBroadcastEventTimeStreamProcessFunction<IN1, IN2, OUT>)
+                    INSTANCE.getMethod(
+                                    "wrapProcessFunction",
+                                    TwoInputBroadcastEventTimeStreamProcessFunction.class)
                             .invoke(null, processFunction);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -135,5 +148,13 @@ public class EventTimeExtension {
 
     public static boolean isIdleStatusWatermark(String watermarkIdentifier) {
         return watermarkIdentifier.equals(IDLE_STATUS_WATERMARK_DECLARATION.getIdentifier());
+    }
+
+    public static boolean isEventTimeWatermark(Watermark watermark) {
+        return watermark.getIdentifier().equals(EVENT_TIME_WATERMARK_DECLARATION.getIdentifier());
+    }
+
+    public static boolean isIdleStatusWatermark(Watermark watermark) {
+        return watermark.getIdentifier().equals(IDLE_STATUS_WATERMARK_DECLARATION.getIdentifier());
     }
 }

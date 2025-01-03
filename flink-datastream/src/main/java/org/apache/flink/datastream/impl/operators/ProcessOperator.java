@@ -114,8 +114,6 @@ public class ProcessOperator<IN, OUT>
 
     @Override
     public void processWatermarkInternal(WatermarkEvent watermark) throws Exception {
-        // TODO: process and filter even time watermark before user-function
-        // TODO: combine event time watermark if this process function is not wrapped
         WatermarkHandlingResult watermarkHandlingResultByUserFunction =
                 userFunction.onWatermark(
                         watermark.getWatermark(), outputCollector, nonPartitionedContext);
