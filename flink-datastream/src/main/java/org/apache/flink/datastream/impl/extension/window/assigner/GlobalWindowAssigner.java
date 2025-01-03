@@ -24,6 +24,7 @@ import org.apache.flink.datastream.api.extension.window.assigner.WindowAssigner;
 import org.apache.flink.datastream.api.extension.window.trigger.Trigger;
 import org.apache.flink.datastream.api.extension.window.window.GlobalWindow;
 import org.apache.flink.datastream.impl.extension.window.window.GlobalWindowImpl;
+import org.apache.flink.streaming.api.windowing.triggers.TriggerResult;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +44,8 @@ public class GlobalWindowAssigner extends WindowAssigner<Object, GlobalWindowImp
 
     @Override
     public Trigger<Object, GlobalWindowImpl> getDefaultTrigger() {
-        return new GlobalWindowAssigner.NeverTrigger();
+        //        return new GlobalWindowAssigner.NeverTrigger();
+        return new GlobalWindowAssigner.EndOfStreamTrigger();
     }
 
     @Override
@@ -75,6 +77,35 @@ public class GlobalWindowAssigner extends WindowAssigner<Object, GlobalWindowImp
         public TriggerResult onEventTime(long time, GlobalWindowImpl window, TriggerContext ctx)
                 throws Exception {
             return TriggerResult.CONTINUE;
+        }
+
+        @Override
+        public TriggerResult onProcessingTime(
+                long time, GlobalWindowImpl window, TriggerContext ctx) {
+            return TriggerResult.CONTINUE;
+        }
+
+        @Override
+        public void clear(GlobalWindowImpl window, TriggerContext ctx) throws Exception {}
+
+        @Override
+        public void onMerge(GlobalWindowImpl window, OnMergeContext ctx) {}
+    }
+
+    @Internal
+    public static class EndOfStreamTrigger extends Trigger<Object, GlobalWindowImpl> {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public TriggerResult onElement(
+                Object element, long timestamp, GlobalWindowImpl window, TriggerContext ctx) {
+            ctx.registerEventTimeListener(Long.MAX_VALUE);
+            return TriggerResult.CONTINUE;
+        }
+
+        @Override
+        public TriggerResult onEventTime(long time, GlobalWindowImpl window, TriggerContext ctx) {
+            return time == Long.MAX_VALUE ? TriggerResult.FIRE : TriggerResult.CONTINUE;
         }
 
         @Override

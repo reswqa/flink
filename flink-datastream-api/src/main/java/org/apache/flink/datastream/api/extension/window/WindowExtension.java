@@ -86,10 +86,10 @@ public class WindowExtension {
     }
 
     public static <IN1, IN2, OUT, W extends Window>
-    TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> apply(
-            WindowBuilder<?, W> window,
-            TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W>
-                    windowProcessFunction) {
+            TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> apply(
+                    WindowBuilder<?, W> window,
+                    TwoInputWindowProcessFunction<Iterable<IN1>, Iterable<IN2>, OUT, W>
+                            windowProcessFunction) {
         try {
             return (TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT>)
                     INSTANCE.getMethod(
@@ -97,7 +97,11 @@ public class WindowExtension {
                                     TwoInputWindowProcessFunction.class,
                                     WindowAssigner.class,
                                     Trigger.class)
-                            .invoke(null, windowProcessFunction, window.getAssigner(), window.getTrigger());
+                            .invoke(
+                                    null,
+                                    windowProcessFunction,
+                                    window.getAssigner(),
+                                    window.getTrigger());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

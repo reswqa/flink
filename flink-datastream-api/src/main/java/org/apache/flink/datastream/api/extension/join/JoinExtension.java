@@ -50,10 +50,34 @@ public class JoinExtension {
         }
     }
 
-    /** Non-Window join. */
+    /** This is a tool method for wrapping JoinFunction and JoinType into a ProcessFunction for use.
+     Note that its target scenario is a non-Window Regular Join, and the State in a Join does not expire. */
     @SuppressWarnings("unchecked")
     public static <IN1, IN2, OUT> TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> join(
             JoinFunction<IN1, IN2, OUT> joinFunction, JoinType joinType) {
+        try {
+            return (TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT>)
+                    INSTANCE.getMethod(
+                                    "join",
+                                    JoinFunction.class,
+                                    JoinType.class,
+                                    WindowExtension.TwoInputWindowBuilder.class)
+                            .invoke(
+                                    null,
+                                    joinFunction,
+                                    joinType,
+                                    WindowExtension.GlobalWindows.createTwoInput());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** This is a tool method for wrapping JoinFunction and JoinType into a ProcessFunction for use.
+     Note that its target scenario is a non-Window Regular Join, and the State in Join expires after stateTtl.
+     */
+    @SuppressWarnings("unchecked")
+    public static <IN1, IN2, OUT> TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT> join(
+            JoinFunction<IN1, IN2, OUT> joinFunction, JoinType joinType, long stateTtl) {
         try {
             return (TwoInputNonBroadcastStreamProcessFunction<IN1, IN2, OUT>)
                     INSTANCE.getMethod(

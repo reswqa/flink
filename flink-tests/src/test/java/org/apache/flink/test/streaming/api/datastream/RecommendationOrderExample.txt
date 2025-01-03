@@ -42,9 +42,9 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * This is an example of an e-commerce scenario used to calculate successful recommended orders. If a product
- * is recommended to a user and the user completes the purchase within five minutes, we call this
- * order as {@link RecommendationOrder}. This example expects to count the {@link
+ * This is an example of an e-commerce scenario used to calculate successful recommended orders. If
+ * a product is recommended to a user and the user completes the purchase within five minutes, we
+ * call this order as {@link RecommendationOrder}. This example expects to count the {@link
  * RecommendationOrder}s every ten minutes for the past hour.
  *
  * <p>The application involves two series of input data: the first is the {@link

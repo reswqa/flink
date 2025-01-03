@@ -49,6 +49,7 @@ import org.apache.flink.runtime.state.v2.internal.InternalPartitionedState;
 import org.apache.flink.streaming.api.operators.InternalTimer;
 import org.apache.flink.streaming.api.operators.InternalTimerService;
 import org.apache.flink.streaming.api.operators.Triggerable;
+import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.util.OutputTag;
 
@@ -656,5 +657,17 @@ public class TwoInputWindowProcessOperator<K, IN1, IN2, ACC1, ACC2, OUT, W exten
                 throws Exception {
             return windowStateStore.getWindowState(stateDeclaration, window);
         }
+    }
+
+    @Override
+    public void processWatermark1(Watermark mark) throws Exception {
+        super.processWatermark1(mark);
+        System.out.println("receive watermark1 " + mark.getTimestamp());
+    }
+
+    @Override
+    public void processWatermark2(Watermark mark) throws Exception {
+        super.processWatermark2(mark);
+        System.out.println("receive watermark2 " + mark.getTimestamp());
     }
 }
