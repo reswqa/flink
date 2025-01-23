@@ -22,6 +22,10 @@ specific language governing permissions and limitations
 under the License.
 -->
 
+{{< hint warning >}}
+**Note:** DataStream API V2 is a new set of APIs, to gradually replace the original DataStream API. It is currently in the experimental stage and is not fully available for production.
+{{< /hint >}}
+
 # Flink DataStream API Programming Guide
 
 DataStream programs in Flink are regular programs that implement transformations on data streams
@@ -30,8 +34,6 @@ sources (e.g., message queues, socket streams, files). Results are returned via 
 example write the data to files, or to standard output (for example the command line
 terminal). Flink programs run in a variety of contexts, standalone, or embedded in other programs.
 The execution can happen in a local JVM, or on clusters of many machines.
-
-Note: DataStream API V2 is a new set of APIs, to gradually replace the original DataStream API. It is currently in the experimental stage and is not fully available for production.
 
 ## What is a DataStream?
 
@@ -54,14 +56,14 @@ such as `process`, `connectAndProcess`, and so on.
 ## Fundamental Primitives and Extensions
 
 Based on whether its functionality must be provided by flink, we divide the relevant concepts in DataStream API 
-into two categories: fundamental primitives and high-Level extensions.
+into two categories: fundamental primitives and high-level extensions.
 
 ### Fundamental primitives
 
 Fundamental primitives are the basic and necessary semantics that flink need to provide in order to
 define a stateful stream processing application, which cannot be achieved by users if not provided by
-the framework. It includes dataStream, partitioning, process function, state, processing timer service,
-watermark and async processing(not provided for now).
+the framework. It includes data stream, partitioning, process function, state, processing timer service,
+watermark.
 
 More details can be found in:
 - [Building Blocks]({{< ref "docs/dev/datastream-v2/building_blocks" >}}): Given the most basic elements of DataStream API.
@@ -73,7 +75,7 @@ More details can be found in:
 
 High-Level extensions are like short-cuts / sugars, without which users can probably still achieve the same
 behavior by working with the fundamental APIs, but would be a lot easier with the builtin supports. 
-It includes common built-in functions(e.g. map, filter, reduce, etc. not provided for now), event timer service, window and join.
+It includes event timer service, window and join.
 
 More details can be found in:
 - [Time Processing # Event Timer Service]({{< ref "docs/dev/datastream-v2/time-processing/event_timer_service" >}}): Explanation of how to handle event time via extension.
@@ -152,7 +154,7 @@ collection to an Integer. For more details of processing, see [Building Blocks #
 ### Specify Where to Put the Results of Your Computations
 
 Once you have a DataStream containing your final results, you can write it to
-an outside system by creating a sink. 
+an external system by creating a sink. 
 
 Data sinks consume DataStreams and forward them to files, sockets, external systems, or print them.
 Flink comes with a variety of built-in sink implementations, you can use SinkV2 based sink via `DataStreamV2SinkUtils.wrapSink(sink)`.

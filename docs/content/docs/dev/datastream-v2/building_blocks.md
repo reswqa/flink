@@ -22,6 +22,10 @@ specific language governing permissions and limitations
 under the License.
 -->
 
+{{< hint warning >}}
+**Note:** DataStream API V2 is a new set of APIs, to gradually replace the original DataStream API. It is currently in the experimental stage and is not fully available for production.
+{{< /hint >}}
+
 # Building Blocks
 
 DataStream, Partitioning, ProcessFunction are the most fundamental elements of DataStream API and respectively represent:
@@ -73,12 +77,7 @@ Overall, we have the following four partitioning:
 
 The specific transformation relationship is shown in the following table:
 
-| Partitioning | Global | Keyed | NonKeyed |      Broadcast      |
-|:------------:|:------:|:-----:|:--------:|:-------------------:|
-|    Global    |   ❎    | KeyBy | Shuffle  |      Broadcast     |
-|    Keyed     | Global | KeyBy | Shuffle  |      Broadcast      |
-|   NonKeyed   | Global | KeyBy | Shuffle  |      Broadcast      |
-|  Broadcast   |   ❎   |  ❎   |    ❎    |          ❎        |
+{{< img src="/fig/datastream/one-input-partitioning.png" alt="one-input-partitioning" >}}
 
 (A crossed box indicates that it is not supported or not required)
 
@@ -99,15 +98,9 @@ According to the number of input / output, they are classified as follows:
 |  TwoInputBroadcastStreamProcessFunction   |           2            |                1                |
 |      TwoOutputStreamProcessFunction       |           1            |                2                |
 
-Logically, process functions that support more inputs and outputs can be achieved by combining them, 
-but this implementation might be inefficient. If the call for this becomes louder, 
-we will consider supporting as many output edges as we want through a mechanism like OutputTag.
-But this loses the explicit generic type information that comes with using ProcessFunction.
+(Processing for more inputs and outputs can be achieved by combining multiple process functions)
 
-The case of two input is relatively special, and we have divided it into two categories:
-
-- TwoInputNonBroadcastStreamProcessFunction: Neither of its inputs is a BroadcastStream, so processing only applied to the single partition.
-- TwoInputBroadcastStreamProcessFunction: One of its inputs is the BroadcastStream, so the processing of this input is applied to all partitions. While the other side is Keyed/Non-Keyed Stream, it's processing applied to single partition.
+We have two types of two-input process function, depending on whether one of the input is broadcast stream.
 
 DataStream has series of `process` and `connectAndProcess` methods to transform the input stream or connect and transform two input streams via ProcssFunction.
 
@@ -133,16 +126,6 @@ For TwoOutputStreamProcessFunction:
 |   NonKeyed   |          NonKeyed + NonKeyed          |
 |  Broadcast   |             Not Supported             |
 
-There are two points to note here:
-- When KeyedPartitionStream is used as input, the output can be either a KeyedPartitionStream or NonKeyedPartitionStream.
-For general data processing logic, how to partition data is uncertain, we can only expect a NonKeyedPartitionStream.
-If we do need a deterministic partition, we can follow it with a KeyBy partitioning.
-However, there are times when we know for sure that the partition of records will not change before
-and after processing, shuffle cost due to the extra partitioning can be avoided.
-To be safe, in this case we ask for a KeySelector for the output data, and the framework
-checks at runtime to see if this invariant is broken. The same is true for two output and two input counterparts.
-- Broadcast stream cannot be used as a single input.
-
 Things with two inputs is a little more complicated. The following table lists which streams are compatible with each other and the types of streams they output.
 
 A cross(❎) indicates not supported.
@@ -154,28 +137,13 @@ A cross(❎) indicates not supported.
 | NonKeyed  |   ❎   |         ❎          | NonKeyed |     NonKeyed      |
 | Broadcast |   ❎   |  NonKeyed / Keyed  | NonKeyed |         ❎         |
 
-The reason why the connection between Global Stream and Non-Global Stream is not supported is that the number of partitions of GlobalStream is forced to be 1, but it is generally not 1 for Non-Global Stream, which will cause conflicts when determining the number of partitions of the output stream. If necessary, they should be transformed into mutually compatible streams and then connected.
-Connecting two broadcast streams doesn't really make sense, because each parallelism would have exactly same input data from both streams and any process would be duplicated.
-The reason why the output of two keyed partition streams can be keyed or non-keyed is the same as we mentioned above in the case of single input.
-When we connect two KeyedPartitionStream, they must have the same key type, otherwise we can't decide how to merge the partitions of the two streams. At the same time, things like access state and register timer are also restricted to the partition itself, cross-partition interaction is not meaningful.
-
-The reasons why the connection between KeyedPartitionStream and NonKeyedPartitionStream is not supported are as follows:
-The data on KeyedStream is deterministic, but on NonKeyed is not. It is difficult to think of a scenario where the two need to be connected.
-This will complicate the state declaration and access rules. A more detailed discussion can be seen in the subsequent state-related sub-FLIP.
-If we see that most people have clear demands for this, we can support it in the future.
-
 ## Config Process
 
 After defining the process functions, you may want to make some configurations for the properties of this processing.
 For example, set the parallelism and name of the process operation, etc.
 
-Therefore, the return value of `process`/`connectAndProcess` meets the following two requirements at the same time:
-
-- It should be a handle, allowing us to configure the previous processing.
-
-- It should be a new DataStream, allowing us to do further processing on it.
-
-The advantage of this is that configurations can be made more conveniently by continuously using `withXXX` . For example:
+The return value of `process`/`connectAndProcess` is both a stream and a handle that allowing us to configure the previous processing.
+It has a number of methods called `withXXX` to do the configuration. For example:
 
 ```java
 inputStream
